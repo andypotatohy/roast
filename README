@@ -1,0 +1,34 @@
+ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
+
+To get started, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see example/, lib/, and all other files) and type:
+
+>> roast
+
+This will demo a modeling process on the MNI152 head. Specifically, this will use the MRI of the MNI152 head to build a model of transcranial electric stimulation (TES) with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
+
+To build a model on a real subject, type:
+
+>> roast('example/subject1.nii')
+
+This will use the MRI of Subject 1 (BTW, Andy's head) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
+
+To build a TES model on any subject you want, just provide the MRI in the 1st argument. The default stimulation config is anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
+
+To build a TES model on any subject you want and any customized montage, do:
+
+>> roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
+
+This will use your own "recipe", i.e., injecting 0.3 mA at electrode F1, 0.7 mA at P2, and asking 0.6 mA coming out of C5, and 0.4 mA flowing out of O2. You can define any stimulation montage you want in the 2nd argument, with electrodeName-injectedCurrent pair. The electrodes supported in this version come from the 10-10 EEG system, and you can find their names in the file 1010electrodes.png under the root directory of ROAST. Note the unit of the injected current is milliampere, and make sure they sum up to 0.
+
+The results are saved as "subjName-date-time_result.mat". And you can look up the corresponding stimulation config you defined in the log file of this subject ("subjName_log"), by using the date-time string.
+
+(c) Yu (Andy) Huang, Parra Lab at CCNY
+yhuang16@citymail.cuny.edu
+November 2017
+
+License:
+General Public License version 3 or later.
+
+This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
+
+Note: ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts and documentation in this package and exclude those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.

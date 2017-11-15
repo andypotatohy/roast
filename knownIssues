@@ -1,0 +1,12 @@
+Known issues:
+
+1. On Mac OS, Matlab 2017 does not work with SPM8 mex file. You get some error message like "Invalid MEX-file... Missing dependent shared libraries ...".
+Solution: type the following in the terminal:
+otool -L libname.dylib
+See https://www.mathworks.com/help/matlab/matlab_external/invalid-mex-file-error.html for more info.
+
+2. On Ubuntu 14.04, sometimes the Matlab C++ library conflicts with the system C++ library. You may get error message like "libstdc++.so.6: version `GLIBCXX_3.4.15' not found".
+Solution: Make sure your Ubuntu is up to date by doing apt-get update and apt-get upgrade. Then you can rename the libstdc++ under Matlab directory to something else and force Matlab to use the latest system libstdc++; or you can set up the environment variable before launching Matlab by doing something like 
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+
+Please send any issues or error messages you got to yhuang16@citymail.cuny.edu

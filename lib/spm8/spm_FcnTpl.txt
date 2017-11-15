@@ -1,0 +1,28 @@
+function [R1,...] = spm_FCN(P1,...)
+% <- H1 line : Single line description using keywords ->
+% FORMAT [R1,...] = spm_FCN(P1,...)
+%
+% P1 - <-Argument/parameter description, including ranges->
+% R1 - <-Description of returned values->
+%_______________________________________________________________________
+%
+% HELP text
+% Long description of function, including i/o details, algorithms and refs.
+%
+%_______________________________________________________________________
+% Copyright (C) YEAR Wellcome Trust Centre for Neuroimaging
+
+% AUTHOR
+% $Id: spm_FcnTpl.txt 1143 2008-02-07 19:33:33Z spm $
+
+%=======================================================================
+% - B A N N E R   S E C T I O N   H E A D I N G
+%=======================================================================
+
+%-MAJOR section heading
+%=======================================================================
+
+%-MINOR section heading
+%-----------------------------------------------------------------------
+
+%                           ----------------
