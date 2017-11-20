@@ -1,21 +1,36 @@
-function vargout = electrodePlacement(vargin)
+function vargout = electrodePlacement(P,elecNeeded,elecPara,uniTag)
 % help text
 
 %% input check
+capType = elecPara.capType;
+elecType = elecPara.elecType;
+elecDim = elecPara.elecDim;
+elecOri = elecPara.elecOri;
 
-%% coord options
-switch coordType
+%% cap options
+switch capType
     case {'1020','1010','1005'}
-%         or just detect by using electrode names
-load('D_1005sysFULLextraAdded.mat')
+        load('D_1005sysFULLextraAdded.mat');
+        elec = capInfo{1};
+        elec_template = cell2mat(capInfo(2:4));
+        isBiosemi = 0;
+        isCustomizedCap = 0;
     case 'biosemi'
-%         or just detect by using electrode names
-load('D_biosemiFULLextraAdded.mat')
+        load('D_biosemiFULLextraAdded.mat');
+        elec = capInfo{1};
+        elec_template = cell2mat(capInfo(2:4));
+        isBiosemi = 1;
+        isCustomizedCap = 0;
     case 'customized'
+%         read user-provided electrode coordniate text file
+        elec = capInfo{1};
+        elec_template = cell2mat(capInfo(2:4));
+        isBiosemi = 0;
+        isCustomizedCap = 1;
 end
 
-%% shape options
-switch shape
+%% electrode shape options
+switch elecType
     case 'disc'
         radius = ;
         height = ;
@@ -28,41 +43,34 @@ switch shape
         height = ;
 end
 
-%% assume head is in RAS from the very beginning (using mricron to convert)
-%% later remove this assumption (to be consistent with user-provided coordinates)
-template = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']); % Load the scalp mask
-% template is used for saving the results with the same header info as the input
-scalp = template.img;
-[Nx, Ny, Nz]=size(scalp); % size of head in RAS orientation
+%% can be any non-ras head (to be consistent with user-provided coordinates)
+landmarks_original = getLandmarks(P);
 
-scalp_surface = mask2EdgePointCloud(scalp);
+[perm,iperm,isFlip] = how2getRAS(landmarks_original);
 
-%% fit cap position on the individual's head, if not customized coodinates
-
-%% mapping landmarks
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
+template = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']); % Load the scalp mask
+% template is used for saving the results with the same header info as the input
+scalp_original = template.img;
 
-load([dirname filesep baseFilename '_seg8.mat'],'image','tpm','Affine');
-tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
-% mapping landmarks from TPM to individual MRI % ANDY 2017-05-17
-landmark = [61 139 98; % nasion
-    61 9 100; % inion
-    11 62 93; % right
-    111 63 93; % left; note here because eTPM is LAS orientation
-    61 113 7; % front_neck
-    61 7 20]; % back_neck
-temp = tpm2mri * [landmark(1,:) 1]'; nasion = round(temp(1:3)');
-temp = tpm2mri * [landmark(2,:) 1]'; inion = round(temp(1:3)');
-temp = tpm2mri * [landmark(3,:) 1]'; right = round(temp(1:3)');
-temp = tpm2mri * [landmark(4,:) 1]'; left = round(temp(1:3)');
-temp = tpm2mri * [landmark(5,:) 1]'; front_neck = round(temp(1:3)');
+[scalp,landmarks,sizRAS] = changeOrientationIn(perm,isFlip,scalp_original,landmarks_original);
+if isCustomizedCap
+    [~,elec_template] = changeOrientationIn(perm,isFlip,scalp_original,elec_template);
+end
 
-electrode_coord = fitCap2individual(scalp,nasion,inion,right,left);
+scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
+
+%% fit cap position on the individual's head
+if ~isCustomizedCap
+    electrode_coord = fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi,elecNeeded);
+else
+    electrode_coord = map2ClosestPoints(elec_template,scalp_surface);
+end
 
 %% head clean up for placing electrodes
-scalp_surface_clean = cleanScalp(scalp_surface);
-scalp_surface2 = mask2EdgePointCloud(scalp_surface_clean);
+[scalp_clean,scalp_filled] = cleanScalp(scalp);
+scalp_surface2 = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
 vec1 = repmat(center,size(electrode_coord,1),1)-electrode_coord;
@@ -78,6 +86,20 @@ for j=1:size(vec1,1)
     % location of each electrode for the calculation of local normal vector
     % for each electrode in the following step
 end
+
+if ~isempty(back_neck)
+    vec1 = repmat(neckCenter,size(neck_coord,1),1)-neck_coord;
+    vec2 = repmat(neckCenter,size(scalp_surface2,1),1)-scalp_surface2;
+    neck_elec_range = zeros(100,size(vec1,1));
+    for j=1:size(vec1,1)
+        temp = dot(repmat(vec1(j,:),size(vec2,1),1),vec2,2)./(repmat(norm(vec1(j,:)),size(vec2,1),1).*sqrt(sum(vec2.^2,2)));
+        [~,intemp] = sort(temp,'descend');
+        neck_elec_range(:,j) = intemp(1:100);
+    end
+    electrode_coord = cat(1,electrode_coord,neck_coord);
+    elec_range = cat(2,elec_range,neck_elec_range);
+end
+% Get local scalp points for neck electrodes
 
 if isBiosemi
     aidElec = [CPz FCz AFz POz];

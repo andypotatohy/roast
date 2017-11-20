@@ -115,7 +115,7 @@ if ~exist([dirname filesep baseFilename '_mask_gray.nii'],'file')
     disp('======================================================')
     disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
     disp('======================================================')
-    mysegment(subj,[],18);
+    mysegment(subj);
     autoPatching(subj);
 else
     disp('======================================================')

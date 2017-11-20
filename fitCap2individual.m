@@ -1,4 +1,4 @@
-function electrode_coord = fitCap2individual(scalp,nasion,inion,right,left)
+function electrode_coord = fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi,elecNeeded)
 
 disp('measuring head size...')
 L = norm(inion-nasion); % Distance between nasion and inion
