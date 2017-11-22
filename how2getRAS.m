@@ -3,14 +3,21 @@ function [permIn,permOut,flipTag] = how2getRAS(landmarks)
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
 
+nasion = landmarks(1,:);
+inion = landmarks(2,:);
+right = landmarks(3,:);
+left = landmarks(4,:);
+front_neck = landmarks(5,:);
+% back_neck = landmarks(6,:);
+
 % disp('adjusting the orientation of the head into RAS orientation...')
-e1 = landmarks(3,:) - landmarks(4,:); % right-left
+e1 = right - left;
 e1 = e1/norm(e1);
 
-e2 = landmarks(1,:) - landmarks(2,:); % nasion-inion
+e2 = nasion - inion;
 e2 = e2/norm(e2);
 
-e3 = landmarks(1,:) - landmarks(5,:); % nasion-front_neck
+e3 = nasion - front_neck;
 e3 = e3/norm(e3);
 % detect the orientation of the head based on the anatomical landmarks
 

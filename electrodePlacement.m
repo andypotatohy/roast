@@ -10,13 +10,13 @@ elecOri = elecPara.elecOri;
 %% cap options
 switch capType
     case {'1020','1010','1005'}
-        load('D_1005sysFULLextraAdded.mat');
+        load('cap1005FullWithExtra.mat');
         elec = capInfo{1};
         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 0;
         isCustomizedCap = 0;
     case 'biosemi'
-        load('D_biosemiFULLextraAdded.mat');
+        load('capBioSemiFullWithExtra.mat');
         elec = capInfo{1};
         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 1;
@@ -32,15 +32,15 @@ end
 %% electrode shape options
 switch elecType
     case 'disc'
-        radius = ;
-        height = ;
+        radius = elecDim(1);
+        height = elecDim(2);
     case 'pad'
-        padDim = [70 50 3]; % [length width thickness]
-        padOri = 'ap';
+        padDim = elecDim; % [length width thickness]
+        padOri = elecOri;
     case 'ring'
-        radiusInner = ;
-        radiusOutter = ;
-        height = ;
+        radiusInner = elecDim(1);
+        radiusOutter = elecDim(2);
+        height = elecDim(3);
 end
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
@@ -63,49 +63,59 @@ scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
 if ~isCustomizedCap
-    electrode_coord = fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi,elecNeeded);
+    [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
 else
-    electrode_coord = map2ClosestPoints(elec_template,scalp_surface);
+    [~,indOnScalpSurf] = map2Points(elec_template,scalp_surface,'closest');
+    electrode_coord = scalp_surface(indOnScalpSurf,:);
+end
+
+if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
+    % Place neck electrodes if needed
+    if any(landmarks(5:6,3)<=0)
+        error('MRI does not cover the neck, so cannot place electrodes on the neck.');
+    else
+        [neck_coord,neck_center] = placeNeckElec(scalp,scalp_surface,landmarks);
+    end
 end
 
 %% head clean up for placing electrodes
-[scalp_clean,scalp_filled] = cleanScalp(scalp);
-scalp_surface2 = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
+[scalp_clean,scalp_filled] = cleanScalp(scalp,scalp_surface);
+scalp_clean_surface = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
-vec1 = repmat(center,size(electrode_coord,1),1)-electrode_coord;
-% vectors connecting center to each electrode
-vec2 = repmat(center,size(scalp_surface2,1),1)-scalp_surface2;
-% vectors connecting center to each point on scalp surface (after clean-up)
-elec_range = zeros(100,size(vec1,1));
-for j=1:size(vec1,1)
-    temp = dot(repmat(vec1(j,:),size(vec2,1),1),vec2,2)./(repmat(norm(vec1(j,:)),size(vec2,1),1).*sqrt(sum(vec2.^2,2)));
-    [~,intemp] = sort(temp,'descend');
-    elec_range(:,j) = intemp(1:100);
-    % Get some points on the scalp surface that are close to the exact
-    % location of each electrode for the calculation of local normal vector
-    % for each electrode in the following step
+if ~isCustomizedCap
+    elec_range = zeros(100,size(electrode_coord,1));
+    [~,indOnScalpSurf] = project2ClosestSurfacePoints(electrode_coord,scalp_clean_surface,center);
+    for i=1:size(elec_range,1)
+        elec_range(:,i) = indOnScalpSurf(1:100,i);
+        % Get some points on the scalp surface that are close to the exact
+        % location of each electrode for the calculation of local normal vector
+        % for each electrode in the following step
+    end
+else
+    [~,elec_range] = map2Points(electrode_coord,scalp_clean_surface,'closer',100);
 end
 
-if ~isempty(back_neck)
-    vec1 = repmat(neckCenter,size(neck_coord,1),1)-neck_coord;
-    vec2 = repmat(neckCenter,size(scalp_surface2,1),1)-scalp_surface2;
-    neck_elec_range = zeros(100,size(vec1,1));
-    for j=1:size(vec1,1)
-        temp = dot(repmat(vec1(j,:),size(vec2,1),1),vec2,2)./(repmat(norm(vec1(j,:)),size(vec2,1),1).*sqrt(sum(vec2.^2,2)));
-        [~,intemp] = sort(temp,'descend');
-        neck_elec_range(:,j) = intemp(1:100);
+if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
+    % Get local scalp points for neck electrodes    
+    neck_elec_range = zeros(100,size(neck_coord,1));
+    [~,indOnScalpSurf] = project2ClosestSurfacePoints(neck_coord,scalp_clean_surface,neck_center);
+    for i=1:size(neck_elec_range,1)
+        neck_elec_range(:,i) = indOnScalpSurf(1:100,i);
     end
+end
+
+% if isBiosemi THIS DOES NOT MATTER ANY MORE FOR ROAST
+%     aidElec = [CPz FCz AFz POz];
+%     elecToPlace = setdiff(1:size(electrode_coord,1),aidElec);
+%     electrode_coord = electrode_coord(elecToPlace,:);
+%     elec_range = elec_range(:,elecToPlace);
+% end
+
+if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
+    elec = cat(1,elec,{'Nk1','Nk2','Nk3','Nk4'});
     electrode_coord = cat(1,electrode_coord,neck_coord);
     elec_range = cat(2,elec_range,neck_elec_range);
-end
-% Get local scalp points for neck electrodes
-
-if isBiosemi
-    aidElec = [CPz FCz AFz POz];
-    elecToPlace = setdiff(1:size(electrode_coord,1),aidElec);
-    electrode_coord = electrode_coord(elecToPlace,:);
-    elec_range = elec_range(:,elecToPlace);
 end
 
 [~,indElecNeeded] = ismember(elecNeeded,elec);

@@ -1,4 +1,14 @@
-function electrode_coord = fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi,elecNeeded)
+function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi)
+%
+% Landmarks follow the order of: nasion, inion, right, left, front neck,
+% and back neck.
+
+nasion = landmarks(1,:);
+inion = landmarks(2,:);
+right = landmarks(3,:);
+left = landmarks(4,:);
+% front_neck = landmarks(5,:);
+% back_neck = landmarks(6,:);
 
 disp('measuring head size...')
 L = norm(inion-nasion); % Distance between nasion and inion
@@ -51,58 +61,14 @@ distance_all = sum(sqrt(diff(yi).^2+diff(zi).^2));
 % Calculate the distance between nasion and inion along the scalp surface
 
 disp('wearing the cap...')
-load(fullfile(fileparts(which(mfilename)),capType),'D'); %EasyCap electrode coordinates
-
-elec = cell(length(D),1);
-for i =1:length(D),
-    elec{i} = D(i).labels;
-    if strcmp(elec{i},'Oz'),Oz = i;end
-    if strcmp(elec{i},'POz'),POz = i;end
-    if strcmp(elec{i},'Pz'),Pz = i;end
-    if strcmp(elec{i},'CPz'),CPz = i;end
-    if strcmp(elec{i},'Cz'),Cz = i;end
-    if strcmp(elec{i},'FCz'),FCz = i;end
-    if strcmp(elec{i},'Fz'),Fz = i;end
-    if strcmp(elec{i},'AFz'),AFz = i;end
-    if strcmp(elec{i},'Fpz'),Fpz = i;end
+elec = capInfo{1};
+if ~isBiosemi
+    centralElec = {'Oz','POz','Pz','CPz','Cz','FCz','Fz','AFz','Fpz'};
+else
+    centralElec = {'A19','POz','A6','CPz','A1','FCz','E17','AFz','E12'};
 end
-% Find the electrodes along the central sagittal line
-
-isBiosemi = 0;
-if ~exist('Oz','var') % this is the case of placing a BioSemi Cap
-    isBiosemi = 1;
-    for i =1:length(D),
-        elec{i} = D(i).labels;
-        if strcmp(elec{i},'A19'),Oz = i;end
-        if strcmp(elec{i},'POz'),POz = i;end
-        if strcmp(elec{i},'A6'),Pz = i;end
-        if strcmp(elec{i},'CPz'),CPz = i;end
-        if strcmp(elec{i},'A1'),Cz = i;end
-        if strcmp(elec{i},'FCz'),FCz = i;end
-        if strcmp(elec{i},'E17'),Fz = i;end
-        if strcmp(elec{i},'AFz'),AFz = i;end
-        if strcmp(elec{i},'E12'),Fpz = i;end
-    end
-    
-    if exist('Oz','var') && ~exist('POz','var')
-        errMsg = 'BioSemi cap detected...';
-        errMsg = [errMsg 'If you are placing a BioSemi cap, please add the following electrodes to help the program optimally place all the electrodes:\n'];
-        errMsg = [errMsg 'electrode name \t inclination \t azimuth \n'];
-        errMsg = [errMsg 'POz \t\t 69 \t\t -90 \n'];
-        errMsg = [errMsg 'CPz \t\t 23 \t\t -90 \n'];
-        errMsg = [errMsg 'FCz \t\t 23 \t\t 90 \n'];
-        errMsg = [errMsg 'AFz \t\t 69 \t\t 90 \n'];
-        error('error:convert',errMsg);
-    end
-end % Find the electrodes along the central sagittal line
-
-if ~exist('Oz','var')
-    error('Unrecognized electrode cap!');
-end
-
-elec_template = ones(4,length(D));
-for i = 1:length(D), elec_template(1:3,i) = [D(i).X;D(i).Y;D(i).Z]; end
-% Electrode coordinates from EasyCap
+[~,indCentralElec] = ismember(centralElec,elec);
+elec_template = cell2mat(capInfo(2:4));
 
 theta = 23;
 alpha = ((360-10*theta)/2)*(pi/180);
@@ -116,44 +82,40 @@ a = cross(s,c); a = a/norm(a); % vectors to be used in affine transform
 disp('adjust the cap for optimized position...this will take a while...')
 factor = 1:-0.05:0.5; % Adjusting factor
 CENTER = zeros(length(factor),3);
-ELEC_COORD = zeros(length(D),3,length(factor));
+ELEC_COORD = zeros(length(elec),3,length(factor));
 F = zeros(length(factor),1);
 for n = 1:length(factor)
     %     fprintf('Iteration No. %d...\n', n)
     center = line_center + h*factor(n)*a; % Adjust the center
     CENTER(n,:) = center; % buffer
-    scale = 150;
+    scale = round(max(size(scalp))/2);
     shift = center';
     
     affine = scale * [s' c' a' shift/scale;0 0 0 1/scale]; % Affine transform matrix
     
-    elec_adjusted = elec_template;
-    elec_adjusted(3,:) = elec_template(3,:)*factor(n);
+    elec_adjusted = [elec_template';ones(1,length(elec))];
+    elec_adjusted(3,:) = elec_adjusted(3,:)*factor(n);
     % Adjust the z-coordinate correspondingly
     elec_transformed = affine * elec_adjusted;
+    elec_transformed = elec_transformed(1:3,:)';
     % Affine transform the EasyCap coordinate to an approximate position for each electrode outside of the scalp surface
     
-    vec1 = repmat(center,size(elec_transformed,2),1)-elec_transformed(1:3,:)';
-    % vectors connecting center to the approximate position for each electrode
-    vec2 = repmat(center,size(scalp_surface,1),1)-scalp_surface;
-    % vectors connecting center to each point on scalp surface
-    idx = zeros(size(vec1,1),1);
-    for j=1:size(vec1,1)
-        temp = dot(repmat(vec1(j,:),size(vec2,1),1),vec2,2)./(repmat(norm(vec1(j,:)),size(vec2,1),1).*sqrt(sum(vec2.^2,2)));
-        [sorttemp,intemp] = sort(temp,'descend');
-        testPts = scalp_surface(intemp(sorttemp> max(sorttemp)*0.99993),:);
-        vecT = repmat(center,size(testPts,1),1)-testPts;
-        dist = sqrt(sum(vecT.^2,2));
-        idx(j) = intemp(find(dist==max(dist),1,'first'));
-        % Find the only point on the outer surface of the scalp for each electrode, i.e., the exact coordinates for each electrode on the scalp surface
+    idx = zeros(size(elec_transformed,1),1);
+    [cosineAngle,indOnScalpSurf] = project2ClosestSurfacePoints(elec_transformed,scalp_surface,center);
+    for i = 1:length(idx)
+%         testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) > max(cosineAngle(:,i))*0.99993,i),:);
+        testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) > prctile(cosineAngle(:,i),99.99),i),:);
+        [~,indFarthestOnTestPts] = map2Points(center,testPts,'farthest');
+        idx(i) = indOnScalpSurf(indFarthestOnTestPts,i);
+        % Find the only point on the outer surface of the scalp for each electrode,
+        % i.e., the exact coordinates for each electrode on the scalp surface
     end
     
     elec_interp = scalp_surface(idx,:); % exact coordinates for each electrode
     ELEC_COORD(:,:,n) = elec_interp; % buffer
     
-    center_points = [inion;elec_interp(Oz,:);elec_interp(POz,:);elec_interp(Pz,:);...
-        elec_interp(CPz,:);elec_interp(Cz,:);elec_interp(FCz,:);elec_interp(Fz,:);...
-        elec_interp(AFz,:);elec_interp(Fpz,:);nasion]; % coordinates for electrodes on central sagittal line
+    center_points = [inion;elec_interp(indCentralElec,:);nasion];
+    % coordinates for electrodes on central sagittal line
     center_fit = [centralSag*ones(length(yi),1) yi zi]; % coordinates for each point on central sagittal line
     
     indxsave = 1;
@@ -173,20 +135,3 @@ end
 [~,index] = min(F);
 electrode_coord = ELEC_COORD(:,:,index); % exact coordinate for each electrode projected on the scalp surface
 center = CENTER(index,:); % center of electrode coordinates
-
-if ~isempty(back_neck)
-    neckCenter = (front_neck+back_neck)/2;
-    vec1 = [neckCenter-front_neck;neckCenter-back_neck;-1 0 0;1 0 0];
-    vec2 = repmat(neckCenter,size(scalp_surface,1),1)- scalp_surface;
-    idx = zeros(size(vec1,1),1);
-    for j=1:size(vec1,1)
-        temp = dot(repmat(vec1(j,:),size(vec2,1),1),vec2,2)./(repmat(norm(vec1(j,:)),size(vec2,1),1).*sqrt(sum(vec2.^2,2)));
-        [sorttemp,intemp] = sort(temp,'descend');
-        testPts = scalp_surface(intemp(sorttemp> max(sorttemp)*0.99993),:);
-        vecT = repmat(neckCenter,size(testPts,1),1)-testPts;
-        dist = sqrt(sum(vecT.^2,2));
-        idx(j) = intemp(find(dist==max(dist),1,'first'));
-    end
-    neck_coord = scalp_surface(idx,:);
-end
-% Place neck electrodes if needed

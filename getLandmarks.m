@@ -9,11 +9,11 @@ tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
 % mapping landmarks from TPM to individual MRI % ANDY 2017-05-17
 
 landmarkInTPM = [61 139 98; % nasion
-    61 9 100; % inion
-    11 62 93; % right
-    111 63 93; % left; note here because eTPM is LAS orientation
-    61 113 7; % front_neck
-    61 7 20]; % back_neck
+                 61 9 100; % inion
+                 11 62 93; % right
+                 111 63 93; % left; note here because eTPM is LAS orientation
+                 61 113 7; % front_neck
+                 61 7 20]; % back_neck
 
 landmarks = zeros(size(landmarkInTPM,1),size(landmarkInTPM,2));
 for i=1:size(landmarkInTPM,1)

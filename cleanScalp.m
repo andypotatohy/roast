@@ -1,7 +1,7 @@
-function [scalpOut,scalpMid] = cleanScalp(scalpIn)
+function [scalpOut,scalpMid] = cleanScalp(scalpIn,scalpSurf)
 
 disp('cleaning the hair for gel injection...')
-scalpIn(min(scalpIn(:,1)):max(scalpIn(:,1)),min(scalpIn(:,2)):max(scalpIn(:,2)),min(scalpIn(:,3))) = 255;
+scalpIn(min(scalpSurf(:,1)):max(scalpSurf(:,1)),min(scalpSurf(:,2)):max(scalpSurf(:,2)),min(scalpSurf(:,3))) = 255;
 % force to close the most bottom slice, because some MRIs with
 % limited FOV just cut off in the middle of the face
 se = 0;
@@ -15,6 +15,7 @@ while ~all(isFilled)
     % Make sure the scalp is closed and filled completely
 end
 
+[Nx, Ny, Nz] = size(scalpIn); % size of head in RAS orientation
 se = 0;
 isOpen = 1;
 while any(isOpen)
