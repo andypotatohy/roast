@@ -45,6 +45,10 @@ disp('generating 3D renderings...')
 indFace = face(find(face(:,4) == 2),1:3);
 indElem = elem(find(elem(:,5) == 2),1:4);
 
+node(:,1:3) = sms(node(:,1:3),indFace);
+% smooth the surface that's to be displayed
+% just for display, the output data is not smoothed
+
 totInCurMag = sum(abs(inCurrent))/2;
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
