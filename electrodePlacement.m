@@ -123,6 +123,7 @@ doElec = zeros(size(electrode_coord,1),1);
 doElec(indElecNeeded) = 1;
 
 %% placing and model the electrodes
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,doElec,elecPara);
 
 %% range generation
 
