@@ -1,4 +1,4 @@
-function [rnge_elec,rnge_gel] = electrodePlacement(P,elecNeeded,elecPara,uniTag)
+function vargout = electrodePlacement(P,elecNeeded,elecPara,uniTag)
 % help text
 
 %% input check
@@ -29,19 +29,19 @@ switch capType
         isCustomizedCap = 1;
 end
 
-% %% electrode shape options
-% switch elecType
-%     case 'disc'
-%         radius = elecDim(1);
-%         height = elecDim(2);
-%     case 'pad'
-%         padDim = elecDim; % [length width thickness]
-%         padOri = elecOri;
-%     case 'ring'
-%         radiusInner = elecDim(1);
-%         radiusOutter = elecDim(2);
-%         height = elecDim(3);
-% end
+%% electrode shape options
+switch elecType
+    case 'disc'
+        radius = elecDim(1);
+        height = elecDim(2);
+    case 'pad'
+        padDim = elecDim; % [length width thickness]
+        padOri = elecOri;
+    case 'ring'
+        radiusInner = elecDim(1);
+        radiusOutter = elecDim(2);
+        height = elecDim(3);
+end
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
 landmarks_original = getLandmarks(P);
@@ -145,16 +145,8 @@ bone = load_untouch_nii([dirname filesep baseFilename '_mask_bone.nii']); volume
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 
 % disp('saving the results...')
-template.img = uint8(volume_elec)*255;
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
 template.img = uint8(volume_gel)*255;
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+template.img = uint8(volume_elec)*255;
+save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
 
-for i=1:length(rnge_elec)
-    if ~isempty(rnge_elec{i})
-        rnge_elec{i} = rnge_elec{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-        rnge_gel{i} = rnge_gel{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-    end
-end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
-
-save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');

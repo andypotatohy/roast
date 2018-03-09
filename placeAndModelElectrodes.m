@@ -20,7 +20,7 @@ if ~isempty(elecPara.elecType,'pad')
 end
 
 % figure;hold on;plot3(scalp_surface(:,1),scalp_surface(:,2),scalp_surface(:,3),'y.');
-elec_allCoord = cell(1,size(elecLoc,1)); gel_allCoord = cell(1,size(elecLoc,1));
+elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
 for i = 1:size(elecLoc,1)
     if doPlace(i)
@@ -38,7 +38,10 @@ for i = 1:size(elecLoc,1)
                 %     electrode = out + elec_height*normal;
                 %     gel_in = out - 4*gel_height*normal; % coordinates of the boundaries of gel and electrode
                 if norm(center - out) < norm(center - elecLoc(i,:))
-                    % try computing this "center" inside this func: gravity center of the filled scalp?
+                    % try computing this "center" inside this func: gravity
+                    % center of the filled scalp? then how about
+                    % neck_center? think of other idea of detecting normal
+                    % points out or in
                     normal = -normal;
                     %         out = elecLoc(i,:) +  dimTry*normal;
                     %         electrode = out + elec_height*normal;
