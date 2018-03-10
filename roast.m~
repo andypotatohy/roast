@@ -102,10 +102,10 @@ if isempty(dirname), dirname = pwd; end
 switch capType
     case {'1020','1010','1005'}
         load('./cap1005FullWithExtra.mat','capInfo');
-        elecPool = capInfo{1};
+        elec = capInfo{1};
     case 'biosemi'
         load('./capBioSemiFullWithExtra.mat','capInfo');
-        elecPool = capInfo{1};
+        elec = capInfo{1};
         %     case 'customized'
         %         fid = fopen([dirname filesep 'customLocations']);
         %         if fid==-1
@@ -113,12 +113,12 @@ switch capType
         %         end
         %         capInfo = textscan(fid,'%s %f %f %f');
         %         fclose(fid);
-        %         elecPool = capInfo{1};
+        %         elec = capInfo{1};
     otherwise
         %         error('Supported cap types are: ''1020'', ''1010'', ''1005'', ''BioSemi'',
         %         and any locations you specified in file ''customLocations'' YOU stored under the subject folder.');
 end
-elecPool = cat(1,elecPool,{'Nk1';'Nk2';'Nk3';'Nk4'});
+elec = cat(1,elec,{'Nk1';'Nk2';'Nk3';'Nk4'});
 
 % more input judge on option conflicts here
 
@@ -130,18 +130,17 @@ elecName = (recipe(1:2:end-1))';
 % if ~all(ismember(elecName,elec))
 %     error('Unrecognized electrode names. Please specify electrodes in the 10-10 EEG system only.');
 % end
-foundElec = ismember(elecName,elecPool);
+foundElec = ismember(elecName,elec);
 indCustomElec = find(~foundElec);
-isUnknownElec = zeros(length(indCustomElec),1);
+isTrueCustom = zeros(length(indCustomElec),1);
 for i=1:length(indCustomElec)
     if isempty(strfind(elecName{indCustomElec(i)},'custom')) && isempty(strfind(elecName{indCustomElec(i)},'Custom'))
         fprintf('Unrecognized electrode %s.\n',elecName{indCustomElec(i)});
-        isUnknownElec(i) = 1;
+        isTrueCustom = 
     end
 end
-if any(isUnknownElec)
-    error('It''s possible that you specified a cap type (e.g. 1010) but provided the electrode name in the e.g. BioSemi system; it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name.');
-end
+if
+error('It''s possible that you specified a cap type (e.g. 1010) but provided the electrode name in the e.g. BioSemi system; it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name.');
 if ~isempty(indCustomElec)
     fid = fopen([dirname filesep 'customLocations']);
     if fid==-1

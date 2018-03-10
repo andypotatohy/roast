@@ -1,47 +1,95 @@
-function vargout = electrodePlacement(P,elecNeeded,elecPara,uniTag)
+function [rnge_elec,rnge_gel] = electrodePlacement(P,elecNeeded,elecPara,uniTag)
 % help text
 
-%% input check
+%% options
 capType = elecPara.capType;
 elecType = elecPara.elecType;
-elecDim = elecPara.elecDim;
+elecSize = elecPara.elecSize;
 elecOri = elecPara.elecOri;
+legacy = elecPara.legacy;
 
 %% cap options
 switch capType
     case {'1020','1010','1005'}
-        load('cap1005FullWithExtra.mat');
-        elec = capInfo{1};
-        elec_template = cell2mat(capInfo(2:4));
+        load('cap1005FullWithExtra.mat','capInfo');
+        elecPool = capInfo{1};
+%         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 0;
-        isCustomizedCap = 0;
+%         isCustomizedCap = 0;
     case 'biosemi'
-        load('capBioSemiFullWithExtra.mat');
-        elec = capInfo{1};
-        elec_template = cell2mat(capInfo(2:4));
+        load('capBioSemiFullWithExtra.mat','capInfo');
+        elecPool = capInfo{1};
+%         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 1;
-        isCustomizedCap = 0;
-    case 'customized'
-%         read user-provided electrode coordniate text file
-        elec = capInfo{1};
-        elec_template = cell2mat(capInfo(2:4));
-        isBiosemi = 0;
-        isCustomizedCap = 1;
+%         isCustomizedCap = 0;
 end
 
-%% electrode shape options
-switch elecType
-    case 'disc'
-        radius = elecDim(1);
-        height = elecDim(2);
-    case 'pad'
-        padDim = elecDim; % [length width thickness]
-        padOri = elecOri;
-    case 'ring'
-        radiusInner = elecDim(1);
-        radiusOutter = elecDim(2);
-        height = elecDim(3);
+doPredefined = 0;
+doNeck = 0;
+doCustom = 0;
+for i=1:length(elecNeeded)
+    if ismember(elecNeeded{i},elecPool)
+        doPredefined = 1;
+    end
+    if ismember(elecNeeded{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
+        doNeck = 1;
+    end
+    if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
+        doCustom = 1;
+        fid = fopen([dirname filesep 'customLocations']);
+        capInfoCustom = textscan(fid,'%s %f %f %f');
+        fclose(fid);
+        elecPoolCustom = capInfoCustom{1};
+        elecLocCustom = cell2mat(capInfoCustom(2:4));
+    end
 end
+        
+% isCustomElec = zeros(length(elecNeeded),1);
+% for i=1:length(elecNeeded)
+%     if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
+%         isCustomElec(i) = 1;
+%     end
+% end
+% if all(isCustomElec)
+%     pureCustom = 1;
+% else
+%     pureCustom = 0;
+%         
+% switch capType
+%     case {'1020','1010','1005'}
+%         load('cap1005FullWithExtra.mat','capInfo');
+%         elec = capInfo{1};
+% %         elec_template = cell2mat(capInfo(2:4));
+%         isBiosemi = 0;
+% %         isCustomizedCap = 0;
+%     case 'biosemi'
+%         load('capBioSemiFullWithExtra.mat','capInfo');
+%         elec = capInfo{1};
+% %         elec_template = cell2mat(capInfo(2:4));
+%         isBiosemi = 1;
+% %         isCustomizedCap = 0;
+% %     case 'customized'
+% % %         read user-provided electrode coordniate text file
+% %         elec = capInfo{1};
+% %         elec_template = cell2mat(capInfo(2:4));
+% %         isBiosemi = 0;
+% %         isCustomizedCap = 1;
+% end
+% end
+
+% %% electrode shape options
+% switch elecType
+%     case 'disc'
+%         radius = elecSize(1);
+%         height = elecSize(2);
+%     case 'pad'
+%         padSize = elecSize; % [length width thickness]
+%         padOri = elecOri;
+%     case 'ring'
+%         radiusInner = elecSize(1);
+%         radiusOutter = elecSize(2);
+%         height = elecSize(3);
+% end
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
 landmarks_original = getLandmarks(P);
@@ -55,23 +103,22 @@ template = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']); % 
 scalp_original = template.img;
 
 scalp = changeOrientationVolume(scalp_original,perm,isFlip);
-landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlip,size(scalp));
-if isCustomizedCap
-    elec_template = changeOrientationPointCloud(elec_template,perm,isFlip,size(scalp));
+
+if doPredefined || doNeck
+    landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlip,size(scalp));
+end
+if doCustom
+    elecLocCustom = changeOrientationPointCloud(elecLocCustom,perm,isFlip,size(scalp));
 end
 
 scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
-if ~isCustomizedCap
+if doPredefined
     [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
-else
-    [~,indOnScalpSurf] = map2Points(elec_template,scalp_surface,'closest');
-    electrode_coord = scalp_surface(indOnScalpSurf,:);
 end
 
-if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
-    % Place neck electrodes if needed
+if doNeck
     if any(landmarks(5:6,3)<=0)
         error('MRI does not cover the neck, so cannot place electrodes on the neck.');
     else
@@ -79,12 +126,18 @@ if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
     end
 end
 
+if doCustom
+    [~,indOnScalpSurf] = map2Points(elecLocCustom,scalp_surface,'closest');
+    electrode_coord = scalp_surface(indOnScalpSurf,:);
+end
+
+
 %% head clean up for placing electrodes
 [scalp_clean,scalp_filled] = cleanScalp(scalp,scalp_surface);
 scalp_clean_surface = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
-if ~isCustomizedCap
+if doPredefined
     elec_range = zeros(100,size(electrode_coord,1));
     [~,indOnScalpSurf] = project2ClosestSurfacePoints(electrode_coord,scalp_clean_surface,center);
     for i=1:size(elec_range,1)
@@ -93,11 +146,8 @@ if ~isCustomizedCap
         % location of each electrode for the calculation of local normal vector
         % for each electrode in the following step
     end
-else
-    [~,elec_range] = map2Points(electrode_coord,scalp_clean_surface,'closer',100);
-end
 
-if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
+if doNeck
     % Get local scalp points for neck electrodes    
     neck_elec_range = zeros(100,size(neck_coord,1));
     [~,indOnScalpSurf] = project2ClosestSurfacePoints(neck_coord,scalp_clean_surface,neck_center);
@@ -105,6 +155,12 @@ if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
         neck_elec_range(:,i) = indOnScalpSurf(1:100,i);
     end
 end
+    
+if doCustom    
+    [~,elec_range] = map2Points(electrode_coord,scalp_clean_surface,'closer',100);
+end
+
+
 
 % if isBiosemi THIS DOES NOT MATTER ANY MORE FOR ROAST
 %     aidElec = [CPz FCz AFz POz];
@@ -145,8 +201,16 @@ bone = load_untouch_nii([dirname filesep baseFilename '_mask_bone.nii']); volume
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 
 % disp('saving the results...')
-template.img = uint8(volume_gel)*255;
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 template.img = uint8(volume_elec)*255;
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+template.img = uint8(volume_gel)*255;
+save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 
+for i=1:length(rnge_elec)
+    if ~isempty(rnge_elec{i})
+        rnge_elec{i} = rnge_elec{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
+        rnge_gel{i} = rnge_gel{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
+    end
+end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
+
+save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');
