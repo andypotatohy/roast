@@ -85,7 +85,7 @@ CENTER = zeros(length(factor),3);
 ELEC_COORD = zeros(length(elec),3,length(factor));
 F = zeros(length(factor),1);
 for n = 1:length(factor)
-    %     fprintf('Iteration No. %d...\n', n)
+    fprintf('Iteration No. %d...\n', n)
     center = line_center + h*factor(n)*a; % Adjust the center
     CENTER(n,:) = center; % buffer
     scale = round(max(size(scalp))/2);

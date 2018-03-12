@@ -1,43 +1,50 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,doPlace,elecPara)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecCtr,elecRange,scalpCleanSurf,scalpFilled,doPlace,elecPara)
 
 % disp('placing electrodes...')
+elecType = elecPara.elecType;
+elecSize = elecPara.elecSize;
+elecOri = elecPara.elecOri;
 
-if ~isempty(elecPara.elecType,'pad')    
-    se = padDim(3);
-    scalpDilated = imdilate(scalpFilled,ones(se,se,se));
+if strcmp(elecType,'pad')
+    pad_height = elecSize(3);
+    scalpDilated = imdilate(scalpFilled,ones(pad_height,pad_height,pad_height));
     dilatedScalp = scalpDilated - scalpFilled; % scalpFilled: filled scalp
     inde = find(dilatedScalp==255);
     gel_layer = zeros(length(inde),3);
     [gel_layer(:,1),gel_layer(:,2),gel_layer(:,3)] = ind2sub(size(dilatedScalp),inde);
     % Get the layer of gel to intersect with placed pad
     
-    scalpDilatedMore = imdilate(scalpDilated,ones(se,se,se));
+    scalpDilatedMore = imdilate(scalpDilated,ones(pad_height,pad_height,pad_height));
     dilatedScalp = scalpDilatedMore - scalpDilated; % scalpFilled: filled scalp
     inde = find(dilatedScalp==255);
     elec_layer = zeros(length(inde),3);
     [elec_layer(:,1),elec_layer(:,2),elec_layer(:,3)] = ind2sub(size(dilatedScalp),inde);
-    % Get the layer of electrode to intersect with placed pad    
+    % Get the layer of electrode to intersect with placed pad
 end
 
-% figure;hold on;plot3(scalp_surface(:,1),scalp_surface(:,2),scalp_surface(:,3),'y.');
+figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
 for i = 1:size(elecLoc,1)
     if doPlace(i)
- 
-        lcl = scalpCleanSurf(elecRange(:,i),:); % local scalp surface for each electrode
+        
+        lcl = scalpCleanSurf(elecRange(i,:),:); % local scalp surface for each electrode
         %     plot3(lcl(:,1),lcl(:,2),lcl(:,3),'b.');
         [U,D] = eig(cov(lcl)); [~,ind] = min(diag(D));
         nv = U(:,ind)'; normal = nv/norm(nv); % Local normal for each electrode
         
-        switch elecPara.elecType
+        switch elecType
             case 'pad'
                 
-                dimTry = 10*padDim(3); % should at least be 4*padDim(3), so that one direction can cover 2 padDim(3)
+                pad_length = elecSize(1);
+                pad_width = elecSize(2);
+                pad_height = elecSize(3);
+                
+                dimTry = 10*pad_height; % should at least be 4*pad_height, so that one direction can cover 2 pad_height
                 out = elecLoc(i,:) +  dimTry*normal;
                 %     electrode = out + elec_height*normal;
                 %     gel_in = out - 4*gel_height*normal; % coordinates of the boundaries of gel and electrode
-                if norm(center - out) < norm(center - elecLoc(i,:))
+                if norm(elecCtr(i,:) - out) < norm(elecCtr(i,:) - elecLoc(i,:))
                     % try computing this "center" inside this func: gravity
                     % center of the filled scalp? then how about
                     % neck_center? think of other idea of detecting normal
@@ -48,12 +55,23 @@ for i = 1:size(elecLoc,1)
                     %         gel_in = out - 4*gel_height*normal;
                 end % make sure the normal is pointing out
                 
+                if ischar(elecOri)
+                    switch elecOri
+                        case 'lr'
+                            elecOri = [1 0 0];
+                        case 'ap'
+                            elecOri = [0 1 0];
+                        case 'si'
+                            elecOri = [0 0 1];
+                    end
+                end
+                
                 padOriShort = cross(normal,padOri);
                 padOriLong = cross(normal,padOriShort);
                 
                 %     startPt = elecLoc(i,:) + normal * dimTry/4;
                 den = 5;
-                pad_coor = drawCuboid(elecLoc(i,:),[padDim(1:2) dimTry],padOriLong,padOriShort,normal,den);
+                pad_coor = drawCuboid(elecLoc(i,:),[pad_length pad_width dimTry],padOriLong,padOriShort,normal,den);
                 
                 %     gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
                 %     elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
@@ -72,26 +90,29 @@ for i = 1:size(elecLoc,1)
                 
                 gel_coor = intersect(pad_coor,gel_layer,'rows');
                 elec_coor = intersect(pad_coor,elec_layer,'rows');
-                %     plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                %     plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                    plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                    plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
                 
                 gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
                 %     fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));
                 
             case 'disc'
                 
-                gel_out = elecLoc(i,:) +  2*gel_height*normal;
-                electrode = gel_out + elec_height*normal;
-                gel_in = gel_out - 4*gel_height*normal; % coordinates of the boundaries of gel and electrode
-                if norm(center - gel_out) < norm(center - elecLoc(i,:))
+                disc_radius = elecSize(1);
+                disc_height = elecSize(2);
+                
+                gel_out = elecLoc(i,:) +  2*disc_height*normal;
+                electrode = gel_out + disc_height*normal;
+                gel_in = gel_out - 4*disc_height*normal; % coordinates of the boundaries of gel and electrode
+                if norm(elecCtr(i,:) - gel_out) < norm(elecCtr(i,:) - elecLoc(i,:))
                     normal = -normal;
-                    gel_out = elecLoc(i,:) +  2*gel_height*normal;
-                    electrode = gel_out + elec_height*normal;
-                    gel_in = gel_out - 4*gel_height*normal;
+                    gel_out = elecLoc(i,:) +  2*disc_height*normal;
+                    electrode = gel_out + disc_height*normal;
+                    gel_in = gel_out - 4*disc_height*normal;
                 end % make sure the normal is pointing out
                 
                 NOP = 500; verSamp = 10;
-                r = 0.05:0.05:elec_radius; % parameters used for modeling of electrodes and gel
+                r = 0.05:0.05:disc_radius; % parameters used for modeling of electrodes and gel
                 
                 gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
                 elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
@@ -105,26 +126,30 @@ for i = 1:size(elecLoc,1)
                 elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
                 elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
                 
-                %         plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                %         plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                        plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                        plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
                 
                 gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
                 %     fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));
                 
             case 'ring'
                 
-                gel_out = elecLoc(i,:) +  2*gel_height*normal;
-                electrode = gel_out + elec_height*normal;
-                gel_in = gel_out - 4*gel_height*normal; % coordinates of the boundaries of gel and electrode
-                if norm(center - gel_out) < norm(center - elecLoc(i,:))
+                ring_radiusIn = elecSize(1);
+                ring_radiusOut = elecSize(2);
+                ring_height = elecSize(3);
+                
+                gel_out = elecLoc(i,:) +  2*ring_height*normal;
+                electrode = gel_out + ring_height*normal;
+                gel_in = gel_out - 4*ring_height*normal; % coordinates of the boundaries of gel and electrode
+                if norm(elecCtr(i,:) - gel_out) < norm(elecCtr(i,:) - elecLoc(i,:))
                     normal = -normal;
-                    gel_out = elecLoc(i,:) +  2*gel_height*normal;
-                    electrode = gel_out + elec_height*normal;
-                    gel_in = gel_out - 4*gel_height*normal;
+                    gel_out = elecLoc(i,:) +  2*ring_height*normal;
+                    electrode = gel_out + ring_height*normal;
+                    gel_in = gel_out - 4*ring_height*normal;
                 end % make sure the normal is pointing out
                 
                 NOP = 500; verSamp = 10;
-                r = radiusInner:0.05:radiusOutter; % parameters used for modeling of electrodes and gel
+                r = ring_radiusIn:0.05:ring_radiusOut; % parameters used for modeling of electrodes and gel
                 
                 gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
                 elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
@@ -138,8 +163,8 @@ for i = 1:size(elecLoc,1)
                 elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
                 elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
                 
-                %         plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                %         plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                        plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                        plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
                 
                 gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
                 %     fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));
@@ -147,5 +172,5 @@ for i = 1:size(elecLoc,1)
         end
     end
 end
-% xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
-% hold off; % Place electrodes and visualize the results
+xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
+hold off; % Place electrodes and visualize the results

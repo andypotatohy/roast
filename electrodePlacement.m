@@ -1,48 +1,74 @@
 function [rnge_elec,rnge_gel] = electrodePlacement(P,elecNeeded,elecPara,uniTag)
 % help text
 
+[dirname,baseFilename] = fileparts(P);
+if isempty(dirname), dirname = pwd; end
+
 %% options
 capType = elecPara.capType;
-elecType = elecPara.elecType;
-elecSize = elecPara.elecSize;
-elecOri = elecPara.elecOri;
+% elecType = elecPara.elecType;
+% elecSize = elecPara.elecSize;
+% elecOri = elecPara.elecOri;
 legacy = elecPara.legacy;
+doPredefined = elecPara.doPredefined;
+doNeck = elecPara.doNeck;
+doCustom = elecPara.doCustom;
 
 %% cap options
-switch capType
+if doPredefined
+    switch capType
     case {'1020','1010','1005'}
         load('cap1005FullWithExtra.mat','capInfo');
-        elecPool = capInfo{1};
+        elecPool_P = capInfo{1};
 %         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 0;
 %         isCustomizedCap = 0;
     case 'biosemi'
         load('capBioSemiFullWithExtra.mat','capInfo');
-        elecPool = capInfo{1};
+        elecPool_P = capInfo{1};
 %         elec_template = cell2mat(capInfo(2:4));
         isBiosemi = 1;
 %         isCustomizedCap = 0;
+    end
+else
+    elecPool_P = '';
 end
 
-doPredefined = 0;
-doNeck = 0;
-doCustom = 0;
-for i=1:length(elecNeeded)
-    if ismember(elecNeeded{i},elecPool)
-        doPredefined = 1;
-    end
-    if ismember(elecNeeded{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
-        doNeck = 1;
-    end
-    if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
-        doCustom = 1;
-        fid = fopen([dirname filesep 'customLocations']);
-        capInfoCustom = textscan(fid,'%s %f %f %f');
-        fclose(fid);
-        elecPoolCustom = capInfoCustom{1};
-        elecLocCustom = cell2mat(capInfoCustom(2:4));
-    end
+if doNeck
+    elecPool_N = {'Nk1';'Nk2';'Nk3';'Nk4'};
+else
+    elecPool_N = '';
 end
+    
+if doCustom
+     fid = fopen([dirname filesep baseFilename '_customLocations']);
+        capInfo_C = textscan(fid,'%s %f %f %f');
+        fclose(fid);
+        elecPool_C = capInfo_C{1};
+        elecLoc_C = cell2mat(capInfo_C(2:4));
+else
+    elecPool_C = '';
+end
+
+% doPredefined = 0;
+% doNeck = 0;
+% doCustom = 0;
+% for i=1:length(elecNeeded)
+%     if ismember(elecNeeded{i},elecPool)
+%         doPredefined = 1;
+%     end
+%     if ismember(elecNeeded{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
+%         doNeck = 1;
+%     end
+%     if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
+%         doCustom = 1;
+%         fid = fopen([dirname filesep 'customLocations']);
+%         capInfoCustom = textscan(fid,'%s %f %f %f');
+%         fclose(fid);
+%         elecPoolCustom = capInfoCustom{1};
+%         elecLocCustom = cell2mat(capInfoCustom(2:4));
+%     end
+% end
         
 % isCustomElec = zeros(length(elecNeeded),1);
 % for i=1:length(elecNeeded)
@@ -96,8 +122,6 @@ landmarks_original = getLandmarks(P);
 
 [perm,iperm,isFlip] = how2getRAS(landmarks_original);
 
-[dirname,baseFilename] = fileparts(P);
-if isempty(dirname), dirname = pwd; end
 template = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']); % Load the scalp mask
 % template is used for saving the results with the same header info as the input
 scalp_original = template.img;
@@ -108,29 +132,35 @@ if doPredefined || doNeck
     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlip,size(scalp));
 end
 if doCustom
-    elecLocCustom = changeOrientationPointCloud(elecLocCustom,perm,isFlip,size(scalp));
+    elecLoc_C = changeOrientationPointCloud(elecLoc_C,perm,isFlip,size(scalp));
 end
 
 scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
 if doPredefined
-    [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
+    [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
+else
+    electrode_coord_P = []; center_P = [];
 end
 
 if doNeck
     if any(landmarks(5:6,3)<=0)
         error('MRI does not cover the neck, so cannot place electrodes on the neck.');
     else
-        [neck_coord,neck_center] = placeNeckElec(scalp,scalp_surface,landmarks);
+        [electrode_coord_N,center_N] = placeNeckElec(scalp,scalp_surface,landmarks);
     end
+else
+    electrode_coord_N = []; center_N = [];
 end
 
 if doCustom
-    [~,indOnScalpSurf] = map2Points(elecLocCustom,scalp_surface,'closest');
-    electrode_coord = scalp_surface(indOnScalpSurf,:);
+    [~,indOnScalpSurf] = map2Points(elecLoc_C,scalp_surface,'closest');
+    electrode_coord_C = scalp_surface(indOnScalpSurf,:);
+    center_C = mean(scalp_surface);
+else
+    electrode_coord_C = []; center_C = [];
 end
-
 
 %% head clean up for placing electrodes
 [scalp_clean,scalp_filled] = cleanScalp(scalp,scalp_surface);
@@ -138,48 +168,50 @@ scalp_clean_surface = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
 if doPredefined
-    elec_range = zeros(100,size(electrode_coord,1));
-    [~,indOnScalpSurf] = project2ClosestSurfacePoints(electrode_coord,scalp_clean_surface,center);
-    for i=1:size(elec_range,1)
-        elec_range(:,i) = indOnScalpSurf(1:100,i);
+%     elec_range_P = zeros(size(electrode_coord_P,1),100);
+    [~,indOnScalpSurf] = project2ClosestSurfacePoints(electrode_coord_P,scalp_clean_surface,center_P);
+    elec_range_P = indOnScalpSurf(1:100,:);
+%     for i=1:size(elec_range_P,1)
+%         elec_range_P(i,:) = indOnScalpSurf(1:100,i);
         % Get some points on the scalp surface that are close to the exact
         % location of each electrode for the calculation of local normal vector
         % for each electrode in the following step
-    end
+%     end
+else
+    elec_range_P = [];
 end
 
 if doNeck
     % Get local scalp points for neck electrodes    
-    neck_elec_range = zeros(100,size(neck_coord,1));
-    [~,indOnScalpSurf] = project2ClosestSurfacePoints(neck_coord,scalp_clean_surface,neck_center);
-    for i=1:size(neck_elec_range,1)
-        neck_elec_range(:,i) = indOnScalpSurf(1:100,i);
-    end
+%     elec_range_N = zeros(size(electrode_coord_N,1),100);
+    [~,indOnScalpSurf] = project2ClosestSurfacePoints(electrode_coord_N,scalp_clean_surface,center_N);
+    elec_range_N = indOnScalpSurf(1:100,:);
+%     for i=1:size(elec_range_N,1)
+%         elec_range_N(i,:) = indOnScalpSurf(1:100,i);
+%     end
+else
+    elec_range_N = [];
 end
     
 if doCustom    
-    [~,elec_range] = map2Points(electrode_coord,scalp_clean_surface,'closer',100);
+    [~,elec_range_C] = map2Points(electrode_coord_C,scalp_clean_surface,'closer',100);
+% [~,elec_range_C] = map2Points(electrode_coord_C,scalp_surface,'closer',100);
+else
+    elec_range_C = [];
 end
 
-% if isBiosemi THIS DOES NOT MATTER ANY MORE FOR ROAST
-%     aidElec = [CPz FCz AFz POz];
-%     elecToPlace = setdiff(1:size(electrode_coord,1),aidElec);
-%     electrode_coord = electrode_coord(elecToPlace,:);
-%     elec_range = elec_range(:,elecToPlace);
-% end
+elecPool = cat(1,elecPool_P,elecPool_N,elecPool_C);
+electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
+electrode_center = cat(1,repmat(center_P,size(electrode_coord_P,1),1),...
+    repmat(center_N,size(electrode_coord_N,1),1),repmat(center_C,size(electrode_coord_C,1),1));
+elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
-if any(ismember(elecNeeded,{'Nk1','Nk2','Nk3','Nk4'}))
-    elec = cat(1,elec,{'Nk1','Nk2','Nk3','Nk4'});
-    electrode_coord = cat(1,electrode_coord,neck_coord);
-    elec_range = cat(2,elec_range,neck_elec_range);
-end
-
-[~,indElecNeeded] = ismember(elecNeeded,elec);
+[~,indElecNeeded] = ismember(elecNeeded,elecPool);
 doElec = zeros(size(electrode_coord,1),1);
 doElec(indElecNeeded) = 1;
 
 %% placing and model the electrodes
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,doElec,elecPara);
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,electrode_center,elec_range,scalp_clean_surface,scalp_filled,doElec,elecPara);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')

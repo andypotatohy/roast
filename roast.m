@@ -89,12 +89,22 @@ end
 if ~exist('capType','var'), capType = '1010'; end
 if ~exist('elecType','var'), elecType = 'disc'; end
 if ~exist('elecSize','var'), elecSize = [6 2]; end
-if ~exist('elecOri','var') && strcmp(elecType,'pad'), elecOri = 'lr'; end
+if ~exist('elecOri','var') && strcmp(elecType,'pad')
+    elecOri = 'lr';
+else
+    elecOri = [];
+end
 if ~exist('legacy','var'), legacy = 0; end
 if ~exist('T2','var'), T2 = []; end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 end
+
+% more input judge on option conflicts here
+if ischar(elecOri) && ~strcmp(elecOri,'lr') && ~strcmp(elecOri,'ap') && ~strcmp(elecOri,'si')
+    error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+end
+
 
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
@@ -118,10 +128,7 @@ switch capType
         %         error('Supported cap types are: ''1020'', ''1010'', ''1005'', ''BioSemi'',
         %         and any locations you specified in file ''customLocations'' YOU stored under the subject folder.');
 end
-elecPool = cat(1,elecPool,{'Nk1';'Nk2';'Nk3';'Nk4'});
-
-% more input judge on option conflicts here
-
+% elecPool = cat(1,elecPool,{'Nk1';'Nk2';'Nk3';'Nk4'});
 
 elecName = (recipe(1:2:end-1))';
 % fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
@@ -130,22 +137,43 @@ elecName = (recipe(1:2:end-1))';
 % if ~all(ismember(elecName,elec))
 %     error('Unrecognized electrode names. Please specify electrodes in the 10-10 EEG system only.');
 % end
-foundElec = ismember(elecName,elecPool);
-indCustomElec = find(~foundElec);
-isUnknownElec = zeros(length(indCustomElec),1);
-for i=1:length(indCustomElec)
-    if isempty(strfind(elecName{indCustomElec(i)},'custom')) && isempty(strfind(elecName{indCustomElec(i)},'Custom'))
-        fprintf('Unrecognized electrode %s.\n',elecName{indCustomElec(i)});
-        isUnknownElec(i) = 1;
+
+doPredefined = 0;
+doNeck = 0;
+doCustom = 0;
+unknownElec = 0;
+for i=1:length(elecName)
+    if ismember(elecName{i},elecPool)
+        doPredefined = 1;
+    elseif ismember(elecName{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
+        doNeck = 1;
+    elseif ~isempty(strfind(elecName{i},'custom')) || ~isempty(strfind(elecName{i},'Custom'))
+        doCustom = 1;
+    else
+        fprintf('Unrecognized electrode %s.\n',elecName{i});
+        unknownElec = unknownElec+1;
     end
 end
-if any(isUnknownElec)
-    error('It''s possible that you specified a cap type (e.g. 1010) but provided the electrode name in the e.g. BioSemi system; it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name.');
+
+% foundElec = ismember(elecName,elecPool);
+% indCustomElec = find(~foundElec);
+% isUnknownElec = zeros(length(indCustomElec),1);
+% for i=1:length(indCustomElec)
+%     if isempty(strfind(elecName{indCustomElec(i)},'custom')) && isempty(strfind(elecName{indCustomElec(i)},'Custom'))
+%         fprintf('Unrecognized electrode %s.\n',elecName{indCustomElec(i)});
+%         isUnknownElec(i) = 1;
+%     end
+% end
+% if any(isUnknownElec)
+%     error('Unrecognized electrodes found. It''s possible that you specified one cap type (e.g. 1010) but provided the electrode name in the other system (e.g. BioSemi); it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name.');
+% end
+if unknownElec>0
+    error('Unrecognized electrodes found. It''s possible that you specified one cap type (e.g. 1010) but provided the electrode name in the other system (e.g. BioSemi); it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name. If you specified neck electrode, please write ''Nk#'' instead of ''nk#'' or ''NK#''.');
 end
-if ~isempty(indCustomElec)
-    fid = fopen([dirname filesep 'customLocations']);
+if doCustom
+    fid = fopen([dirname filesep baseFilename '_customLocations']);
     if fid==-1
-        error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''customLocations'' and store it under the subject folder');
+        error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
     end
     fclose(fid);
 end
@@ -161,6 +189,9 @@ for i=1:length(elecName)
 end
 configTxt = configTxt(1:end-2);
 
+% save simulation options in a text file named by uniqueTag
+
+
 if ~exist([dirname filesep baseFilename '_log'],'file')
     fid = fopen([dirname filesep baseFilename '_log'],'w');
     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss'));
@@ -172,6 +203,7 @@ else
     C = textscan(fid,'%s\t%s','delimiter','\t');
     fclose(fid);
     [Lia,Loc] = ismember(configTxt,C{2});
+    % should use option text file to judge if it's run before
     if ~Lia
         fid = fopen([dirname filesep baseFilename '_log'],'a');
         uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss'));
@@ -221,7 +253,8 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('          STEP 3: ELECTRODE PLACEMENT...              ')
     disp('======================================================')
     elecPara = struct('capType',capType,'elecType',elecType,...
-                      'elecSize',elecSize,'elecOri',elecOri,'legacy',legacy);
+                      'elecSize',elecSize,'elecOri',elecOri,'legacy',legacy,...
+                      'doPredefined',doPredefined,'doNeck',doNeck,'doCustom',doCustom);
     [rnge_elec,rnge_gel] = electrodePlacement(subj,elecName,elecPara,uniqueTag);
 else
     disp('======================================================')

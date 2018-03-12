@@ -14,8 +14,8 @@ neck_center = (front_neck+back_neck)/2;
 
 neck_elec = [front_neck;
     back_neck;
-    neck_center(1)-round(size(scalp,1)/2) neck_center(2) neck_center(3);
-    neck_center(1)+round(size(scalp,1)/2) neck_center(2) neck_center(3)];
+    neck_center(1)-round(size(scalp,1)/2) neck_center(2) neck_center(3); % left neck
+    neck_center(1)+round(size(scalp,1)/2) neck_center(2) neck_center(3)]; % right neck
 
 idx = zeros(size(neck_elec,1),1);
 [cosineAngle,indOnScalpSurf] = project2ClosestSurfacePoints(neck_elec,scalp_surface,neck_center);
