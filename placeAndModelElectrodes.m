@@ -100,7 +100,9 @@ for i = 1:size(elecLoc,1)
                 electrode = gel_out + disc_height*normal;
                 gel_in = gel_out - 4*disc_height*normal; % coordinates of the boundaries of gel and electrode
                 
-                if norm(gel_out-localCentroid) <= norm(gel_in-localCentroid)
+                testPoint = round(elecLoc(i,:) - 20*disc_height*normal);
+%                 if norm(gel_out-localCentroid) <= norm(gel_in-localCentroid)
+                if scalpFilled(testPoint(1),testPoint(2),testPoint(3))==0
                     normal = -normal;
                     gel_out = elecLoc(i,:) +  2*disc_height*normal;
                     electrode = gel_out + disc_height*normal;
