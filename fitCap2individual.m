@@ -1,4 +1,4 @@
-function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi)
+function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,indNeed,isBiosemi)
 %
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
@@ -63,12 +63,14 @@ distance_all = sum(sqrt(diff(yi).^2+diff(zi).^2));
 disp('wearing the cap...')
 elec = capInfo{1};
 if ~isBiosemi
-    centralElec = {'Oz','POz','Pz','CPz','Cz','FCz','Fz','AFz','Fpz'};
+    centralElec = {'Oz';'POz';'Pz';'CPz';'Cz';'FCz';'Fz';'AFz';'Fpz'};
 else
-    centralElec = {'A19','POz','A6','CPz','A1','FCz','E17','AFz','E12'};
+    centralElec = {'A19';'POz';'A6';'CPz';'A1';'FCz';'E17';'AFz';'E12'};
 end
 [~,indCentralElec] = ismember(centralElec,elec);
+indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
 elec_template = cell2mat(capInfo(2:4));
+elec_template = elec_template(indFit,:);
 
 theta = 23;
 alpha = ((360-10*theta)/2)*(pi/180);
@@ -82,7 +84,7 @@ a = cross(s,c); a = a/norm(a); % vectors to be used in affine transform
 disp('adjust the cap for optimized position...this will take a while...')
 factor = 1:-0.05:0.5; % Adjusting factor
 CENTER = zeros(length(factor),3);
-ELEC_COORD = zeros(length(elec),3,length(factor));
+ELEC_COORD = zeros(size(elec_template,1),3,length(factor));
 F = zeros(length(factor),1);
 for n = 1:length(factor)
     fprintf('Iteration No. %d...\n', n)
@@ -93,7 +95,7 @@ for n = 1:length(factor)
     
     affine = scale * [s' c' a' shift/scale;0 0 0 1/scale]; % Affine transform matrix
     
-    elec_adjusted = [elec_template';ones(1,length(elec))];
+    elec_adjusted = [elec_template';ones(1,size(elec_template,1))];
     elec_adjusted(3,:) = elec_adjusted(3,:)*factor(n);
     % Adjust the z-coordinate correspondingly
     elec_transformed = affine * elec_adjusted;
@@ -114,7 +116,8 @@ for n = 1:length(factor)
     elec_interp = scalp_surface(idx,:); % exact coordinates for each electrode
     ELEC_COORD(:,:,n) = elec_interp; % buffer
     
-    center_points = [inion;elec_interp(indCentralElec,:);nasion];
+%     center_points = [inion;elec_interp(indCentralElec,:);nasion];
+    center_points = [inion;elec_interp(1:length(indCentralElec),:);nasion];
     % coordinates for electrodes on central sagittal line
     center_fit = [centralSag*ones(length(yi),1) yi zi]; % coordinates for each point on central sagittal line
     
@@ -133,5 +136,6 @@ for n = 1:length(factor)
 end
 
 [~,index] = min(F);
-electrode_coord = ELEC_COORD(:,:,index); % exact coordinate for each electrode projected on the scalp surface
+% electrode_coord = ELEC_COORD(:,:,index); % exact coordinate for each electrode projected on the scalp surface
+electrode_coord = ELEC_COORD(length(indCentralElec)+1:end,:,index); % exact coordinate for each electrode projected on the scalp surface
 center = CENTER(index,:); % center of electrode coordinates

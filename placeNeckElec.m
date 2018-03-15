@@ -1,4 +1,4 @@
-function [neck_coord,neck_center]= placeNeckElec(scalp,scalp_surface,landmarks)
+function [neck_coord,neck_center]= placeNeckElec(scalp,scalp_surface,landmarks,indNeed)
 %
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
@@ -17,6 +17,7 @@ neck_elec = [front_neck;
     neck_center(1)-round(size(scalp,1)/2) neck_center(2) neck_center(3); % left neck
     neck_center(1)+round(size(scalp,1)/2) neck_center(2) neck_center(3)]; % right neck
 
+neck_elec = neck_elec(indNeed,:);
 idx = zeros(size(neck_elec,1),1);
 [cosineAngle,indOnScalpSurf] = project2ClosestSurfacePoints(neck_elec,scalp_surface,neck_center);
 for i = 1:length(idx)

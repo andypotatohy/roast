@@ -113,7 +113,7 @@ switch capType
     case {'1020','1010','1005'}
         load('./cap1005FullWithExtra.mat','capInfo');
         elecPool = capInfo{1};
-    case 'biosemi'
+    case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
         load('./capBioSemiFullWithExtra.mat','capInfo');
         elecPool = capInfo{1};
         %     case 'customized'
@@ -125,7 +125,7 @@ switch capType
         %         fclose(fid);
         %         elecPool = capInfo{1};
     otherwise
-        %         error('Supported cap types are: ''1020'', ''1010'', ''1005'', ''BioSemi'',
+        error('Supported cap types are: ''1020'', ''1010'', ''1005'' and ''BioSemi''.');
         %         and any locations you specified in file ''customLocations'' YOU stored under the subject folder.');
 end
 % elecPool = cat(1,elecPool,{'Nk1';'Nk2';'Nk3';'Nk4'});

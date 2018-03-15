@@ -10,6 +10,8 @@ for i = 1:length(elec_allCoord)
             & temp(:,2)>0 & temp(:,2)<=coordRange(2)...
             & temp(:,3)>0 & temp(:,3)<=coordRange(3));
         if ~isempty(ind)
+            % messeage to be added here for warning users if placed elec is
+            % outside of image boundary
             temp = temp(ind,:);
             elec_allCoord{i} = temp;
             rnge{i} = [max(temp);min(temp)];
