@@ -99,8 +99,7 @@ if isSmooth
         air_temp(:,:,i) = imfilter(air_temp(:,:,i),smt_fil);
     end
 end
-% Smooth the mask if it's not clean enough, to avoid convergence problem
-% in the subsequent meshing using ScanIP
+% Smooth the mask if it's not clean enough
 
 disp('creating binary masks...')
 [empt_temp,gray_temp,white_temp,csf_temp,bone_temp,skin_temp,air_temp]...
