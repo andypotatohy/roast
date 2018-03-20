@@ -61,25 +61,25 @@ lenOptions = length(varargin);
 indArg = 1;
 while indArg <=lenOptions
     switch varargin{indArg}
-        case 'capType'
+        case {'capType','captype','CapType'}
             capType = varargin{indArg+1};
             indArg = indArg+2;
-        case 'elecType'
+        case {'elecType','electype','ElecType'}
             elecType = varargin{indArg+1};
             indArg = indArg+2;
-        case 'elecSize'
+        case {'elecSize','elecsize','ElecSize'}
             elecSize = varargin{indArg+1};
             indArg = indArg+2;
-        case 'elecOri'
+        case {'elecOri','elecori','ElecOri'}
             elecOri = varargin{indArg+1};
             indArg = indArg+2;
-        case 'legacy'
+        case {'legacy','Legacy'}
             legacy = 1;
             indArg = indArg+1;
-        case 'T2'
+        case {'T2','t2'}
             T2 = varargin{indArg+1};
             indArg = indArg+2;
-        case 'meshOptions'
+        case {'meshOptions','meshoptions','MeshOptions'}
             meshOpt = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
@@ -105,7 +105,7 @@ else
         end
     else
         if length(elecType)~=length(elecName)
-            error('You want to place more than 1 type of electrodes. Please tell ROAST the type for each electrode respectively, as the value for option ''elecType'', in a cell array of length equals to the number of electrodes to be placed.');
+            error('You want to place more than 1 type of electrodes, but did not tell ROAST which type for each electrode. Please provide the type for each electrode respectively, as the value for option ''elecType'', in a cell array of length equals to the number of electrodes to be placed.');
         end
         for i=1:length(elecType)
            if ~any(strcmp(elecType{i},{'disc','pad','ring','Disc','Pad','Ring','DISC','PAD','RING'}))
@@ -139,14 +139,20 @@ if ~exist('elecSize','var')
         end
     end
 else
-    if ~iscell(elecSize)
-        if iscellstr(elecType), error('You want to place at least 2 types of electrodes, but only provided size info for 1 type. Please provide complete size info for all types of electrodes as the value for option ''elecSize'', or just use defaults by not specifying ''elecSize'' option.'); end
-        if size(elecSize,1)>1 && size(elecSize,1)~=length(elecName)
-            error('You want different sizes for each electrode. Please tell ROAST the size for each electrode respectively, in a N-row matrix, where N is the number of electrodes to be placed.');
+    if ~iscellstr(elecType)
+        if iscell(elecSize)
+            warning('Looks like you''re placing only 1 type of electrodes. ROAST will only use the 1st entry of the cell array of ''elecSize''. If this is not what you want and you meant differect sizes for different electrodes of the same type, just enter ''elecSize'' option as an N-by-2 or N-by-3 matrix, where N is number of electrodes to be placed.');
+            elecSize = elecSize{1};
+        end
+        if any(elecSize(:)<=0)
+            error('Please enter non-negative values for electrode size.');
         end
         if size(elecSize,2)~=2 && size(elecSize,2)~=3
             error('Unrecognized electrode sizes. Please specify as [radius height] for disc, [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
         end
+        if size(elecSize,1)>1 && size(elecSize,1)~=length(elecName)
+            error('You want different sizes for each electrode. Please tell ROAST the size for each electrode respectively, in a N-row matrix, where N is the number of electrodes to be placed.');
+        end        
         if any(strcmp(elecType,{'disc','Disc','DISC'})) && size(elecSize,2)==3
             warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
             elecSize = elecSize(:,1:2);
@@ -156,23 +162,24 @@ else
         end
         if any(strcmp(elecType,{'ring','Ring','RING'})) && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
-        end
+        end        
     else
-        if ~iscellstr(elecType)
-            warning('Looks like you''re placing only 1 type of electrodes. ROAST will only use the 1st entry of the cell array of ''elecSize''. If this is not what you want and you meant differect sizes for different electrodes of the same type, just enter ''elecSize'' option as an N-by-2 or N-by-3 matrix, where N is number of electrodes to be placed.');
-            elecSize = elecSize(1);
-        else
-            if length(elecSize)~=length(elecType)
-                error('You want to place more than 1 type of electrodes. Please tell ROAST the size for each electrode respectively, as the value for option ''elecSize'', in a cell array of length equals to the number of electrodes to be placed.');
-            end
+        if ~iscell(elecSize)
+            error('You want to place at least 2 types of electrodes, but only provided size info for 1 type. Please provide complete size info for all types of electrodes in a cell array as the value for option ''elecSize'', or just use defaults by not specifying ''elecSize'' option.');
+        end
+        if length(elecSize)~=length(elecType)
+            error('You want to place more than 1 type of electrodes. Please tell ROAST the size for each electrode respectively, as the value for option ''elecSize'', in a cell array of length equals to the number of electrodes to be placed.');
         end
         for i=1:length(elecSize)
-            if size(elecSize{i},1)>1
-                error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
+            if any(elecSize{i}(:)<=0)
+                error('Please enter non-negative values for electrode size.');
             end
             if size(elecSize{i},2)~=2 && size(elecSize{i},2)~=3
                 error('Unrecognized electrode sizes. Please specify as [radius height] for disc, [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
             end
+            if size(elecSize{i},1)>1
+                error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
+            end            
             if any(strcmp(elecType{i},{'disc','Disc','DISC'})) && size(elecSize{i},2)==3
                 warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
                 elecSize{i} = elecSize{i}(:,1:2);
@@ -205,53 +212,90 @@ if ~exist('elecOri','var')
         end
     end
 else
-    if ~iscell(elecOri)
-        if iscellstr(elecType), error('Illegal useage of ROAST. You want to place another type of electrodes aside from pad. Please provide complete orienation info for all types of electrodes as the value for option ''elecOri'' (put [] for non-pad electrodes), or just use defaults by not specifying ''elecOri'' option.'); end
+    if ~iscellstr(elecType)
+        if iscell(elecOri)
+            warning('Looks like you''re only placing pad electrodes. ROAST will only use the 1st entry of the cell array of ''elecOri''. If this is not what you want and you meant differect orientations for different pad electrodes, just enter ''elecOri'' option as an N-by-3 matrix, where N is number of pad electrodes to be placed.');
+            elecOri = elecOri{1};
+        end
         if any(strcmp(elecType,{'pad','Pad','PAD'}))
             if ischar(elecOri)
                 if ~any(strcmp(elecOri,{'lr','ap','si'}))
                     error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
                 end
             else
-                if size(elecOri,1)>1 && size(elecOri,1)~=length(elecName)
-                    error('You want different orientations for each pad electrode. Please tell ROAST the orientation for each pad respectively, in a N-row matrix, where N is the number of pads to be placed.');
-                end
                 if size(elecOri,2)~=3
-                    error('Unrecognized pad orientations. Please specify as a 3D unit row vector for each pad electrode.');
+                    error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
                 end
+                if size(elecOri,1)>1 && size(elecOri,1)~=length(elecName)
+                    error('You want different orientations for each pad electrode. Please tell ROAST the orientation for each pad respectively, in a N-by-3 matrix, where N is the number of pads to be placed.');
+                end                
             end
         else
             warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
             elecOri = [];
         end
     else
-        if ~iscellstr(elecType)
-            warning('Looks like you''re only placing pad electrodes. ROAST will only use the 1st entry of the cell array of ''elecOri''. If this is not what you want and you meant differect orientations for different pad electrodes, just enter ''elecOri'' option as an N-by-3 matrix, where N is number of pad electrodes to be placed. Or enter ''elecOri'' option as a cell array consists of one of the three orientation keywords.');
-            elecOri = elecOri(1);
+        if ~iscell(elecOri)
+            elecOri0 = elecOri;
+            elecOri = cell(1,length(elecType));
+            if ischar(elecOri0)
+                if ~any(strcmp(elecOri0,{'lr','ap','si'}))
+                    error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                end
+                for i=1:length(elecType)
+                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                        elecOri{i} = elecOri0;
+                    else
+                        elecOri{i} = [];
+                    end
+                end
+            else
+                if size(elecOri0,2)~=3
+                    error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                end
+                numPad = 0;
+                for i=1:length(elecType)
+                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                        numPad = numPad+1;
+                    end
+                end
+                if numPad > size(elecOri0,1)
+                    error('Not enough orientation info for each of the pad electrodes. Please tell ROAST the orientation for each pad respectively, in a N-by-3 matrix, where N is the number of pads to be placed.');
+                end
+                i0=1;
+                for i=1:length(elecType)
+                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                        elecOri{i} = elecOri0(i0,:);
+                        i0 = i0+1;
+                    else
+                        elecOri{i} = [];
+                    end
+                end
+            end
         else
             if length(elecOri)~=length(elecType)
                 error('You want to place another type of electrodes aside from pad. Please tell ROAST the orienation for each electrode respectively, as the value for option ''elecOri'', in a cell array of length equals to the number of electrodes to be placed (put [] for non-pad electrodes).');
             end
-        end
-        for i=1:length(elecOri)
-            if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
-                if ischar(elecOri{i})
-                    if ~any(strcmp(elecOri{i},{'lr','ap','si'}))
-                        error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+            for i=1:length(elecOri)
+                if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                    if ischar(elecOri{i})
+                        if ~any(strcmp(elecOri{i},{'lr','ap','si'}))
+                            error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                        end
+                    else
+                        if size(elecOri{i},2)~=3
+                            error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                        end
+                        if size(elecOri{i},1)>1
+                            error('You''re placing more than 1 type of electrodes. Please put orientation info for each pad electrode as a 1-by-3 vector or one of the three keywords ''lr'', ''ap'', or ''si'' in a cell array for option ''elecOri''.');
+                        end                        
                     end
                 else
-                    if size(elecOri{i},1)>1
-                        error('You''re placing more than 1 type of electrodes. Please put orientation info for each pad electrode as a 1-row vector in a cell array for option ''elecOri''.');
-                    end
-                    if size(elecOri{i},2)~=3
-                        error('Unrecognized pad orientations. Please specify as a 3D unit row vector for each pad electrode.');
-                    end
+%                     warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
+                    elecOri{i} = [];
                 end
-            else
-                warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
-                elecOri{i} = [];
-            end            
-        end        
+            end
+        end
     end
 end
 
