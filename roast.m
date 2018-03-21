@@ -41,7 +41,7 @@ if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
 end
 
-if nargin<2
+if nargin<2 || isempty(recipe)
     recipe = {'Fp1',1,'P4',-1};
 end
 
@@ -418,8 +418,8 @@ end
 
 if ~exist([dirname filesep baseFilename '_log'],'file')
     fid = fopen([dirname filesep baseFilename '_log'],'w');
-    uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss'));
-    % "datetime" only available from Matlab 2014b
+%     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
+    uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
     fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
     fclose(fid);
 else
@@ -430,8 +430,8 @@ else
     % should use option text file to judge if it's run before
     if ~Lia
         fid = fopen([dirname filesep baseFilename '_log'],'a');
-        uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss'));
-        % "datetime" only available from Matlab 2014b
+%         uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
+        uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
         fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
         fclose(fid);
     else

@@ -34,10 +34,10 @@ else
 end
 
 if nargin<4 || isempty(clim)
-    if min(img(:))==max(img(:))
+    if double(min(img(:)))==double(max(img(:)))
         mydata.clim = 'auto';
     else
-        mydata.clim = [min(img(:)) max(img(:))];
+        mydata.clim = double([min(img(:)) max(img(:))]);
     end
 else
     mydata.clim = clim;
