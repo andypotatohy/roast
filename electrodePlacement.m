@@ -59,73 +59,6 @@ if doCustom
 %     elecPool_C = '';
 end
 
-% doPredefined = 0;
-% doNeck = 0;
-% doCustom = 0;
-% for i=1:length(elecNeeded)
-%     if ismember(elecNeeded{i},elecPool)
-%         doPredefined = 1;
-%     end
-%     if ismember(elecNeeded{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
-%         doNeck = 1;
-%     end
-%     if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
-%         doCustom = 1;
-%         fid = fopen([dirname filesep 'customLocations']);
-%         capInfoCustom = textscan(fid,'%s %f %f %f');
-%         fclose(fid);
-%         elecPoolCustom = capInfoCustom{1};
-%         elecLocCustom = cell2mat(capInfoCustom(2:4));
-%     end
-% end
-
-% isCustomElec = zeros(length(elecNeeded),1);
-% for i=1:length(elecNeeded)
-%     if ~isempty(strfind(elecNeeded{i},'custom')) || ~isempty(strfind(elecNeeded{i},'Custom'))
-%         isCustomElec(i) = 1;
-%     end
-% end
-% if all(isCustomElec)
-%     pureCustom = 1;
-% else
-%     pureCustom = 0;
-%
-% switch capType
-%     case {'1020','1010','1005'}
-%         load('cap1005FullWithExtra.mat','capInfo');
-%         elec = capInfo{1};
-% %         elec_template = cell2mat(capInfo(2:4));
-%         isBiosemi = 0;
-% %         isCustomizedCap = 0;
-%     case 'biosemi'
-%         load('capBioSemiFullWithExtra.mat','capInfo');
-%         elec = capInfo{1};
-% %         elec_template = cell2mat(capInfo(2:4));
-%         isBiosemi = 1;
-% %         isCustomizedCap = 0;
-% %     case 'customized'
-% % %         read user-provided electrode coordniate text file
-% %         elec = capInfo{1};
-% %         elec_template = cell2mat(capInfo(2:4));
-% %         isBiosemi = 0;
-% %         isCustomizedCap = 1;
-% end
-% end
-
-% %% electrode shape options
-% switch elecType
-%     case 'disc'
-%         radius = elecSize(1);
-%         height = elecSize(2);
-%     case 'pad'
-%         padSize = elecSize; % [length width thickness]
-%         padOri = elecOri;
-%     case 'ring'
-%         radiusInner = elecSize(1);
-%         radiusOutter = elecSize(2);
-%         height = elecSize(3);
-% end
-
 %% can be any non-ras head (to be consistent with user-provided coordinates)
 landmarks_original = getLandmarks(P);
 
@@ -149,25 +82,6 @@ scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 %% fit cap position on the individual's head
 if doPredefined
    [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,indP,isBiosemi);
-%     if ~isBiosemi
-%         
-%         if ~exist([dirname filesep baseFilename '_fittedCap1005.mat'],'file')
-%             [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
-%             save([dirname filesep baseFilename '_fittedCap1005.mat'],'electrode_coord_P','center_P');
-%         else
-%             load([dirname filesep baseFilename '_fittedCap1005.mat'],'electrode_coord_P','center_P');
-%         end
-%         
-%     else
-%         
-%         if ~exist([dirname filesep baseFilename '_fittedCapBioSemi.mat'],'file')
-%             [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,isBiosemi);
-%             save([dirname filesep baseFilename '_fittedCapBioSemi.mat'],'electrode_coord_P','center_P');
-%         else
-%             load([dirname filesep baseFilename '_fittedCapBioSemi.mat'],'electrode_coord_P','center_P');
-%         end
-%         
-%     end
 else
     electrode_coord_P = []; center_P = [];
 end

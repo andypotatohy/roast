@@ -37,6 +37,12 @@ function roast(subj,recipe,varargin)
 % yhuang16@citymail.cuny.edu
 % March 2018
 
+fprintf('\n\n');
+disp('======================================================')
+disp('CHECKING INPUTS...')
+disp('======================================================')
+fprintf('\n');
+
 if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
 end
@@ -158,7 +164,7 @@ else
             elecSize = elecSize(:,1:2);
         end
         if any(strcmp(elecType,{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize,2)==2
-            error('Insufficient size info for Pad and Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
+            error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
         end
         if any(strcmp(elecType,{'ring','Ring','RING'})) && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -185,7 +191,7 @@ else
                 elecSize{i} = elecSize{i}(:,1:2);
             end
             if any(strcmp(elecType{i},{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize{i},2)==2
-                error('Insufficient size info for Pad and Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
+                error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
             end
             if any(strcmp(elecType{i},{'ring','Ring','RING'})) && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                 error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -259,8 +265,12 @@ else
                         numPad = numPad+1;
                     end
                 end
-                if numPad > size(elecOri0,1)
-                    error('Not enough orientation info for each of the pad electrodes. Please tell ROAST the orientation for each pad respectively, in a N-by-3 matrix, where N is the number of pads to be placed.');
+                if size(elecOri0,1)>1
+                    if size(elecOri0,1)~=numPad
+                        error('You want different orientations for each pad electrode. Please tell ROAST the orientation for each pad respectively, in a N-by-3 matrix, where N is the number of pads to be placed.');
+                    end
+                else
+                    elecOri0 = repmat(elecOri0,numPad,1);
                 end
                 i0=1;
                 for i=1:length(elecType)
@@ -308,98 +318,97 @@ end
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-if ~legacy    
-    switch capType
-        case {'1020','1010','1005'}
-            load('./cap1005FullWithExtra.mat','capInfo');
-            elecPool = capInfo{1};
-        case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
-            load('./capBioSemiFullWithExtra.mat','capInfo');
-            elecPool = capInfo{1};
-            %     case 'customized'
-            %         fid = fopen([dirname filesep 'customLocations']);
-            %         if fid==-1
-            %             error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a file ''customLocations'' and store it under the subject folder');
-            %         end
-            %         capInfo = textscan(fid,'%s %f %f %f');
-            %         fclose(fid);
-            %         elecPool = capInfo{1};
-%         otherwise
-%             error('Supported cap types are: ''1020'', ''1010'', ''1005'' and ''BioSemi''.');
-            %         and any locations you specified in file ''customLocations'' YOU stored under the subject folder.');
-    end
-    % elecPool = cat(1,elecPool,{'Nk1';'Nk2';'Nk3';'Nk4'});
-    
-%     elecName = (recipe(1:2:end-1))';
-    % fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
-    % elec = C{4};
-    % for i=1:length(elec), elec{i} = strrep(elec{i},'.',''); end
-    % if ~all(ismember(elecName,elec))
-    %     error('Unrecognized electrode names. Please specify electrodes in the 10-10 EEG system only.');
-    % end    
+if ~legacy
     doPredefined = 0;
     doNeck = 0;
     doCustom = 0;
     unknownElec = 0;
+    
+    switch capType
+        case {'1020','1010','1005'}
+            load('./cap1005FullWithExtra.mat','capInfo');
+            elecPool_P = capInfo{1};
+        case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
+            load('./capBioSemiFullWithExtra.mat','capInfo');
+            elecPool_P = capInfo{1};
+    end
+    
+    elecPool_N = {'Nk1';'Nk2';'Nk3';'Nk4'};    
+
     for i=1:length(elecName)
-        if ismember(elecName{i},elecPool)
+        if ismember(elecName{i},elecPool_P)
             doPredefined = 1;
-        elseif ismember(elecName{i},{'Nk1';'Nk2';'Nk3';'Nk4'})
+        elseif ismember(elecName{i},elecPool_N)
             doNeck = 1;
         elseif ~isempty(strfind(elecName{i},'custom')) || ~isempty(strfind(elecName{i},'Custom'))
             doCustom = 1;
-            fid = fopen([dirname filesep baseFilename '_customLocations']);
-            if fid==-1
-                error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
-            else
+            if ~exist('elecPool_C','var')
+                fid = fopen([dirname filesep baseFilename '_customLocations']);
+                if fid==-1
+                    error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
+                end
                 capInfo_C = textscan(fid,'%s %f %f %f');
                 elecPool_C = capInfo_C{1};
-                if ~ismember(elecName{i},elecPool_C)
-                    fprintf('Unrecognized electrode %s.\n',elecName{i});
-                    unknownElec = unknownElec+1;
-                end
+                fclose(fid);
             end
-            fclose(fid);
+            if ~ismember(elecName{i},elecPool_C)
+                fprintf('Unrecognized electrode %s.\n',elecName{i});
+                unknownElec = unknownElec+1;
+            end
         else
             fprintf('Unrecognized electrode %s.\n',elecName{i});
             unknownElec = unknownElec+1;
         end
     end
     
-    % foundElec = ismember(elecName,elecPool);
-    % indCustomElec = find(~foundElec);
-    % isUnknownElec = zeros(length(indCustomElec),1);
-    % for i=1:length(indCustomElec)
-    %     if isempty(strfind(elecName{indCustomElec(i)},'custom')) && isempty(strfind(elecName{indCustomElec(i)},'Custom'))
-    %         fprintf('Unrecognized electrode %s.\n',elecName{indCustomElec(i)});
-    %         isUnknownElec(i) = 1;
-    %     end
-    % end
-    % if any(isUnknownElec)
-    %     error('Unrecognized electrodes found. It''s possible that you specified one cap type (e.g. 1010) but provided the electrode name in the other system (e.g. BioSemi); it''s also possible that you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name.');
-    % end
     if unknownElec>0
         error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes); 4) you want to do neck electrodes, but wrote ''nk#'' or ''NK#'' instead of ''Nk#''.');
     end
-    %     if doCustom
-    %         fid = fopen([dirname filesep baseFilename '_customLocations']);
-    %         if fid==-1
-    %             error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
-    %         end
-    %         fclose(fid);
-    %     end
     
-    injectCurrent = cell2mat(recipe(2:2:end));
+    if doPredefined
+        [isPredefined,indPredefined] = ismember(elecName,elecPool_P);
+        ind2UI_P = find(isPredefined);
+        indP = indPredefined(isPredefined);
+        [indP,indtemp] = sort(indP);
+        ind2UI_P = ind2UI_P(indtemp);
+    end
+
+    if doNeck
+        [isNeck,indNeck]=ismember(elecName,elecPool_N);
+        ind2UI_N = find(isNeck);
+        indN = indNeck(isNeck);
+        [indN,indtemp] = sort(indN);
+        ind2UI_N = ind2UI_N(indtemp);
+    end
+
+    if doCustom
+        [isCustom,indCustom]=ismember(elecName,elecPool_C);
+        ind2UI_C = find(isCustom);
+        indC = indCustom(isCustom);
+        elecLoc_C = cell2mat(capInfo_C(2:4));
+        elecLoc_C = elecLoc_C(indC,:);
+        [indC,indtemp] = sort(indC);
+        ind2UI_C = ind2UI_C(indtemp);
+    end
+    
+    ind2UI = cat(1,ind2UI_P,ind2UI_N,ind2UI_C);
+    
+    injectCurrent = (cell2mat(recipe(2:2:end)))';
     if sum(injectCurrent)~=0
         error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
     end
+    
+    elecName = elecName(ind2UI);
+    injectCurrent = injectCurrent(ind2UI);
+    
+%     sort elec options (electype size ori)
     
     configTxt = [];
     for i=1:length(elecName)
         configTxt = [configTxt elecName{i} ' (' num2str(injectCurrent(i)) ' mA), '];
     end
     configTxt = configTxt(1:end-2);
-else    
+else
     warning('You selected ''legacy'' mode. Nice choice! Note all customized options will be overwritten by the ''legacy'' mode. Refer to the readme file for more details on ''legacy'' mode.');
     fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
