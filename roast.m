@@ -88,8 +88,11 @@ while indArg <=lenOptions
         case {'meshOptions','meshoptions','MeshOptions'}
             meshOpt = varargin{indArg+1};
             indArg = indArg+2;
+        case {'simulationTag','simulationtag','SimulationTag'}
+            simTag = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''legacy'', ''T2'' and ''meshOptions''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''legacy'', ''T2'', ''meshOptions'' and ''simulationTag''.');
     end
 end
 
@@ -317,6 +320,7 @@ if ~exist('T2','var'), T2 = []; end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 end
+if ~exist('simTag','var'), simTag = []; end
 
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
@@ -396,6 +400,8 @@ if ~legacy
     
     ind2UI = cat(1,ind2UI_P,ind2UI_N,ind2UI_C);
     
+%     put above into a func and reset captype to 1010 if pure custome elec
+    
     injectCurrent = (cell2mat(recipe(2:2:end)))';
     if sum(injectCurrent)~=0
         error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
@@ -415,6 +421,7 @@ elseif length(elecPara)==length(elecName)
 else
     error('Something is wrong!');
 end
+
     
     configTxt = [];
     for i=1:length(elecName)
@@ -437,38 +444,56 @@ else
     configTxt = 'legacy';
 end
 
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag);
+
 % save simulation options in a text file named by uniqueTag
-if ~exist([dirname filesep baseFilename '_log'],'file')
-    fid = fopen([dirname filesep baseFilename '_log'],'w');
-%     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
-    uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
-%     fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
-    fprintf(fid,'%s:\n',uniqueTag);
-    fprintf(fid,'recipe:\t%s\n',configTxt);
-    fprintf(fid,'capType:\t%s\n',elecPara(1).capType);
-    fprintf(fid,'elecType:\t');
-    for i=1:length(elecPara)
-        fprintf(fid,'%s\t',elecPara(i).elecType);
-    end
-    fprintf(fid,'\n');
-%     elecSize  elecori  t2 meshOpt
-    fclose(fid);
+Sopt = dir([dirname filesep baseFilename '*options.mat']);
+if isempty(Sopt)
+    options = writeRoastLog(subj,options);    
 else
-    fid = fopen([dirname filesep baseFilename '_log'],'r');
-    C = textscan(fid,'%s\t%s','delimiter','\t');
-    fclose(fid);
-    [Lia,Loc] = ismember(configTxt,C{2});
-    % should use option text file to judge if it's run before
-    if ~Lia
-        fid = fopen([dirname filesep baseFilename '_log'],'a');
-%         uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
-        uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
-        fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
-        fclose(fid);
-    else
-        uniqueTag = C{1}{Loc};
+    for i=1:length(S)
+        load(S(i).filename,'opt');
+%             and compare with options
+%     if found one
+%         read out the tag and use it afterwards
+%     else
+%         options = writeRoastLog(subj,options);
+%     end
     end
 end
+
+% if ~exist([dirname filesep baseFilename '_log'],'file')
+%     writeRoastLog(subj,configTxt,options)
+%     fid = fopen([dirname filesep baseFilename '_log'],'w');
+% %     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
+%     uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
+% %     fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
+%     fprintf(fid,'%s:\n',uniqueTag);
+%     fprintf(fid,'recipe:\t%s\n',configTxt);
+%     fprintf(fid,'capType:\t%s\n',elecPara(1).capType);
+%     fprintf(fid,'elecType:\t');
+%     for i=1:length(elecPara)
+%         fprintf(fid,'%s\t',elecPara(i).elecType);
+%     end
+%     fprintf(fid,'\n');
+% %     elecSize  elecori  t2 meshOpt
+%     fclose(fid);
+% else
+%     fid = fopen([dirname filesep baseFilename '_log'],'r');
+%     C = textscan(fid,'%s\t%s','delimiter','\t');
+%     fclose(fid);
+%     [Lia,Loc] = ismember(configTxt,C{2});
+%     % should use option text file to judge if it's run before
+%     if ~Lia
+%         fid = fopen([dirname filesep baseFilename '_log'],'a');
+% %         uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
+%         uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
+%         fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
+%         fclose(fid);
+%     else
+%         uniqueTag = C{1}{Loc};
+%     end
+% end
 
 fprintf('\n\n');
 disp('======================================================')
