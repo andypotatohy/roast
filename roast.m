@@ -309,6 +309,9 @@ else
     end
 end
 
+elecPara = struct('capType',capType,'elecType',elecType,...
+        'elecSize',elecSize,'elecOri',elecOri);
+
 if ~exist('legacy','var'), legacy = 0; end
 if ~exist('T2','var'), T2 = []; end
 if ~exist('meshOpt','var')
@@ -402,6 +405,16 @@ if ~legacy
     injectCurrent = injectCurrent(ind2UI);
     
 %     sort elec options (electype size ori)
+if length(elecPara)==1
+    if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2UI,:); end
+    if ~ischar(elecOri) && size(elecOri,1)>1
+        elecPara.elecOri = elecPara.elecOri(ind2UI,:);
+    end
+elseif length(elecPara)==length(elecName)
+    elecPara = elecPara(ind2UI);
+else
+    error('Something is wrong!');
+end
     
     configTxt = [];
     for i=1:length(elecName)
@@ -416,6 +429,8 @@ else
     elecType = 'disc';
     elecSize = [6 2];
     elecOri = [];
+    elecPara = struct('capType',capType,'elecType',elecType,...
+        'elecSize',elecSize,'elecOri',elecOri);
     doPredefined = 1;
     doNeck = 0;
     doCustom = 0;
@@ -423,13 +438,20 @@ else
 end
 
 % save simulation options in a text file named by uniqueTag
-
-
 if ~exist([dirname filesep baseFilename '_log'],'file')
     fid = fopen([dirname filesep baseFilename '_log'],'w');
 %     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
     uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
-    fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
+%     fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
+    fprintf(fid,'%s:\n',uniqueTag);
+    fprintf(fid,'recipe:\t%s\n',configTxt);
+    fprintf(fid,'capType:\t%s\n',elecPara(1).capType);
+    fprintf(fid,'elecType:\t');
+    for i=1:length(elecPara)
+        fprintf(fid,'%s\t',elecPara(i).elecType);
+    end
+    fprintf(fid,'\n');
+%     elecSize  elecori  t2 meshOpt
     fclose(fid);
 else
     fid = fopen([dirname filesep baseFilename '_log'],'r');
@@ -485,9 +507,9 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
     disp('          STEP 3: ELECTRODE PLACEMENT...              ')
     disp('======================================================')
-    elecPara = struct('capType',capType,'elecType',elecType,...
-        'elecSize',elecSize,'elecOri',elecOri,...
-        'doPredefined',doPredefined,'doNeck',doNeck,'doCustom',doCustom);
+%     elecPara = struct('capType',capType,'elecType',elecType,...
+%         'elecSize',elecSize,'elecOri',elecOri,...
+%         'doPredefined',doPredefined,'doNeck',doNeck,'doCustom',doCustom);
     [rnge_elec,rnge_gel] = electrodePlacement(subj,elecName,elecPara,uniqueTag);
 else
     disp('======================================================')
