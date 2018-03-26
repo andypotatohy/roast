@@ -1,11 +1,27 @@
 function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPara)
 
 % disp('placing electrodes...')
-elecType = elecPara.elecType;
-elecSize = elecPara.elecSize;
-elecOri = elecPara.elecOri;
 
-if any(strcmp(elecType,{'pad','Pad','PAD'}))
+if length(elecPara)==1
+    numOfElec = size(elecLoc,1);
+    temp = repmat(elecPara,numOfElec,1);
+    if size(elecPara.elecSize,1)>1
+        for i=1:length(temp), temp(i).elecSize = temp(i).elecSize(i,:); end
+    end
+    if size(elecPara.elecOri,1)>1
+        for i=1:length(temp), temp(i).elecOri = temp(i).elecOri(i,:); end
+    end
+    elecPara = temp;
+end
+
+doPad = 0;
+for i=1:length(elecPara)
+    if any(strcmp(elecPara(i).elecType,{'pad','Pad','PAD'}))
+        doPad = 1;
+    end
+end
+
+if doPad % do this one time or for each electrode?
     pad_height = elecSize(3);
     scalpDilated = imdilate(scalpFilled,ones(pad_height,pad_height,pad_height));
     dilatedScalp = scalpDilated - scalpFilled; % scalpFilled: filled scalp

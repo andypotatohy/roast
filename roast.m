@@ -326,102 +326,26 @@ if ~exist('simTag','var'), simTag = []; end
 if isempty(dirname), dirname = pwd; end
 
 if ~legacy
-    doPredefined = 0;
-    doNeck = 0;
-    doCustom = 0;
-    unknownElec = 0;
-    
-    switch capType
-        case {'1020','1010','1005'}
-            load('./cap1005FullWithExtra.mat','capInfo');
-            elecPool_P = capInfo{1};
-        case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
-            load('./capBioSemiFullWithExtra.mat','capInfo');
-            elecPool_P = capInfo{1};
-    end
-    
-    elecPool_N = {'Nk1';'Nk2';'Nk3';'Nk4'};    
-
-    for i=1:length(elecName)
-        if ismember(elecName{i},elecPool_P)
-            doPredefined = 1;
-        elseif ismember(elecName{i},elecPool_N)
-            doNeck = 1;
-        elseif ~isempty(strfind(elecName{i},'custom')) || ~isempty(strfind(elecName{i},'Custom'))
-            doCustom = 1;
-            if ~exist('elecPool_C','var')
-                fid = fopen([dirname filesep baseFilename '_customLocations']);
-                if fid==-1
-                    error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
-                end
-                capInfo_C = textscan(fid,'%s %f %f %f');
-                elecPool_C = capInfo_C{1};
-                fclose(fid);
-            end
-            if ~ismember(elecName{i},elecPool_C)
-                fprintf('Unrecognized electrode %s.\n',elecName{i});
-                unknownElec = unknownElec+1;
-            end
-        else
-            fprintf('Unrecognized electrode %s.\n',elecName{i});
-            unknownElec = unknownElec+1;
-        end
-    end
-    
-    if unknownElec>0
-        error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes); 4) you want to do neck electrodes, but wrote ''nk#'' or ''NK#'' instead of ''Nk#''.');
-    end
-    
-    if doPredefined
-        [isPredefined,indPredefined] = ismember(elecName,elecPool_P);
-        ind2UI_P = find(isPredefined);
-        indP = indPredefined(isPredefined);
-        [indP,indtemp] = sort(indP);
-        ind2UI_P = ind2UI_P(indtemp);
-    end
-
-    if doNeck
-        [isNeck,indNeck]=ismember(elecName,elecPool_N);
-        ind2UI_N = find(isNeck);
-        indN = indNeck(isNeck);
-        [indN,indtemp] = sort(indN);
-        ind2UI_N = ind2UI_N(indtemp);
-    end
-
-    if doCustom
-        [isCustom,indCustom]=ismember(elecName,elecPool_C);
-        ind2UI_C = find(isCustom);
-        indC = indCustom(isCustom);
-        elecLoc_C = cell2mat(capInfo_C(2:4));
-        elecLoc_C = elecLoc_C(indC,:);
-        [indC,indtemp] = sort(indC);
-        ind2UI_C = ind2UI_C(indtemp);
-    end
-    
-    ind2UI = cat(1,ind2UI_P,ind2UI_N,ind2UI_C);
-    
-%     put above into a func and reset captype to 1010 if pure custome elec
+    [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
     
     injectCurrent = (cell2mat(recipe(2:2:end)))';
     if sum(injectCurrent)~=0
         error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
-    end
+    end    
+    elecName = elecName(ind2usrInput);
+    injectCurrent = injectCurrent(ind2usrInput);
     
-    elecName = elecName(ind2UI);
-    injectCurrent = injectCurrent(ind2UI);
-    
-%     sort elec options (electype size ori)
-if length(elecPara)==1
-    if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2UI,:); end
-    if ~ischar(elecOri) && size(elecOri,1)>1
-        elecPara.elecOri = elecPara.elecOri(ind2UI,:);
+    % sort elec options (electype size ori)
+    if length(elecPara)==1
+        if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2usrInput,:); end
+        if ~ischar(elecOri) && size(elecOri,1)>1
+            elecPara.elecOri = elecPara.elecOri(ind2usrInput,:);
+        end
+    elseif length(elecPara)==length(elecName)
+        elecPara = elecPara(ind2usrInput);
+    else
+        error('Something is wrong!');
     end
-elseif length(elecPara)==length(elecName)
-    elecPara = elecPara(ind2UI);
-else
-    error('Something is wrong!');
-end
-
     
     configTxt = [];
     for i=1:length(elecName)
@@ -438,68 +362,39 @@ else
     elecOri = [];
     elecPara = struct('capType',capType,'elecType',elecType,...
         'elecSize',elecSize,'elecOri',elecOri);
-    doPredefined = 1;
-    doNeck = 0;
-    doCustom = 0;
+    elecPara = elecPreproc(subj,elecName,elecPara);
     configTxt = 'legacy';
 end
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag);
 
-% save simulation options in a text file named by uniqueTag
+% log tracking
 Sopt = dir([dirname filesep baseFilename '*options.mat']);
 if isempty(Sopt)
-    options = writeRoastLog(subj,options);    
+    options = writeRoastLog(subj,options);
 else
-    for i=1:length(S)
-        load(S(i).filename,'opt');
-%             and compare with options
-%     if found one
-%         read out the tag and use it afterwards
-%     else
-%         options = writeRoastLog(subj,options);
-%     end
+    isNew = zeros(length(Sopt),1);
+    for i=1:length(Sopt)
+        load([Sopt(i).folder filesep Sopt(i).name],'opt');
+        isNew(i) = isNewOptions(options,opt);
+    end
+    if all(isNew)
+        options = writeRoastLog(subj,options);
+    else
+        load([Sopt(find(~isNew)).folder filesep Sopt(find(~isNew)).name],'opt');
+        options.uniqueTag = opt.uniqueTag;
     end
 end
-
-% if ~exist([dirname filesep baseFilename '_log'],'file')
-%     writeRoastLog(subj,configTxt,options)
-%     fid = fopen([dirname filesep baseFilename '_log'],'w');
-% %     uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
-%     uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
-% %     fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
-%     fprintf(fid,'%s:\n',uniqueTag);
-%     fprintf(fid,'recipe:\t%s\n',configTxt);
-%     fprintf(fid,'capType:\t%s\n',elecPara(1).capType);
-%     fprintf(fid,'elecType:\t');
-%     for i=1:length(elecPara)
-%         fprintf(fid,'%s\t',elecPara(i).elecType);
-%     end
-%     fprintf(fid,'\n');
-% %     elecSize  elecori  t2 meshOpt
-%     fclose(fid);
-% else
-%     fid = fopen([dirname filesep baseFilename '_log'],'r');
-%     C = textscan(fid,'%s\t%s','delimiter','\t');
-%     fclose(fid);
-%     [Lia,Loc] = ismember(configTxt,C{2});
-%     % should use option text file to judge if it's run before
-%     if ~Lia
-%         fid = fopen([dirname filesep baseFilename '_log'],'a');
-% %         uniqueTag = char(datetime('now','Format','yyyy-MM-dd-HH-mm-ss')); % for Matlab 2014b and later
-%         uniqueTag = char(datestr(now,30)); % for Matlab 2014a and earlier
-%         fprintf(fid,'%s\t%s\n',uniqueTag,configTxt);
-%         fclose(fid);
-%     else
-%         uniqueTag = C{1}{Loc};
-%     end
-% end
+uniqueTag = options.uniqueTag;
 
 fprintf('\n\n');
 disp('======================================================')
 disp(['ROAST ' subj])
 disp('USING RECIPE:')
 disp(configTxt)
+disp('...and simulation options saved in:')
+disp([dirname filesep baseFilename '_log,'])
+disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
 
