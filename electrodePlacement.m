@@ -1,67 +1,12 @@
-function [rnge_elec,rnge_gel] = electrodePlacement(P,elecNeeded,elecPara,uniTag)
+function [rnge_elec,rnge_gel] = electrodePlacement(P,elecPara,uniTag)
 % help text
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
 
-%% options
-% capType = elecPara.capType;
-% % elecType = elecPara.elecType;
-% % elecSize = elecPara.elecSize;
-% % elecOri = elecPara.elecOri;
-% % legacy = elecPara.legacy;
-% doPredefined = elecPara.doPredefined;
-% doNeck = elecPara.doNeck;
-% doCustom = elecPara.doCustom;
-
 indP = elecPara(1).indP;
 indN = elecPara(1).indN;
 indC = elecPara(1).indC;
-
-% %% cap options
-% if doPredefined
-%     switch capType
-%         case {'1020','1010','1005'}
-%             load('cap1005FullWithExtra.mat','capInfo');
-%             elecPool_P = capInfo{1};
-%             %         elec_template = cell2mat(capInfo(2:4));
-%             isBiosemi = 0;
-%             %         isCustomizedCap = 0;
-%             [isPredefined,indPredefined]=ismember(elecNeeded,elecPool_P);
-%             indP = indPredefined(isPredefined);
-%         case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
-%             load('capBioSemiFullWithExtra.mat','capInfo');
-%             elecPool_P = capInfo{1};
-%             %         elec_template = cell2mat(capInfo(2:4));
-%             isBiosemi = 1;
-%             %         isCustomizedCap = 0;
-%             [isPredefined,indPredefined]=ismember(elecNeeded,elecPool_P);
-%             indP = indPredefined(isPredefined);
-%     end
-% % else
-% %     elecPool_P = '';
-% end
-% 
-% if doNeck
-%     elecPool_N = {'Nk1';'Nk2';'Nk3';'Nk4'};
-%     [isNeck,indNeck]=ismember(elecNeeded,elecPool_N);
-%     indN = indNeck(isNeck);
-% % else
-% %     elecPool_N = '';
-% end
-% 
-% if doCustom
-%     fid = fopen([dirname filesep baseFilename '_customLocations']);
-%     capInfo_C = textscan(fid,'%s %f %f %f');
-%     fclose(fid);
-%     elecPool_C = capInfo_C{1};
-%     elecLoc_C = cell2mat(capInfo_C(2:4));
-%     [isCustom,indCustom]=ismember(elecNeeded,elecPool_C);
-%     indC = indCustom(isCustom);
-%     elecLoc_C = elecLoc_C(indC,:);
-% % else
-% %     elecPool_C = '';
-% end
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
 landmarks_original = getLandmarks(P);
@@ -74,11 +19,10 @@ scalp_original = template.img;
 
 scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
 
-% if doPredefined || doNeck
 if ~isempty(indP) || ~isempty(indN)
     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
 end
-% if doCustom
+
 if ~isempty(indC)
     fid = fopen([dirname filesep baseFilename '_customLocations']);
     capInfo_C = textscan(fid,'%s %f %f %f');
@@ -118,7 +62,7 @@ if ~isempty(indC)
     [~,indOnScalpSurf] = map2Points(elecLoc_C,scalp_surface,'closest');
     electrode_coord_C = scalp_surface(indOnScalpSurf,:);
 else
-    electrode_coord_C = []; center_C = [];
+    electrode_coord_C = [];
 end
 
 %% head clean up for placing electrodes
@@ -164,10 +108,6 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 % electrode_center = cat(1,repmat(center_P,size(electrode_coord_P,1),1),...
 %     repmat(center_N,size(electrode_coord_N,1),1),repmat(center_C,size(electrode_coord_C,1),1));
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
-
-% [~,indElecNeeded] = ismember(elecNeeded,elecPool);
-% doElec = zeros(size(electrode_coord,1),1);
-% doElec(indElecNeeded) = 1;
 
 %% placing and model the electrodes
 [elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecPara);

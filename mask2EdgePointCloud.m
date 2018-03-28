@@ -1,10 +1,12 @@
-function edgePtCloud = mask2EdgePointCloud(mask,method,se)
+function [edgePtCloud,maskProc] = mask2EdgePointCloud(mask,method,se)
 
 switch method
     case 'erode'
-        mask_edge = mask-imerode(mask,se); % Get the edge of mask
+        maskProc = imerode(mask,se);
+        mask_edge = mask-maskProc; % Get the edge of mask
     case 'dilate'
-        mask_edge = imdilate(mask,se)-mask; % Get the edge of mask
+        maskProc = imdilate(mask,se);
+        mask_edge = maskProc-mask; % Get the edge of mask
     otherwise
         error('Please enter either erode or dilate for the Method.');
 end

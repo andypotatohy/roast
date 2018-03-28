@@ -161,7 +161,7 @@ else
         end
         if size(elecSize,1)>1 && size(elecSize,1)~=length(elecName)
             error('You want different sizes for each electrode. Please tell ROAST the size for each electrode respectively, in a N-row matrix, where N is the number of electrodes to be placed.');
-        end        
+        end
         if any(strcmp(elecType,{'disc','Disc','DISC'})) && size(elecSize,2)==3
             warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
             elecSize = elecSize(:,1:2);
@@ -171,7 +171,7 @@ else
         end
         if any(strcmp(elecType,{'ring','Ring','RING'})) && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
-        end        
+        end
     else
         if ~iscell(elecSize)
             error('You want to place at least 2 types of electrodes, but only provided size info for 1 type. Please provide complete size info for all types of electrodes in a cell array as the value for option ''elecSize'', or just use defaults by not specifying ''elecSize'' option.');
@@ -180,24 +180,35 @@ else
             error('You want to place more than 1 type of electrodes. Please tell ROAST the size for each electrode respectively, as the value for option ''elecSize'', in a cell array of length equals to the number of electrodes to be placed.');
         end
         for i=1:length(elecSize)
-            if any(elecSize{i}(:)<=0)
-                error('Please enter non-negative values for electrode size.');
-            end
-            if size(elecSize{i},2)~=2 && size(elecSize{i},2)~=3
-                error('Unrecognized electrode sizes. Please specify as [radius height] for disc, [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
-            end
-            if size(elecSize{i},1)>1
-                error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
-            end            
-            if any(strcmp(elecType{i},{'disc','Disc','DISC'})) && size(elecSize{i},2)==3
-                warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
-                elecSize{i} = elecSize{i}(:,1:2);
-            end
-            if any(strcmp(elecType{i},{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize{i},2)==2
-                error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
-            end
-            if any(strcmp(elecType{i},{'ring','Ring','RING'})) && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
-                error('For Ring electrodes, the inner radius should be smaller than outter radius.');
+            if isempty(elecSize{i})
+                switch elecType{i}
+                    case {'disc','Disc','DISC'}
+                        elecSize{i} = [6 2];
+                    case {'pad','Pad','PAD'}
+                        elecSize{i} = [50 30 3];
+                    case {'ring','Ring','RING'}
+                        elecSize{i} = [4 6 2];
+                end
+            else
+                if any(elecSize{i}(:)<=0)
+                    error('Please enter non-negative values for electrode size.');
+                end
+                if size(elecSize{i},2)~=2 && size(elecSize{i},2)~=3
+                    error('Unrecognized electrode sizes. Please specify as [radius height] for disc, [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
+                end
+                if size(elecSize{i},1)>1
+                    error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
+                end
+                if any(strcmp(elecType{i},{'disc','Disc','DISC'})) && size(elecSize{i},2)==3
+                    warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
+                    elecSize{i} = elecSize{i}(:,1:2);
+                end
+                if any(strcmp(elecType{i},{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize{i},2)==2
+                    error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
+                end
+                if any(strcmp(elecType{i},{'ring','Ring','RING'})) && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
+                    error('For Ring electrodes, the inner radius should be smaller than outter radius.');
+                end
             end
         end
     end
@@ -237,7 +248,7 @@ else
                 end
                 if size(elecOri,1)>1 && size(elecOri,1)~=length(elecName)
                     error('You want different orientations for each pad electrode. Please tell ROAST the orientation for each pad respectively, in a N-by-3 matrix, where N is the number of pads to be placed.');
-                end                
+                end
             end
         else
             warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
@@ -291,20 +302,24 @@ else
             end
             for i=1:length(elecOri)
                 if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
-                    if ischar(elecOri{i})
-                        if ~any(strcmp(elecOri{i},{'lr','ap','si'}))
-                            error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
-                        end
+                    if isempty(elecOri{i})
+                        elecOri{i} = 'lr';
                     else
-                        if size(elecOri{i},2)~=3
-                            error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                        if ischar(elecOri{i})
+                            if ~any(strcmp(elecOri{i},{'lr','ap','si'}))
+                                error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                            end
+                        else
+                            if size(elecOri{i},2)~=3
+                                error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
+                            end
+                            if size(elecOri{i},1)>1
+                                error('You''re placing more than 1 type of electrodes. Please put orientation info for each pad electrode as a 1-by-3 vector or one of the three keywords ''lr'', ''ap'', or ''si'' in a cell array for option ''elecOri''.');
+                            end
                         end
-                        if size(elecOri{i},1)>1
-                            error('You''re placing more than 1 type of electrodes. Please put orientation info for each pad electrode as a 1-by-3 vector or one of the three keywords ''lr'', ''ap'', or ''si'' in a cell array for option ''elecOri''.');
-                        end                        
                     end
                 else
-%                     warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
+                    %                     warning('You''re not placing pad electrodes; customized orientation options will be ignored.');
                     elecOri{i} = [];
                 end
             end
@@ -427,10 +442,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
     disp('          STEP 3: ELECTRODE PLACEMENT...              ')
     disp('======================================================')
-%     elecPara = struct('capType',capType,'elecType',elecType,...
-%         'elecSize',elecSize,'elecOri',elecOri,...
-%         'doPredefined',doPredefined,'doNeck',doNeck,'doCustom',doCustom);
-    [rnge_elec,rnge_gel] = electrodePlacement(subj,elecName,elecPara,uniqueTag);
+    [rnge_elec,rnge_gel] = electrodePlacement(subj,elecPara,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
