@@ -47,6 +47,10 @@ if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
 end
 
+if ~exist(subj,'file')
+    error('The T1 MRI you provided does not exist.');
+end
+
 if nargin<2 || isempty(recipe)
     recipe = {'Fp1',1,'P4',-1};
 end
@@ -331,9 +335,15 @@ elecPara = struct('capType',capType,'elecType',elecType,...
         'elecSize',elecSize,'elecOri',elecOri);
 
 if ~exist('legacy','var'), legacy = 0; end
-if ~exist('T2','var'), T2 = []; end
+if ~exist('T2','var')
+    T2 = [];
+else
+    if ~exist(T2,'file'), error('The T2 MRI you provided does not exist.'); end
+end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+else
+    warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
 end
 if ~exist('simTag','var'), simTag = []; end
 
@@ -430,8 +440,8 @@ if ~exist([dirname filesep baseFilename '_mask_gray.nii'],'file')
     disp('======================================================')
     disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
     disp('======================================================')
-    mysegment(subj);
-    autoPatching(subj);
+    mysegment(subj,T2);
+    autoPatching(subj,T2);
 else
     disp('======================================================')
     disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')

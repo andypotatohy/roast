@@ -53,7 +53,11 @@ for i=1:size(P,1)
     
     ref = deblank(P(i,:));
 %     [pth,nam,ext] = spm_fileparts(ref);
-    data = load_untouch_nii(ref); sliceshow(data.img,[],'gray',[],[],'MRI: T1. Click anywhere to navigate.'); drawnow
+    t1Data = load_untouch_nii(ref);
+    sliceshow(t1Data.img,[],'gray',[],[],'MRI: T1. Click anywhere to navigate.'); drawnow
+    if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
+%      error('    ask users to adjust')
+    end
     matlabbatch{1}.spm.tools.preproc8.channel.vols = {ref};  % image to be segmented
     matlabbatch{1}.spm.tools.preproc8.channel.biasreg = 0.0001; % P(beta)
     matlabbatch{1}.spm.tools.preproc8.channel.biasfwhm = 60;
@@ -62,7 +66,14 @@ for i=1:size(P,1)
         ref2 = deblank(T2(i,:));
 %         [pth2,nam2,ext2] = spm_fileparts(ref2);
 %         fprintf('Using %s to segment T1 and T2 images: %s %s\n', Template, ref, ref2);
-        data = load_untouch_nii(ref2); sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+        t2Data = load_untouch_nii(ref2);
+        sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+        if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
+%      error('    ask users to adjust')
+        end
+        if any(size(t1Data.img)~=size(t2Data.img))
+            error('T2 image is not registered to T1 image space.');
+        end
         matlabbatch{1}.spm.tools.preproc8.channel(2).vols = {ref2}; % the 2nd image aiding segmentation
         matlabbatch{1}.spm.tools.preproc8.channel(2).biasreg = 0.0001;
         matlabbatch{1}.spm.tools.preproc8.channel(2).biasfwhm = 60;
