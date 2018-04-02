@@ -43,14 +43,16 @@ disp('CHECKING INPUTS...')
 disp('======================================================')
 fprintf('\n');
 
+% check subject name
 if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
 end
 
 if ~exist(subj,'file')
-    error('The T1 MRI you provided does not exist.');
+    error(['The subject MRI you provided ' subj ' does not exist.']);
 end
 
+% check recipe syntax
 if nargin<2 || isempty(recipe)
     recipe = {'Fp1',1,'P4',-1};
 end
@@ -61,15 +63,13 @@ end
 
 elecName = (recipe(1:2:end-1))';
 
-lenOptions = length(varargin);
-% if mod(lenOptions,2)~=0
-%     error('Unrecognized format of options. Please enter as property-value pair.');
-% end
-
 % take in user-specified options
-% for i=1:2:lenOptions-1
+if mod(length(varargin),2)~=0
+    error('Unrecognized format of options. Please enter as property-value pair.');
+end
+    
 indArg = 1;
-while indArg <=lenOptions
+while indArg <= length(varargin)
     switch varargin{indArg}
         case {'capType','captype','CapType'}
             capType = varargin{indArg+1};
@@ -83,9 +83,6 @@ while indArg <=lenOptions
         case {'elecOri','elecori','ElecOri'}
             elecOri = varargin{indArg+1};
             indArg = indArg+2;
-        case {'legacy','Legacy'}
-            legacy = 1;
-            indArg = indArg+1;
         case {'T2','t2'}
             T2 = varargin{indArg+1};
             indArg = indArg+2;
@@ -96,7 +93,7 @@ while indArg <=lenOptions
             simTag = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''legacy'', ''T2'', ''meshOptions'' and ''simulationTag''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'' and ''simulationTag''.');
     end
 end
 
@@ -334,66 +331,54 @@ end
 elecPara = struct('capType',capType,'elecType',elecType,...
         'elecSize',elecSize,'elecOri',elecOri);
 
-if ~exist('legacy','var'), legacy = 0; end
 if ~exist('T2','var')
     T2 = [];
 else
-    if ~exist(T2,'file'), error('The T2 MRI you provided does not exist.'); end
+    if ~exist(T2,'file'), error(['The T2 MRI you provided ' T2 ' does not exist.']); end
 end
+
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 else
     warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
 end
+
 if ~exist('simTag','var'), simTag = []; end
 
-[dirname,baseFilename] = fileparts(subj);
-if isempty(dirname), dirname = pwd; end
+% preproc electrodes
+[elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
 
-if ~legacy
-    [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
-    
-    injectCurrent = (cell2mat(recipe(2:2:end)))';
-    if sum(injectCurrent)~=0
-        error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
-    end    
-    elecName = elecName(ind2usrInput);
-    injectCurrent = injectCurrent(ind2usrInput);
-    
-    % sort elec options (electype size ori)
-    if length(elecPara)==1
-        if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2usrInput,:); end
-        if ~ischar(elecOri) && size(elecOri,1)>1
-            elecPara.elecOri = elecPara.elecOri(ind2usrInput,:);
-        end
-    elseif length(elecPara)==length(elecName)
-        elecPara = elecPara(ind2usrInput);
-    else
-        error('Something is wrong!');
-    end
-    
-    configTxt = [];
-    for i=1:length(elecName)
-        configTxt = [configTxt elecName{i} ' (' num2str(injectCurrent(i)) ' mA), '];
-    end
-    configTxt = configTxt(1:end-2);
-else
-    warning('You selected ''legacy'' mode. Nice choice! Note all customized options will be overwritten by the ''legacy'' mode. Refer to the readme file for more details on ''legacy'' mode.');
-    fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
-    elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
-    capType = '1010';
-    elecType = 'disc';
-    elecSize = [6 2];
-    elecOri = [];
-    elecPara = struct('capType',capType,'elecType',elecType,...
-        'elecSize',elecSize,'elecOri',elecOri);
-    elecPara = elecPreproc(subj,elecName,elecPara);
-    configTxt = 'legacy';
+injectCurrent = (cell2mat(recipe(2:2:end)))';
+if sum(injectCurrent)~=0
+    error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
 end
+elecName = elecName(ind2usrInput);
+injectCurrent = injectCurrent(ind2usrInput);
+
+% sort elec options
+if length(elecPara)==1
+    if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2usrInput,:); end
+    if ~ischar(elecOri) && size(elecOri,1)>1
+        elecPara.elecOri = elecPara.elecOri(ind2usrInput,:);
+    end
+elseif length(elecPara)==length(elecName)
+    elecPara = elecPara(ind2usrInput);
+else
+    error('Something is wrong!');
+end
+
+configTxt = [];
+for i=1:length(elecName)
+    configTxt = [configTxt elecName{i} ' (' num2str(injectCurrent(i)) ' mA), '];
+end
+configTxt = configTxt(1:end-2);
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag);
 
 % log tracking
+[dirname,baseFilename] = fileparts(subj);
+if isempty(dirname), dirname = pwd; end
+
 Sopt = dir([dirname filesep baseFilename '*options.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options);
@@ -425,7 +410,8 @@ fprintf('\n\n');
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
-if ~exist([dirname filesep 'c1' baseFilename '.nii'],'file')
+if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
+        (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
     disp('======================================================')
     disp('            STEP 1: SEGMENT THE MRI...                ')
     disp('======================================================')
@@ -436,7 +422,8 @@ else
     disp('======================================================')
 end
 
-if ~exist([dirname filesep baseFilename '_mask_gray.nii'],'file')
+if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
+        (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
     disp('======================================================')
     disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
     disp('======================================================')
@@ -464,7 +451,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('            STEP 4: MESH GENERATION...                ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,meshOpt,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -489,11 +476,11 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('     STEP 6: SAVING AND VISUALIZING THE RESULTS...    ')
     disp('======================================================')
     [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
-    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,0);
+    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,0,T2);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,1);
+    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,1,T2);
 end

@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(P,uniTag)
-% [node,elem,face] = meshByIso2mesh(P,uniTag)
+function [node,elem,face] = meshByIso2mesh(P,opt,uniTag)
+% [node,elem,face] = meshByIso2mesh(P,opt,uniTag)
 %
 % generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -31,12 +31,12 @@ drawnow
 
 allMask = uint8(allMask);
 
-opt.radbound = 5; % default 6, maximum surface element size
-opt.angbound = 30; % default 30, miminum angle of a surface triangle
-opt.distbound = 0.4; % default 0.5, maximum distance
-% between the center of the surface bounding circle and center of the element bounding sphere
-opt.reratio = 3; % default 3, maximum radius-edge ratio
-maxvol = 10; %100; % target maximum tetrahedral elem volume
+% opt.radbound = 5; % default 6, maximum surface element size
+% opt.angbound = 30; % default 30, miminum angle of a surface triangle
+% opt.distbound = 0.4; % default 0.5, maximum distance
+% % between the center of the surface bounding circle and center of the element bounding sphere
+% opt.reratio = 3; % default 3, maximum radius-edge ratio
+% maxvol = 10; %100; % target maximum tetrahedral elem volume
 
 [node,elem,face] = cgalv2m(allMask,opt,maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space

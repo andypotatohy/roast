@@ -85,9 +85,11 @@ for i=1:length(optNew.elecPara)
     
 end
 
-if ~isempty(optNew.T2) && ~isempty(optOld.T2) && ~strcmp(optNew.T2,optOld.T2)
-    isNewOpt = 1;
-    return
+if ~(isempty(optNew.T2) && isempty(optOld.T2))
+    if ~strcmp(optNew.T2,optOld.T2)
+        isNewOpt = 1;
+        return
+    end
 end
 
 if optNew.meshOpt.radbound~=optOld.meshOpt.radbound

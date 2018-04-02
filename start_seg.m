@@ -54,9 +54,9 @@ for i=1:size(P,1)
     ref = deblank(P(i,:));
 %     [pth,nam,ext] = spm_fileparts(ref);
     t1Data = load_untouch_nii(ref);
-    sliceshow(t1Data.img,[],'gray',[],[],'MRI: T1. Click anywhere to navigate.'); drawnow
+    sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
     if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
-%      error('    ask users to adjust')
+     error('ask users to adjust')
     end
     matlabbatch{1}.spm.tools.preproc8.channel.vols = {ref};  % image to be segmented
     matlabbatch{1}.spm.tools.preproc8.channel.biasreg = 0.0001; % P(beta)
@@ -69,7 +69,7 @@ for i=1:size(P,1)
         t2Data = load_untouch_nii(ref2);
         sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
         if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
-%      error('    ask users to adjust')
+         error('ask users to adjust')
         end
         if any(size(t1Data.img)~=size(t2Data.img))
             error('T2 image is not registered to T1 image space.');
@@ -114,4 +114,26 @@ for i=1:size(P,1)
     
     spm_jobman('run',matlabbatch);
     
+    [dirname,baseFilename] = fileparts(ref);
+    if isempty(dirname), dirname = pwd; end
+    
+    if isempty(T2)
+        for t=1:6
+            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
+                [dirname filesep 'c' num2str(t) baseFilename '_T1orT2.nii']);
+        end
+        movefile([dirname filesep baseFilename '_rmask.mat'],...
+            [dirname filesep baseFilename '_T1orT2_rmask.mat']);
+        movefile([dirname filesep baseFilename '_seg8.mat'],...
+            [dirname filesep baseFilename '_T1orT2_seg8.mat']);
+    else
+        for t=1:6
+            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
+                [dirname filesep 'c' num2str(t) baseFilename '_T1andT2.nii']);
+        end
+        movefile([dirname filesep baseFilename '_rmask.mat'],...
+            [dirname filesep baseFilename '_T1andT2_rmask.mat']);
+        movefile([dirname filesep baseFilename '_seg8.mat'],...
+            [dirname filesep baseFilename '_T1andT2_seg8.mat']);
+    end
 end % for each image

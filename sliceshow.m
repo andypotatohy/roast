@@ -34,7 +34,9 @@ else
 end
 
 if nargin<4 || isempty(clim)
-    if double(min(img(:)))==double(max(img(:)))
+    if all(isnan(img(:)))
+        error('The image volume you provided does not have any meaningful values.');
+    elseif double(min(img(:)))==double(max(img(:)))
         mydata.clim = 'auto';
     else
         mydata.clim = double([min(img(:)) max(img(:))]);

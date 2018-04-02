@@ -1,5 +1,5 @@
-function mysegment(P,isSmooth,conn)
-% mysegment(P,isSmooth,conn)
+function mysegment(P,T2,isSmooth,conn)
+% mysegment(P,T2,isSmooth,conn)
 %
 % This function performs automated clean up on the output of SPM8 New Segmentation.
 % It does the following:
@@ -38,11 +38,11 @@ function mysegment(P,isSmooth,conn)
 % The Neural Engineering Lab, Dept. of Biomedical Engineering, City College of New York
 % Send bugs to yhuang16@citymail.cuny.edu
 
-if nargin < 2 || isempty(isSmooth)
+if nargin < 3 || isempty(isSmooth)
     isSmooth = 1; % smooth the tissue by default
 end
 
-if nargin < 3
+if nargin < 4
     conn = 18;
 end
 
@@ -50,6 +50,8 @@ disp('loading data...')
 % cd(dirname)
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
+if ~isempty(T2), baseFilename = [baseFilename '_withT2']; end
+
 gray = load_untouch_nii([dirname filesep 'c1' baseFilename '.nii']);
 white = load_untouch_nii([dirname filesep 'c2' baseFilename '.nii']);
 csf = load_untouch_nii([dirname filesep 'c3' baseFilename '.nii']);

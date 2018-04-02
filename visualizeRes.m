@@ -1,5 +1,5 @@
-function visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
-% visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
+function visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll,T2)
+% visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll,T2)
 %
 % Display the simulation results (in voxel space)
 %
@@ -8,6 +8,11 @@ function visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
+if ~isempty(T2)
+    baseFilename2 = [baseFilename '_withT2'];
+else
+    baseFilename2 = baseFilename;
+end
 
 if showAll
     
@@ -23,7 +28,7 @@ if showAll
         if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
             data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
         else
-            data = load_untouch_nii([dirname filesep baseFilename '_mask_' maskName{i} '.nii']);
+            data = load_untouch_nii([dirname filesep baseFilename2 '_mask_' maskName{i} '.nii']);
         end
         img = data.img;
         
@@ -108,8 +113,8 @@ drawnow
 
 disp('generating slice views...');
 
-data = load_untouch_nii([dirname filesep baseFilename '_mask_gray.nii']); gray = data.img;
-data = load_untouch_nii([dirname filesep baseFilename '_mask_white.nii']); white = data.img;
+data = load_untouch_nii([dirname filesep baseFilename2 '_mask_gray.nii']); gray = data.img;
+data = load_untouch_nii([dirname filesep baseFilename2 '_mask_white.nii']); white = data.img;
 brain = gray | white;
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
