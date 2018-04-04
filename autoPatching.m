@@ -9,7 +9,12 @@ function autoPatching(P,T2)
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
-if ~isempty(T2), baseFilename = [baseFilename '_withT2']; end
+
+if isempty(T2)
+    baseFilename = [baseFilename '_T1orT2'];
+else
+    baseFilename = [baseFilename '_T1andT2'];
+end
 
 load([dirname filesep baseFilename '_rmask.mat'],'holes_vol','eyes_vol','WMexclude_vol');
 maskName = {'gray','white','csf','bone','skin','air'};

@@ -50,7 +50,12 @@ disp('loading data...')
 % cd(dirname)
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
-if ~isempty(T2), baseFilename = [baseFilename '_withT2']; end
+
+if isempty(T2)
+    baseFilename = [baseFilename '_T1orT2'];
+else
+    baseFilename = [baseFilename '_T1andT2'];
+end
 
 gray = load_untouch_nii([dirname filesep 'c1' baseFilename '.nii']);
 white = load_untouch_nii([dirname filesep 'c2' baseFilename '.nii']);

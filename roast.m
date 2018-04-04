@@ -439,7 +439,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
     disp('          STEP 3: ELECTRODE PLACEMENT...              ')
     disp('======================================================')
-    [rnge_elec,rnge_gel] = electrodePlacement(subj,elecPara,uniqueTag);
+    [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecPara,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
@@ -451,7 +451,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('            STEP 4: MESH GENERATION...                ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,meshOpt,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,T2,meshOpt,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -476,11 +476,11 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('     STEP 6: SAVING AND VISUALIZING THE RESULTS...    ')
     disp('======================================================')
     [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
-    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,0,T2);
+    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,1,T2);
+    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,1);
 end

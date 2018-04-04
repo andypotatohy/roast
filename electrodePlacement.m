@@ -1,4 +1,4 @@
-function [rnge_elec,rnge_gel] = electrodePlacement(P,elecPara,uniTag)
+function [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecPara,uniTag)
 % help text
 
 [dirname,baseFilename] = fileparts(P);
@@ -9,11 +9,15 @@ indN = elecPara(1).indN;
 indC = elecPara(1).indC;
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
-landmarks_original = getLandmarks(P);
+landmarks_original = getLandmarks(P,T2);
 
 [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-template = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']); % Load the scalp mask
+if isempty(T2)
+    template = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']); % Load the scalp mask
+else
+    template = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_skin.nii']); % Load the scalp mask
+end
 % template is used for saving the results with the same header info as the input
 scalp_original = template.img;
 
@@ -127,7 +131,12 @@ end
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
 volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlap with the electrode
-bone = load_untouch_nii([dirname filesep baseFilename '_mask_bone.nii']); volume_bone = bone.img;
+if isempty(T2)
+    bone = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_bone.nii']);
+else
+    bone = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_bone.nii']);
+end
+volume_bone = bone.img;
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 
 % disp('saving the results...')

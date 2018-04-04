@@ -1,5 +1,5 @@
-function visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll,T2)
-% visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll,T2)
+function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
+% visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
 %
 % Display the simulation results (in voxel space)
 %
@@ -8,18 +8,17 @@ function visualizeRes(P,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll,T
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
-if ~isempty(T2)
-    baseFilename2 = [baseFilename '_withT2'];
-else
-    baseFilename2 = baseFilename;
-end
 
 if showAll
     
     disp('showing MRI and segmentations...');
     
-    ref = deblank(P);
-    data = load_untouch_nii(ref); sliceshow(data.img,[],'gray',[],[],'MRI: T1. Click anywhere to navigate.'); drawnow
+    data = load_untouch_nii(P); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
+    
+    if ~isempty(T2) %T2 specified
+        data = load_untouch_nii(T2);
+        sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+    end
     
     maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
     
@@ -28,7 +27,11 @@ if showAll
         if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
             data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
         else
-            data = load_untouch_nii([dirname filesep baseFilename2 '_mask_' maskName{i} '.nii']);
+            if isempty(T2)
+                data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_' maskName{i} '.nii']);
+            else
+                data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_' maskName{i} '.nii']);
+            end
         end
         img = data.img;
         
@@ -113,8 +116,13 @@ drawnow
 
 disp('generating slice views...');
 
-data = load_untouch_nii([dirname filesep baseFilename2 '_mask_gray.nii']); gray = data.img;
-data = load_untouch_nii([dirname filesep baseFilename2 '_mask_white.nii']); white = data.img;
+if isempty(T2)
+    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_gray.nii']); gray = data.img;
+    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_white.nii']); white = data.img;
+else
+    data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_gray.nii']); gray = data.img;
+    data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_white.nii']); white = data.img;
+end
 brain = gray | white;
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
