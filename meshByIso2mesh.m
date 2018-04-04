@@ -42,7 +42,7 @@ allMask = uint8(allMask);
 % opt.reratio = 3; % default 3, maximum radius-edge ratio
 % maxvol = 10; %100; % target maximum tetrahedral elem volume
 
-[node,elem,face] = cgalv2m(allMask,opt,maxvol);
+[node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 
 % figure;

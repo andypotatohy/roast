@@ -1,4 +1,4 @@
-function [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange)
+function [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange,elec)
 
 vol_elec = zeros(coordRange);
 rnge = cell(length(elec_allCoord),1);
@@ -10,12 +10,12 @@ for i = 1:length(elec_allCoord)
             & temp(:,2)>0 & temp(:,2)<=coordRange(2)...
             & temp(:,3)>0 & temp(:,3)<=coordRange(3));
         if isempty(ind)
-            warning('electrode goes out of image boundary. you can do zero-padding to the MRI before running roast');
+            warning(['Electrode ' elec{i} ' goes out of image boundary. you can do zero-padding to the MRI before running roast.']);
             elec_allCoord{i} = [];
             rnge{i} = [];
         else
             if length(ind)<size(temp,1)
-                warning('part of electrode goes out of image boundary. you can do zero-padding to the MRI before running roast');
+                warning(['Part of the electrode ' elec{i} ' goes out of image boundary. you can do zero-padding to the MRI before running roast.']);
             end
             temp = temp(ind,:);
             elec_allCoord{i} = temp;

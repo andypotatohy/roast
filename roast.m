@@ -379,7 +379,7 @@ options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',mes
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-Sopt = dir([dirname filesep baseFilename '*options.mat']);
+Sopt = dir([dirname filesep baseFilename '_20*_options.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options);
 else
@@ -439,7 +439,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
     disp('          STEP 3: ELECTRODE PLACEMENT...              ')
     disp('======================================================')
-    [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecPara,uniqueTag);
+    [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecName,elecPara,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')

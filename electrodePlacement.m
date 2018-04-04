@@ -1,4 +1,4 @@
-function [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecPara,uniTag)
+function [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecNeeded,elecPara,uniTag)
 % help text
 
 [dirname,baseFilename] = fileparts(P);
@@ -114,7 +114,7 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
 %% placing and model the electrodes
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecPara);
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
@@ -125,8 +125,8 @@ for i = 1:length(elec_C)
     end
 end
 
-[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original));
-[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original));
+[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original),elecNeeded);
+[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original),elecNeeded);
 
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp

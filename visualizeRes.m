@@ -127,8 +127,9 @@ brain = gray | white;
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
+cm = colormap(jet(512)); cm = [1 1 1;cm];
 figName = ['Voltage in Simulation: ' uniTag];
-sliceshow(vol_all.*nan_mask_brain,[],[],[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
+sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' uniTag];
-sliceshow(ef_mag.*nan_mask_brain,[],[],[0 0.3*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+sliceshow(ef_mag.*nan_mask_brain,[],cm,[0 0.3*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow

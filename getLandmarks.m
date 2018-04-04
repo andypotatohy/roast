@@ -3,7 +3,7 @@ function landmarks = getLandmarks(P,T2)
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
 
-[dirname,baseFilename] = fileparts(P,T2);
+[dirname,baseFilename] = fileparts(P);
 if isempty(T2)
     baseFilename = [baseFilename '_T1orT2'];
 else

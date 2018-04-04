@@ -55,18 +55,14 @@ for i = 1:size(X,1)
 end
 % figure; plot3(X(find(label_gel==1),1),X(find(label_gel==1),2),X(find(label_gel==1),3),'r.')
 
-fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
-elec = C{4};
-for i=1:length(elec), elec{i} = strrep(elec{i},'.',''); end
-[~,indElecNeeded] = ismember(elecNeeded,elec);
-element_elecNeeded = cell(length(indElecNeeded),1);
-area_elecNeeded = zeros(length(indElecNeeded),1);
+element_elecNeeded = cell(length(elecNeeded),1);
+area_elecNeeded = zeros(length(elecNeeded),1);
 
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
-    [faces_elec,verts_elec] = freeBoundary(TriRep(element_electrode(label_elec==indElecNeeded(i),:),node(:,1:3)));
-    [faces_gel,verts_gel] = freeBoundary(TriRep(element_gel(label_gel==indElecNeeded(i),:),node(:,1:3)));
+    [faces_elec,verts_elec] = freeBoundary(TriRep(element_electrode(label_elec==i,:),node(:,1:3)));
+    [faces_gel,verts_gel] = freeBoundary(TriRep(element_gel(label_gel==i,:),node(:,1:3)));
     [~,iE,iG] = intersect(verts_elec,verts_gel,'rows');
     tempTag = ismember(faces_elec,iE);
     % faces_overlap = faces_elec(sum(tempTag,2)==3,:);

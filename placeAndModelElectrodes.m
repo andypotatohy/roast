@@ -1,4 +1,4 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPara)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara)
 
 disp('placing electrodes...')
 
@@ -63,6 +63,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     
     switch elecPara(i).elecType
         case {'pad','Pad','PAD'}
+            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
             pad_length = elecPara(i).elecSize(1);
             pad_width = elecPara(i).elecSize(2);
@@ -98,9 +99,9 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
-            fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));
             
         case {'disc','Disc','DISC'}
+            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
             disc_radius = elecPara(i).elecSize(1);
             disc_height = elecPara(i).elecSize(2);
@@ -128,9 +129,9 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
-            fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));
             
         case {'ring','Ring','RING'}
+            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
             ring_radiusIn = elecPara(i).elecSize(1);
             ring_radiusOut = elecPara(i).elecSize(2);
@@ -159,7 +160,6 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
-            fprintf('%d out of %d electrodes placed...\n',i,size(elecLoc,1));            
     end
 end
 xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
