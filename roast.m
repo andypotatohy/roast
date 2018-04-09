@@ -3,31 +3,62 @@ function roast(subj,recipe,varargin)
 %
 % Main function for ROAST.
 %
-% Example: roast
+% Example 1: roast
 %
 % Default call of ROAST, will demo a modeling process on the MNI152 head.
 % Specifically, this will use the MRI of the MNI152 head to build a model
 % of transcranial electric stimulation (TES) with anode on Fp1 (1 mA) and cathode
-% on P4 (-1 mA).
+% on P4 (-1 mA). Electrodes are modeled by default as small disc electrodes.
+% See options below for details.
 %
-% Example: roast('example/subject1.nii')
+% Example 2: roast('example/subject1.nii')
 %
 % Build a TES model on any subject you want, just provide the MRI in the
 % 1st argument. The default stimulation config is anode on Fp1 (1 mA) and
-% cathode on P4 (-1 mA).
+% cathode on P4 (-1 mA). Electrodes are modeled by default as small disc
+% electrodes. See options below for details.
 %
-% Example: roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
+% Example 3: roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
 %
 % Build the TES model on any subject with your own "recipe". Here we inject
 % 0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
 % and 0.4 mA flowing out of O2. You can define any stimulation montage you want
-% in the 2nd argument, with electrodeName-injectedCurrent pair. The electrodes
-% supported in this version come from the 10-10 EEG system, and you can find
-% their names in the file 1010electrodes.png under the root directory of ROAST.
+% in the 2nd argument, with electrodeName-injectedCurrent pair. Electrodes are
+% modeled by default as small disc electrodes. You can pick any electrode
+% from the 10/20, 10/10, 10/05 or BioSemi EEG system. See options below for details.
 % Note the unit of the injected current is milliampere, and make sure they sum
 % up to 0.
 %
-% OPTIONS HERE.
+% Options for ROAST can be entered as Name-Value Pairs from the 3rd argument
+% (available from ROAST v2.0). The syntax follows the Matlab convention (e.g. plot() function).
+% 
+% 'capType': the EEG system that you want to pick any electrode from.
+% '1020' | '1010' (default) | '1005' | 'BioSemi'
+% You can also use customized electrode locations you defined. Just provide
+% the text file that contains the electrode coordinates. See below Example
+% X for details.
+% 
+% 'elecType': the shape of electrode.
+% 'disc' (default) | 'pad' | 'ring'
+% 
+% 'elecSize': the size of electrode.
+% For disc electrodes, sizes follow the format of [radius height], and
+% default size is [6mm 2mm]; for pad electrodes, sizes follow the format of
+% [length width height], and default size is [50mm 30mm 3mm]; for ring
+% electrodes, sizes follow the format of [innerRadius outterRadius height],
+% and default size is [4mm 6mm 2mm]
+% 
+% 'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes)
+% 'lr' (default) | 'ap' | 'si' | direction vector of the long axis
+% Here 
+
+% 'T2'
+% 'meshOptions'
+% 'simulationTag'
+
+
+%  you can find
+% their names in the file 1010electrodes.png under the root directory of ROAST.
 %
 % The results are saved as "subjName-date-time_result.mat". And you can
 % look up the corresponding stimulation config you defined in the log file
@@ -385,7 +416,7 @@ if isempty(Sopt)
 else
     isNew = zeros(length(Sopt),1);
     for i=1:length(Sopt)
-        load([Sopt(i).folder filesep Sopt(i).name],'opt');
+        load([dirname filesep Sopt(i).name],'opt');
         isNew(i) = isNewOptions(options,opt);
     end
     if all(isNew)
