@@ -380,7 +380,7 @@ if ~exist('simTag','var'), simTag = []; end
 [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
 
 injectCurrent = (cell2mat(recipe(2:2:end)))';
-if sum(injectCurrent)~=0
+if abs(sum(injectCurrent))>eps
     error('Electric currents going in and out of the head not balanced. Please make sure they sum to 0.');
 end
 elecName = elecName(ind2usrInput);

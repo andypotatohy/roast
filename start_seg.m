@@ -53,11 +53,17 @@ for i=1:size(P,1)
     
     ref = deblank(P(i,:));
 %     [pth,nam,ext] = spm_fileparts(ref);
+    [dirname,baseFilename,ext] = fileparts(ref);
+    if isempty(dirname), dirname = pwd; end
+    
+    if strcmp(ext,'.hdr'), ref = [dirname filesep baseFilename '.img']; end
+    
     t1Data = load_untouch_nii(ref);
     sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
     if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
      error('ask users to adjust')
     end
+    
     matlabbatch{1}.spm.tools.preproc8.channel.vols = {ref};  % image to be segmented
     matlabbatch{1}.spm.tools.preproc8.channel.biasreg = 0.0001; % P(beta)
     matlabbatch{1}.spm.tools.preproc8.channel.biasfwhm = 60;
@@ -65,7 +71,12 @@ for i=1:size(P,1)
     if ~isempty(T2) %T2 specified
         ref2 = deblank(T2(i,:));
 %         [pth2,nam2,ext2] = spm_fileparts(ref2);
+        [dirname2,baseFilename2,ext2] = fileparts(ref2);
+        if isempty(dirname2), dirname2 = pwd; end
+
+        if strcmp(ext2,'.hdr'), ref2 = [dirname2 filesep baseFilename2 '.img']; end
 %         fprintf('Using %s to segment T1 and T2 images: %s %s\n', Template, ref, ref2);
+
         t2Data = load_untouch_nii(ref2);
         sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
         if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
@@ -113,9 +124,6 @@ for i=1:size(P,1)
     matlabbatch{1}.spm.tools.preproc8.warp.write = [0 0]; % save the deformation/warping fields: forward deform ([0 1]), inverse deform ([1 0]), or both ([1 1]). We do NOT save anything for this option ([0 0]) at this stage. % ANDY 2013-05-03
     
     spm_jobman('run',matlabbatch);
-    
-    [dirname,baseFilename] = fileparts(ref);
-    if isempty(dirname), dirname = pwd; end
     
     if isempty(T2)
         for t=1:6

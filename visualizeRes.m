@@ -70,6 +70,7 @@ C{2} = C{2} - min(C{2}); % re-reference the voltage
 color = nan(size(node,1),1);
 color(C{1}) = C{2};
 dataShow = [node(:,1:3) color];
+% need to make color of elec nodes to be the injected current intensity for each electrode (need to label elec node first)
 
 figName = ['Voltage in Simulation: ' uniTag];
 figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
