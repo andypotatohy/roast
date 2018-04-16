@@ -50,11 +50,23 @@ function roast(subj,recipe,varargin)
 % 
 % 'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes)
 % 'lr' (default) | 'ap' | 'si' | direction vector of the long axis
-% Here 
-
-% 'T2'
-% 'meshOptions'
-% 'simulationTag'
+% For pad electrodes, you can define their orientation by giving the
+% direction of the long axis. Three pre-defined orientations are: lr--long
+% axis going left and right; ap--long axis pointing front and back;
+% si--long axis going up and down. You can also specify the direction by
+% giving the direction vector of the long axis.
+%
+% 'T2': use a T2-weighted MRI to help segmentation
+% [] (default) | file path to the T2 MRI
+% If you have a T2 MRI aside of T1, you can put the T2 file in this option.
+% If you ONLY have a T2 MRI, put the T2 file in the first argument 'subj'
+% when you call roast, just like what you would do when you only have a T1.
+% 
+% 'meshOptions': advanced options of ROAST, for controlling mesh
+% parameters. x sub-options are available:
+%
+%
+% 'simulationTag': 
 
 
 %  you can find
@@ -371,6 +383,7 @@ end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 else
+    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure.'); end
     warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
 end
 
