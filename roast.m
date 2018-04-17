@@ -113,26 +113,26 @@ end
     
 indArg = 1;
 while indArg <= length(varargin)
-    switch varargin{indArg}
-        case {'capType','captype','CapType'}
+    switch lower(varargin{indArg})
+        case 'captype'
             capType = varargin{indArg+1};
             indArg = indArg+2;
-        case {'elecType','electype','ElecType'}
+        case 'electype'
             elecType = varargin{indArg+1};
             indArg = indArg+2;
-        case {'elecSize','elecsize','ElecSize'}
+        case 'elecsize'
             elecSize = varargin{indArg+1};
             indArg = indArg+2;
-        case {'elecOri','elecori','ElecOri'}
+        case 'elecori'
             elecOri = varargin{indArg+1};
             indArg = indArg+2;
-        case {'T2','t2'}
+        case 't2'
             T2 = varargin{indArg+1};
             indArg = indArg+2;
-        case {'meshOptions','meshoptions','MeshOptions'}
+        case 'meshoptions'
             meshOpt = varargin{indArg+1};
             indArg = indArg+2;
-        case {'simulationTag','simulationtag','SimulationTag'}
+        case 'simulationtag'
             simTag = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
@@ -144,7 +144,7 @@ end
 if ~exist('capType','var')
     capType = '1010';
 else
-    if ~any(strcmp(capType,{'1020','1010','1005','biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}))
+    if ~any(strcmp(lower(capType),{'1020','1010','1005','biosemi'}))
         error('Supported cap types are: ''1020'', ''1010'', ''1005'' and ''BioSemi''.');
     end
 end
@@ -383,8 +383,17 @@ end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 else
-    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure.'); end
+    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
+    meshOptNam = fieldnames(meshOpt);
+    if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
+        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+    end
     warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
+    if ~isfield(meshOpt,'radbound'), meshOpt.radbound = 5; end
+    if ~isfield(meshOpt,'angbound'), meshOpt.angbound = 30; end
+    if ~isfield(meshOpt,'distbound'), meshOpt.distbound = 0.4; end
+    if ~isfield(meshOpt,'reratio'), meshOpt.reratio = 3; end
+    if ~isfield(meshOpt,'maxvol'), meshOpt.maxvol = 10; end
 end
 
 if ~exist('simTag','var'), simTag = []; end
@@ -435,7 +444,7 @@ else
     if all(isNew)
         options = writeRoastLog(subj,options);
     else
-        load([Sopt(find(~isNew)).folder filesep Sopt(find(~isNew)).name],'opt');
+        load([dirname filesep Sopt(find(~isNew)).name],'opt');
         options.uniqueTag = opt.uniqueTag;
     end
 end
