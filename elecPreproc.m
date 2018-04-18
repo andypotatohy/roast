@@ -5,11 +5,11 @@ doNeck = 0;
 doCustom = 0;
 unknownElec = 0;
 
-switch para(1).capType
+switch lower(para(1).capType)
     case {'1020','1010','1005'}
         load('./cap1005FullWithExtra.mat','capInfo');
         elecPool_P = capInfo{1};
-    case {'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}
+    case 'biosemi'
         load('./capBioSemiFullWithExtra.mat','capInfo');
         elecPool_P = capInfo{1};
 end
@@ -21,7 +21,7 @@ for i=1:length(elec)
         doPredefined = 1;
     elseif ismember(elec{i},elecPool_N)
         doNeck = 1;
-    elseif ~isempty(strfind(elec{i},'custom')) || ~isempty(strfind(elec{i},'Custom'))
+    elseif ~isempty(strfind(lower(elec{i}),'custom'))
         doCustom = 1;
         if ~exist('elecPool_C','var')
             [dirname,baseFilename] = fileparts(subj);

@@ -40,7 +40,7 @@ scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
 if ~isempty(indP)
-   if any(strcmp(elecPara(1).capType,{'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'}))
+   if strcmpi(elecPara(1).capType,'biosemi')
        isBiosemi = 1;
        load('./capBioSemiFullWithExtra.mat','capInfo');
    else
@@ -114,7 +114,10 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
 %% placing and model the electrodes
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara);
+resolution = mean(template.hdr.dime.pixdim(2:4));
+% mean() here to handle anisotropic resolution; ugly. Maybe just
+% resample MRI to isotropic in the very beginning?
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
@@ -145,11 +148,12 @@ save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.n
 template.img = uint8(volume_gel)*255;
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 
-for i=1:length(rnge_elec)
-    if ~isempty(rnge_elec{i})
-        rnge_elec{i} = rnge_elec{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-        rnge_gel{i} = rnge_gel{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-    end
-end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
+% for i=1:length(rnge_elec)
+%     if ~isempty(rnge_elec{i})
+%         rnge_elec{i} = rnge_elec{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
+%         rnge_gel{i} = rnge_gel{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
+%     end
+% end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
+% % this may not be needed for iso2mesh mesher.
 
 save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');

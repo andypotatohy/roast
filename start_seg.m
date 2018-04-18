@@ -61,7 +61,7 @@ for i=1:size(P,1)
     t1Data = load_untouch_nii(ref);
     sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
     if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
-     error('ask users to adjust')
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
     end
     
     matlabbatch{1}.spm.tools.preproc8.channel.vols = {ref};  % image to be segmented
@@ -80,7 +80,7 @@ for i=1:size(P,1)
         t2Data = load_untouch_nii(ref2);
         sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
         if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
-         error('ask users to adjust')
+            error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
         end
         if any(size(t1Data.img)~=size(t2Data.img))
             error('T2 image is not registered to T1 image space.');

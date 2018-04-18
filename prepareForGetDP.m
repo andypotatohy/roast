@@ -1,5 +1,5 @@
-function prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
-% prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+function prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+% prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
 %
 % prepare to solve in getDP
 %
@@ -58,6 +58,15 @@ end
 element_elecNeeded = cell(length(elecNeeded),1);
 area_elecNeeded = zeros(length(elecNeeded),1);
 
+if isempty(T2)
+    template = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']); % Load the scalp mask
+else
+    template = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_skin.nii']); % Load the scalp mask
+end
+resolution = mean(template.hdr.dime.pixdim(2:4));
+% mean() here to handle anisotropic resolution; ugly. Maybe just
+% resample MRI to isotropic in the very beginning?
+
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
@@ -70,8 +79,8 @@ for i=1:length(element_elecNeeded)
     [~,Loc] = ismember(verts_elec,node(:,1:3),'rows');
     element_elecNeeded{i} = Loc(faces_elecOuter);
     % calculate the surface area
-    a = verts_elec(faces_elecOuter(:, 2), :) - verts_elec(faces_elecOuter(:, 1), :);
-    b = verts_elec(faces_elecOuter(:, 3), :) - verts_elec(faces_elecOuter(:, 1), :);
+    a = (verts_elec(faces_elecOuter(:, 2),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
+    b = (verts_elec(faces_elecOuter(:, 3),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
     c = cross(a, b, 2);
     area_elecNeeded(i) = sum(0.5*sqrt(sum(c.^2, 2)));
     

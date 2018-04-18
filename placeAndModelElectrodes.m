@@ -1,4 +1,4 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
 
 disp('placing electrodes...')
 
@@ -16,7 +16,7 @@ end
 
 padH = zeros(length(elecPara),1);
 for i=1:length(elecPara)
-    if any(strcmp(elecPara(i).elecType,{'pad','Pad','PAD'}))
+    if strcmpi(elecPara(i).elecType,'pad')
         padH(i) = elecPara(i).elecSize(3);
     end
 end
@@ -61,18 +61,18 @@ for i = 1:length(elecPara) % size(elecLoc,1)
         normal = -normal;
     end % make sure the normal is pointing out
     
-    switch elecPara(i).elecType
-        case {'pad','Pad','PAD'}
+    switch lower(elecPara(i).elecType)
+        case 'pad'
             fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
-            pad_length = elecPara(i).elecSize(1);
-            pad_width = elecPara(i).elecSize(2);
-            pad_height = elecPara(i).elecSize(3);
+            pad_length = elecPara(i).elecSize(1)/res;
+            pad_width = elecPara(i).elecSize(2)/res;
+            pad_height = elecPara(i).elecSize(3)/res;
             
             dimTry = 10*pad_height; % should at least be 4*pad_height, so that one direction can cover 2 pad_height
             
             if ischar(elecPara(i).elecOri)
-                switch elecPara(i).elecOri
+                switch lower(elecPara(i).elecOri)
                     case 'lr'
                         elecPara(i).elecOri = [1 0 0];
                     case 'ap'
@@ -100,11 +100,11 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
-        case {'disc','Disc','DISC'}
+        case 'disc'
             fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
-            disc_radius = elecPara(i).elecSize(1);
-            disc_height = elecPara(i).elecSize(2);
+            disc_radius = elecPara(i).elecSize(1)/res;
+            disc_height = elecPara(i).elecSize(2)/res;
             
             gel_out = elecLoc(i,:) +  2*disc_height*normal;
             electrode = gel_out + disc_height*normal;
@@ -130,12 +130,12 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
-        case {'ring','Ring','RING'}
+        case 'ring'
             fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             
-            ring_radiusIn = elecPara(i).elecSize(1);
-            ring_radiusOut = elecPara(i).elecSize(2);
-            ring_height = elecPara(i).elecSize(3);
+            ring_radiusIn = elecPara(i).elecSize(1)/res;
+            ring_radiusOut = elecPara(i).elecSize(2)/res;
+            ring_height = elecPara(i).elecSize(3)/res;
             
             gel_out = elecLoc(i,:) +  2*ring_height*normal;
             electrode = gel_out + ring_height*normal;

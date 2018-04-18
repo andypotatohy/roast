@@ -7,8 +7,8 @@ if ~strcmp(optNew.configTxt,optOld.configTxt)
     return
 end
 
-capNew = [any(strcmp(optNew.elecPara(1).capType,{'1020','1010','1005'})) any(strcmp(optNew.elecPara(1).capType,{'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'})) strcmp(optNew.elecPara(1).capType,'none')];
-capOld = [any(strcmp(optOld.elecPara(1).capType,{'1020','1010','1005'})) any(strcmp(optOld.elecPara(1).capType,{'biosemi','Biosemi','bioSemi','BioSemi','BIOSEMI'})) strcmp(optOld.elecPara(1).capType,'none')];
+capNew = [any(strcmp(optNew.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optNew.elecPara(1).capType,'biosemi') strcmp(optNew.elecPara(1).capType,'none')];
+capOld = [any(strcmp(optOld.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optOld.elecPara(1).capType,'biosemi') strcmp(optOld.elecPara(1).capType,'none')];
 if any(capNew~=capOld)
     isNewOpt = 1;
     return
@@ -36,12 +36,12 @@ end
 
 for i=1:length(optNew.elecPara)
     
-    elecNew = [any(strcmp(optNew.elecPara(i).elecType,{'disc','Disc','DISC'})) ...
-        any(strcmp(optNew.elecPara(i).elecType,{'pad','Pad','PAD'})) ...
-        any(strcmp(optNew.elecPara(i).elecType,{'ring','Ring','RING'}))];
-    elecOld = [any(strcmp(optOld.elecPara(i).elecType,{'disc','Disc','DISC'})) ...
-        any(strcmp(optOld.elecPara(i).elecType,{'pad','Pad','PAD'})) ...
-        any(strcmp(optOld.elecPara(i).elecType,{'ring','Ring','RING'}))];
+    elecNew = [strcmpi(optNew.elecPara(i).elecType,'disc') ...
+        strcmpi(optNew.elecPara(i).elecType,'pad') ...
+        strcmpi(optNew.elecPara(i).elecType,'ring')];
+    elecOld = [strcmpi(optOld.elecPara(i).elecType,'disc') ...
+        strcmpi(optOld.elecPara(i).elecType,'pad') ...
+        strcmpi(optOld.elecPara(i).elecType,'ring')];
     if any(elecNew~=elecOld), isNewOpt = 1; return; end
     
     if size(optNew.elecPara(i).elecSize,1)>1 && size(optOld.elecPara(i).elecSize,1)==1
@@ -60,7 +60,7 @@ for i=1:length(optNew.elecPara)
     
     if find(elecNew)==2
         if ischar(optNew.elecPara(i).elecOri) && ischar(optOld.elecPara(i).elecOri)
-            if ~strcmp(optNew.elecPara(i).elecOri,optOld.elecPara(i).elecOri)
+            if ~strcmpi(optNew.elecPara(i).elecOri,optOld.elecPara(i).elecOri)
                 isNewOpt = 1;
                 return
             end
@@ -78,7 +78,7 @@ for i=1:length(optNew.elecPara)
                    return
                 end
             end
-        else
+        else % needs improvement here
             isNewOpt = 1; return
         end
     end

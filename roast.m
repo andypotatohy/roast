@@ -51,10 +51,10 @@ function roast(subj,recipe,varargin)
 % 'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes)
 % 'lr' (default) | 'ap' | 'si' | direction vector of the long axis
 % For pad electrodes, you can define their orientation by giving the
-% direction of the long axis. Three pre-defined orientations are: lr--long
-% axis going left and right; ap--long axis pointing front and back;
-% si--long axis going up and down. You can also specify the direction by
-% giving the direction vector of the long axis.
+% direction of the long axis. You can simply use the three pre-defined orientations:
+% lr--long axis going left and right; ap--long axis pointing front and back;
+% si--long axis going up and down. For other orientations you can also more
+% accurately specify the direction by giving the direction vector of the long axis.
 %
 % 'T2': use a T2-weighted MRI to help segmentation
 % [] (default) | file path to the T2 MRI
@@ -66,15 +66,17 @@ function roast(subj,recipe,varargin)
 % parameters. x sub-options are available:
 %
 %
-% 'simulationTag': 
+% 'simulationTag': a unique tag that identifies each simulation
+% dateTime string (default) | user-provided string
+% 
 
 
-%  you can find
-% their names in the file 1010electrodes.png under the root directory of ROAST.
+% You can find electrode info in the excel file xxx under the root directory of ROAST.
 %
-% The results are saved as "subjName-date-time_result.mat". And you can
+% The results are saved as "subjName_simulationTag_result.mat". And you can
 % look up the corresponding stimulation config you defined in the log file
-% of this subject ("subjName_log"), by using the date-time string.
+% of this subject ("subjName_log"), by using the simulation tag (either you
+% provided or the dateTime string).
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
@@ -91,7 +93,11 @@ if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
 end
 
-if ~exist(subj,'file')
+if strcmpi(subj,'nyhead')
+    subj = 'example/nyhead.nii';
+end
+
+if isempty(strfind(subj,'nyhead')) && ~exist(subj,'file')
     error(['The subject MRI you provided ' subj ' does not exist.']);
 end
 
@@ -144,7 +150,7 @@ end
 if ~exist('capType','var')
     capType = '1010';
 else
-    if ~any(strcmp(lower(capType),{'1020','1010','1005','biosemi'}))
+    if ~any(strcmpi(capType,{'1020','1010','1005','biosemi'}))
         error('Supported cap types are: ''1020'', ''1010'', ''1005'' and ''BioSemi''.');
     end
 end
@@ -153,7 +159,7 @@ if ~exist('elecType','var')
     elecType = 'disc';
 else
     if ~iscellstr(elecType)
-        if ~any(strcmp(elecType,{'disc','pad','ring','Disc','Pad','Ring','DISC','PAD','RING'}))
+        if ~any(strcmpi(elecType,{'disc','pad','ring'}))
             error('Supported electrodes are: ''disc'', ''pad'' and ''ring''.');
         end
     else
@@ -161,7 +167,7 @@ else
             error('You want to place more than 1 type of electrodes, but did not tell ROAST which type for each electrode. Please provide the type for each electrode respectively, as the value for option ''elecType'', in a cell array of length equals to the number of electrodes to be placed.');
         end
         for i=1:length(elecType)
-           if ~any(strcmp(elecType{i},{'disc','pad','ring','Disc','Pad','Ring','DISC','PAD','RING'}))
+           if ~any(strcmpi(elecType{i},{'disc','pad','ring'}))
                error('Supported electrodes are: ''disc'', ''pad'' and ''ring''.');
            end
         end
@@ -170,23 +176,23 @@ end
 
 if ~exist('elecSize','var')
     if ~iscellstr(elecType)
-        switch elecType
-            case {'disc','Disc','DISC'}
+        switch lower(elecType)
+            case {'disc'}
                 elecSize = [6 2];
-            case {'pad','Pad','PAD'}
+            case {'pad'}
                 elecSize = [50 30 3];
-            case {'ring','Ring','RING'}
+            case {'ring'}
                 elecSize = [4 6 2];
         end
     else
         elecSize = cell(1,length(elecType));
         for i=1:length(elecSize)
-            switch elecType{i}
-                case {'disc','Disc','DISC'}
+            switch lower(elecType{i})
+                case {'disc'}
                     elecSize{i} = [6 2];
-                case {'pad','Pad','PAD'}
+                case {'pad'}
                     elecSize{i} = [50 30 3];
-                case {'ring','Ring','RING'}
+                case {'ring'}
                     elecSize{i} = [4 6 2];
             end
         end
@@ -206,14 +212,14 @@ else
         if size(elecSize,1)>1 && size(elecSize,1)~=length(elecName)
             error('You want different sizes for each electrode. Please tell ROAST the size for each electrode respectively, in a N-row matrix, where N is the number of electrodes to be placed.');
         end
-        if any(strcmp(elecType,{'disc','Disc','DISC'})) && size(elecSize,2)==3
+        if strcmpi(elecType,'disc') && size(elecSize,2)==3
             warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
             elecSize = elecSize(:,1:2);
         end
-        if any(strcmp(elecType,{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize,2)==2
+        if any(strcmpi(elecType,{'pad','ring'})) && size(elecSize,2)==2
             error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
         end
-        if any(strcmp(elecType,{'ring','Ring','RING'})) && any(elecSize(:,1) >= elecSize(:,2))
+        if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
     else
@@ -225,12 +231,12 @@ else
         end
         for i=1:length(elecSize)
             if isempty(elecSize{i})
-                switch elecType{i}
-                    case {'disc','Disc','DISC'}
+                switch lower(elecType{i})
+                    case {'disc'}
                         elecSize{i} = [6 2];
-                    case {'pad','Pad','PAD'}
+                    case {'pad'}
                         elecSize{i} = [50 30 3];
-                    case {'ring','Ring','RING'}
+                    case {'ring'}
                         elecSize{i} = [4 6 2];
                 end
             else
@@ -243,14 +249,14 @@ else
                 if size(elecSize{i},1)>1
                     error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
                 end
-                if any(strcmp(elecType{i},{'disc','Disc','DISC'})) && size(elecSize{i},2)==3
+                if strcmpi(elecType{i},'disc') && size(elecSize{i},2)==3
                     warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
                     elecSize{i} = elecSize{i}(:,1:2);
                 end
-                if any(strcmp(elecType{i},{'pad','Pad','PAD','ring','Ring','RING'})) && size(elecSize{i},2)==2
+                if any(strcmpi(elecType{i},{'pad','ring'})) && size(elecSize{i},2)==2
                     error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
                 end
-                if any(strcmp(elecType{i},{'ring','Ring','RING'})) && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
+                if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
                 end
             end
@@ -260,7 +266,7 @@ end
 
 if ~exist('elecOri','var')
     if ~iscellstr(elecType)
-        if any(strcmp(elecType,{'pad','Pad','PAD'}))
+        if strcmpi(elecType,'pad')
             elecOri = 'lr';
         else
             elecOri = [];
@@ -268,7 +274,7 @@ if ~exist('elecOri','var')
     else
         elecOri = cell(1,length(elecType));
         for i=1:length(elecOri)
-            if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+            if strcmpi(elecType{i},'pad')
                 elecOri{i} = 'lr';
             else
                 elecOri{i} = [];
@@ -281,9 +287,9 @@ else
             warning('Looks like you''re only placing pad electrodes. ROAST will only use the 1st entry of the cell array of ''elecOri''. If this is not what you want and you meant differect orientations for different pad electrodes, just enter ''elecOri'' option as an N-by-3 matrix, where N is number of pad electrodes to be placed.');
             elecOri = elecOri{1};
         end
-        if any(strcmp(elecType,{'pad','Pad','PAD'}))
+        if strcmpi(elecType,'pad')
             if ischar(elecOri)
-                if ~any(strcmp(elecOri,{'lr','ap','si'}))
+                if ~any(strcmpi(elecOri,{'lr','ap','si'}))
                     error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
                 end
             else
@@ -303,11 +309,11 @@ else
             elecOri0 = elecOri;
             elecOri = cell(1,length(elecType));
             if ischar(elecOri0)
-                if ~any(strcmp(elecOri0,{'lr','ap','si'}))
+                if ~any(strcmpi(elecOri0,{'lr','ap','si'}))
                     error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
                 end
                 for i=1:length(elecType)
-                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                    if strcmpi(elecType{i},'pad')
                         elecOri{i} = elecOri0;
                     else
                         elecOri{i} = [];
@@ -319,7 +325,7 @@ else
                 end
                 numPad = 0;
                 for i=1:length(elecType)
-                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                    if strcmpi(elecType{i},'pad')
                         numPad = numPad+1;
                     end
                 end
@@ -332,7 +338,7 @@ else
                 end
                 i0=1;
                 for i=1:length(elecType)
-                    if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                    if strcmpi(elecType{i},'pad')
                         elecOri{i} = elecOri0(i0,:);
                         i0 = i0+1;
                     else
@@ -345,12 +351,12 @@ else
                 error('You want to place another type of electrodes aside from pad. Please tell ROAST the orienation for each electrode respectively, as the value for option ''elecOri'', in a cell array of length equals to the number of electrodes to be placed (put [] for non-pad electrodes).');
             end
             for i=1:length(elecOri)
-                if any(strcmp(elecType{i},{'pad','Pad','PAD'}))
+                if strcmpi(elecType{i},'pad')
                     if isempty(elecOri{i})
                         elecOri{i} = 'lr';
                     else
                         if ischar(elecOri{i})
-                            if ~any(strcmp(elecOri{i},{'lr','ap','si'}))
+                            if ~any(strcmpi(elecOri{i},{'lr','ap','si'}))
                                 error('Unrecognized pad orientation. Please enter ''lr'', ''ap'', or ''si'' for pad orientation; or just enter the direction vector of the long axis of the pad');
                             end
                         else
@@ -463,29 +469,39 @@ fprintf('\n\n');
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
-if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
-        (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
-    disp('======================================================')
-    disp('            STEP 1: SEGMENT THE MRI...                ')
-    disp('======================================================')
-    start_seg(subj,T2);
+if ~strcmp(baseFilename,'nyhead')
+    
+    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
+        disp('======================================================')
+        disp('            STEP 1: SEGMENT THE MRI...                ')
+        disp('======================================================')
+        start_seg(subj,T2);
+    else
+        disp('======================================================')
+        disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
+        disp('======================================================')
+    end
+    
+    if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
+        disp('======================================================')
+        disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
+        disp('======================================================')
+        mysegment(subj,T2);
+        autoPatching(subj,T2);
+    else
+        disp('======================================================')
+        disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
+        disp('======================================================')
+    end
+    
 else
+    
     disp('======================================================')
-    disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
+    disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
-end
-
-if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
-        (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
-    disp('======================================================')
-    disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
-    disp('======================================================')
-    mysegment(subj,T2);
-    autoPatching(subj,T2);
-else
-    disp('======================================================')
-    disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
-    disp('======================================================')
+    
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
@@ -516,7 +532,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('           STEP 5: SOLVING THE MODEL...               ')
     disp('======================================================')
-    prepareForGetDP(subj,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
+    prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')
