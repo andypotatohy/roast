@@ -11,13 +11,16 @@ if isempty(dirname), dirname = pwd; end
 
 if showAll
     
-    disp('showing MRI and segmentations...');
-    
-    data = load_untouch_nii(P); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
-    
-    if ~isempty(T2) %T2 specified
-        data = load_untouch_nii(T2);
-        sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+    if ~strcmp(baseFilename,'nyhead')
+        disp('showing MRI and segmentations...');
+        data = load_untouch_nii(P); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
+        
+        if ~isempty(T2) %T2 specified
+            data = load_untouch_nii(T2);
+            sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+        end
+    else
+        disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
     end
     
     maskName = {'white','gray','csf','bone','skin','air','gel','elec'};

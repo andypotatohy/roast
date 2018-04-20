@@ -77,6 +77,8 @@ function roast(subj,recipe,varargin)
 % look up the corresponding stimulation config you defined in the log file
 % of this subject ("subjName_log"), by using the simulation tag (either you
 % provided or the dateTime string).
+% 
+% more examples with options
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
@@ -458,7 +460,11 @@ uniqueTag = options.uniqueTag;
 
 fprintf('\n\n');
 disp('======================================================')
-disp(['ROAST ' subj])
+if ~strcmp(baseFilename,'nyhead')
+    disp(['ROAST ' subj])
+else
+    disp('ROAST New York head')
+end
 disp('USING RECIPE:')
 disp(configTxt)
 disp('...and simulation options saved in:')
@@ -501,6 +507,7 @@ else
     disp('======================================================')
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
+    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have decent machine to run ROAST with New York head.')
     
 end
 

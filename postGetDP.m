@@ -10,8 +10,11 @@ function [vol_all,ef_mag] = postGetDP(P,node,uniTag)
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
 
-% data = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']);
-data = load_untouch_nii(P);
+if ~strcmp(baseFilename,'nyhead')
+    data = load_untouch_nii(P);
+else
+    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']);
+end
 [xi,yi,zi] = ndgrid(1:size(data.img,1), 1:size(data.img,2), 1:size(data.img,3));
 
 % node = node + 0.5; already done right after mesh
