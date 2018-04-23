@@ -89,6 +89,12 @@ lightangle(90,45)
 lightangle(-90,-45)
 hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
 title(hc1,'Voltage (mV)','FontSize',18);
+a1 = gca;
+a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+axis off;
+hc2 = colorbar(a2); set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+title(hc2,'Injected current (mA)','FontSize',18);
+axes(a1);
 drawnow
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
@@ -114,8 +120,14 @@ caxis([0 0.3*totInCurMag]);
 lightangle(-90,45)
 lightangle(90,45)
 lightangle(-90,-45)
-hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right');
-title(hc2,'Electric field (V/m)','FontSize',18);
+hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
+title(hc1,'Electric field (V/m)','FontSize',18);
+a1 = gca;
+a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+axis off;
+hc2 = colorbar(a2); set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+title(hc2,'Injected current (mA)','FontSize',18);
+axes(a1);
 drawnow
 
 disp('generating slice views...');

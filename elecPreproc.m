@@ -14,12 +14,12 @@ switch lower(para(1).capType)
         elecPool_P = capInfo{1};
 end
 
-elecPool_N = {'Nk1';'Nk2';'Nk3';'Nk4'};
+elecPool_N = {'nk1';'nk2';'nk3';'nk4'};
 
 for i=1:length(elec)
     if ismember(elec{i},elecPool_P)
         doPredefined = 1;
-    elseif ismember(elec{i},elecPool_N)
+    elseif ismember(lower(elec{i}),elecPool_N)
         doNeck = 1;
     elseif ~isempty(strfind(lower(elec{i}),'custom'))
         doCustom = 1;
@@ -45,7 +45,7 @@ for i=1:length(elec)
 end
 
 if unknownElec>0
-    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes); 4) you want to do neck electrodes, but wrote ''nk#'' or ''NK#'' instead of ''Nk#''.');
+    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes).');
 end
 
 if doPredefined
@@ -60,7 +60,7 @@ else
 end
 
 if doNeck
-    [isNeck,indNeck]=ismember(elec,elecPool_N);
+    [isNeck,indNeck]=ismember(lower(elec),elecPool_N);
     ind2UI_N = find(isNeck);
     indN = indNeck(isNeck);
     [indN,indtemp] = sort(indN);
