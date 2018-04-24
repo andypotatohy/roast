@@ -92,7 +92,7 @@ title(hc1,'Voltage (mV)','FontSize',18);
 a1 = gca;
 a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
 axis off;
-hc2 = colorbar(a2); set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right'); %position
 title(hc2,'Injected current (mA)','FontSize',18);
 axes(a1);
 drawnow
@@ -125,7 +125,7 @@ title(hc1,'Electric field (V/m)','FontSize',18);
 a1 = gca;
 a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
 axis off;
-hc2 = colorbar(a2); set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right'); %position
 title(hc2,'Injected current (mA)','FontSize',18);
 axes(a1);
 drawnow
