@@ -90,6 +90,8 @@ disp('CHECKING INPUTS...')
 disp('======================================================')
 fprintf('\n');
 
+warning('on');
+
 % check subject name
 if nargin<1 || isempty(subj)
     subj = 'example/MNI152_T1_1mm.nii';
@@ -539,12 +541,13 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('           STEP 5: SOLVING THE MODEL...               ')
     disp('======================================================')
-    prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
+    label_elec = prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')
     disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
     disp('======================================================')
+    load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
@@ -552,11 +555,11 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('     STEP 6: SAVING AND VISUALIZING THE RESULTS...    ')
     disp('======================================================')
     [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,0);
+    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,uniqueTag,1);
+    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,1);
 end

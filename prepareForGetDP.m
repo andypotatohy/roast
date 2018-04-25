@@ -1,5 +1,5 @@
-function prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
-% prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+function [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+% [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
 %
 % prepare to solve in getDP
 %
@@ -11,9 +11,9 @@ if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
 
-element_electrode = elem(find(elem(:,5) == 8),1:4);
-X = zeros(size(element_electrode,1),3);
-for e = 1:size(element_electrode,1), X(e,:) = mean ( node(element_electrode(e,:),1:3) ); end
+indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
+X = zeros(size(indNode_elecElm,1),3);
+for e = 1:size(indNode_elecElm,1), X(e,:) = mean ( node(indNode_elecElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
 label_elec = zeros(size(X,1),1);
@@ -33,9 +33,9 @@ for i = 1:size(X,1)
 end
 % figure; plot3(X(find(label_elec==1),1),X(find(label_elec==1),2),X(find(label_elec==1),3),'r.')
 
-element_gel = elem(find(elem(:,5) == 7),1:4);
-X = zeros(size(element_gel,1),3);
-for e = 1:size(element_gel,1), X(e,:) = mean ( node(element_gel(e,:),1:3) ); end
+indNode_gelElm = elem(find(elem(:,5) == 7),1:4);
+X = zeros(size(indNode_gelElm,1),3);
+for e = 1:size(indNode_gelElm,1), X(e,:) = mean ( node(indNode_gelElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
 label_gel = zeros(size(X,1),1);
@@ -54,6 +54,7 @@ for i = 1:size(X,1)
     %     end
 end
 % figure; plot3(X(find(label_gel==1),1),X(find(label_gel==1),2),X(find(label_gel==1),3),'r.')
+save([dirname filesep baseFilename '_' uniTag '_elecMeshLabels.mat'],'label_elec','label_gel');
 
 element_elecNeeded = cell(length(elecNeeded),1);
 area_elecNeeded = zeros(length(elecNeeded),1);
@@ -70,8 +71,8 @@ resolution = mean(template.hdr.dime.pixdim(2:4));
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
-    [faces_elec,verts_elec] = freeBoundary(TriRep(element_electrode(label_elec==i,:),node(:,1:3)));
-    [faces_gel,verts_gel] = freeBoundary(TriRep(element_gel(label_gel==i,:),node(:,1:3)));
+    [faces_elec,verts_elec] = freeBoundary(TriRep(indNode_elecElm(label_elec==i,:),node(:,1:3)));
+    [faces_gel,verts_gel] = freeBoundary(TriRep(indNode_gelElm(label_gel==i,:),node(:,1:3)));
     [~,iE,iG] = intersect(verts_elec,verts_gel,'rows');
     tempTag = ismember(faces_elec,iE);
     % faces_overlap = faces_elec(sum(tempTag,2)==3,:);

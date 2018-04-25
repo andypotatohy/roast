@@ -1,5 +1,5 @@
-function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
-% visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,uniTag,showAll)
+function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
+% visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
 %
 % Display the simulation results (in voxel space)
 %
@@ -53,14 +53,29 @@ end
 % scrsz = get(groot,'ScreenSize');
 
 disp('generating 3D renderings...')
-indFace = face(find(face(:,4) == 2),1:3);
-indElem = elem(find(elem(:,5) == 2),1:4);
+if ~strcmp(baseFilename,'nyhead')
+    data = load_untouch_nii(P);
+else
+    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']);
+end
+M1 = [data.hdr.hist.srow_x;data.hdr.hist.srow_y;data.hdr.hist.srow_z;0 0 0 1];
+voxCoord = [node(:,1:3) ones(size(node,1),1)];
+worldCoord = (M1*voxCoord')';
+% do the 3D rendering in world space, to avoid confusion in left-right;
+% sliceshow below is still in voxel space though
+node(:,1:3) = worldCoord(:,1:3);
 
-node(:,1:3) = sms(node(:,1:3),indFace);
+indNode_grayFace = face(find(face(:,4) == 2),1:3);
+indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
+indNode_elecFace = face(find(face(:,4) == 8),1:3);
+indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
+
+node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
 % smooth the surface that's to be displayed
 % just for display, the output data is not smoothed
 
 totInCurMag = sum(abs(inCurrent))/2;
+inCurrentRange = [min(inCurrent) max(inCurrent)];
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
 fgetl(fid);
@@ -73,17 +88,23 @@ C{2} = C{2} - min(C{2}); % re-reference the voltage
 color = nan(size(node,1),1);
 color(C{1}) = C{2};
 dataShow = [node(:,1:3) color];
-% need to make color of elec nodes to be the injected current intensity for each electrode (need to label elec node first)
 
 figName = ['Voltage in Simulation: ' uniTag];
 figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
 set(gcf,'color','w');
 colormap(jet);
-plotmesh(dataShow,indFace,indElem,'LineStyle','none');
-hold on; plotmesh(dataShow,face(find(face(:,4) == 8),1:3),elem(find(elem(:,5) == 8),1:4),'LineStyle','none');
+plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
+dataShowRange = [min(dataShow(unique(indNode_grayElm(:)),4)) max(dataShow(unique(indNode_grayElm(:)),4))];
+dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
+for i=1:length(inCurrent)
+    indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+    dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+end % to show injected current intensities properly
+hold on;
+plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
 axis off; rotate3d on;
 % set(hp1,'SpecularColorReflectance',0,'SpecularExponent',50);
-caxis([min(dataShow(unique(indElem(:)),4)) max(dataShow(unique(indElem(:)),4))]);
+caxis(dataShowRange);
 lightangle(-90,45)
 lightangle(90,45)
 lightangle(-90,-45)
@@ -92,8 +113,9 @@ title(hc1,'Voltage (mV)','FontSize',18);
 a1 = gca;
 a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
 axis off;
-hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
 title(hc2,'Injected current (mA)','FontSize',18);
+caxis(inCurrentRange);
 axes(a1);
 drawnow
 
@@ -112,11 +134,18 @@ figName = ['Electric field in Simulation: ' uniTag];
 figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
 set(gcf,'color','w');
 colormap(jet);
-plotmesh(dataShow,indFace,indElem,'LineStyle','none');
-hold on; plotmesh(dataShow,face(find(face(:,4) == 8),1:3),elem(find(elem(:,5) == 8),1:4),'LineStyle','none');
+plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
+dataShowRange = [0 0.3*totInCurMag];
+dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
+for i=1:length(inCurrent)
+    indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+    dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+end % to show injected current intensities properly
+hold on;
+plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
 axis off; rotate3d on;
 % set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
-caxis([0 0.3*totInCurMag]);
+caxis(dataShowRange);
 lightangle(-90,45)
 lightangle(90,45)
 lightangle(-90,-45)
@@ -125,8 +154,9 @@ title(hc1,'Electric field (V/m)','FontSize',18);
 a1 = gca;
 a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
 axis off;
-hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right'); %position
+hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
 title(hc2,'Injected current (mA)','FontSize',18);
+caxis(inCurrentRange);
 axes(a1);
 drawnow
 

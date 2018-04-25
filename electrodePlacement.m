@@ -128,8 +128,8 @@ for i = 1:length(elec_C)
     end
 end
 
-[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original),elecNeeded);
-[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original),elecNeeded);
+[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
+[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
 
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
