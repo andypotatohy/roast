@@ -1,7 +1,7 @@
 function roast(subj,recipe,varargin)
 % roast(subj,recipe,varargin)
 %
-% Main function for ROAST.
+% Main function of ROAST.
 %
 % Example 1: roast
 %
@@ -25,12 +25,15 @@ function roast(subj,recipe,varargin)
 % and 0.4 mA flowing out of O2. You can define any stimulation montage you want
 % in the 2nd argument, with electrodeName-injectedCurrent pair. Electrodes are
 % modeled by default as small disc electrodes. You can pick any electrode
-% from the 10/20, 10/10, 10/05 or BioSemi EEG system. See options below for details.
-% Note the unit of the injected current is milliampere, and make sure they sum
+% from the 10/20, 10/10, 10/05 or BioSemi-256 EEG system. You can find all
+% the info on electrodes (names, locations, coordinates) in the Microsoft
+% Excel file capInfo.xls under the root directory of ROAST. See options below for details.
+% Note the unit of the injected current is milliampere (mA). Make sure they sum
 % up to 0.
 %
-% Options for ROAST can be entered as Name-Value Pairs from the 3rd argument
-% (available from ROAST v2.0). The syntax follows the Matlab convention (e.g. plot() function).
+%
+% Options for ROAST can be entered as Name-Value Pairs in the 3rd argument 
+% (available from ROAST v2.0). The syntax follows the Matlab convention (see plot() for example).
 % 
 % 'capType': the EEG system that you want to pick any electrode from.
 % '1020' | '1010' (default) | '1005' | 'BioSemi'
@@ -46,43 +49,56 @@ function roast(subj,recipe,varargin)
 % default size is [6mm 2mm]; for pad electrodes, sizes follow the format of
 % [length width height], and default size is [50mm 30mm 3mm]; for ring
 % electrodes, sizes follow the format of [innerRadius outterRadius height],
-% and default size is [4mm 6mm 2mm]
+% and default size is [4mm 6mm 2mm].
 % 
-% 'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes)
+% 'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes).
 % 'lr' (default) | 'ap' | 'si' | direction vector of the long axis
 % For pad electrodes, you can define their orientation by giving the
 % direction of the long axis. You can simply use the three pre-defined orientations:
-% lr--long axis going left and right; ap--long axis pointing front and back;
-% si--long axis going up and down. For other orientations you can also more
-% accurately specify the direction by giving the direction vector of the long axis.
+% lr--long axis going left (l) and right (r); ap--long axis pointing front (anterior) and back (posterior);
+% si--long axis going up (superior) and down (inferior). For other orientations you can also specify
+% the direction precisely by giving the direction vector of the long axis.
 %
-% 'T2': use a T2-weighted MRI to help segmentation
+% 'T2': use a T2-weighted MRI to help segmentation.
 % [] (default) | file path to the T2 MRI
 % If you have a T2 MRI aside of T1, you can put the T2 file in this option.
 % If you ONLY have a T2 MRI, put the T2 file in the first argument 'subj'
 % when you call roast, just like what you would do when you only have a T1.
 % 
-% 'meshOptions': advanced options of ROAST, for controlling mesh
-% parameters. x sub-options are available:
+% 'meshOptions': advanced options of ROAST, for controlling mesh parameters.
+% 5 sub-options are available:
+% meshOpt.radbound: maximum surface element size, default 5;
+% meshOpt.angbound: miminum angle of a surface triangle, default 30;
+% meshOpt.distbound: maximum distance between the center of the surface bounding circle
+% and center of the element bounding sphere, default 0.4;
+% meshOpt.reratio: maximum radius-edge ratio, default 3;
+% meshOpt.maxvol: target maximum tetrahedral elem volume, default 10.
+% See iso2mesh documentation for more details on these options.
 %
-%
-% 'simulationTag': a unique tag that identifies each simulation
+% 'simulationTag': a unique tag that identifies each simulation.
 % dateTime string (default) | user-provided string
-% 
-
-
-% You can find electrode info in the excel file xxx under the root directory of ROAST.
+% This tag is used by ROAST for managing simulation data. ROAST can
+% identify if a certain simulation has been already run. If yes, it will
+% just load the results to save time. You can leave this option empty so 
+% that ROAST will just use the date and time as the unique tag for the
+% simulation. Or you can provide your preferred tag for a specific
+% simulation, then you can find it more easily later. Also all the
+% simulation history with options info for each simulation are saved in the
+% log file (named as "subjName_log"), parsed by the simulation tags.
 %
-% The results are saved as "subjName_simulationTag_result.mat". And you can
-% look up the corresponding stimulation config you defined in the log file
-% of this subject ("subjName_log"), by using the simulation tag (either you
-% provided or the dateTime string).
-% 
-% more examples with options
+% More advanced examples with these options:
+% Example X: placing customized electrodes
 %
+% ROAST outputs 6 figures for quick visualization of the simulation
+% results. It also save the results as "subjName_simulationTag_result.mat".
+% 
+% For a formal description of ROAST, one is referred to (please use this as reference):
+% https://www.biorxiv.org/content/early/2017/11/10/217331
+% 
+% 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% March 2018
+% April 2018
 
 fprintf('\n\n');
 disp('======================================================')

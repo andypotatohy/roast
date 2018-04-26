@@ -53,5 +53,5 @@ disp('You can also find the results in the two text files: ');
 disp([dirname filesep baseFilename '_' uniTag '_v.pos']);
 disp(['and ' dirname filesep baseFilename '_' uniTag '_e.pos']);
 disp('Look up the detailed info for this simulation in the log file');
-disp('by using the date-time string in the file name.');
+disp('by using the unique simulation tag.');
 disp('======================================================');
