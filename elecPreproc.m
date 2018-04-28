@@ -1,4 +1,11 @@
 function [para,ind2UI] = elecPreproc(subj,elec,para)
+% [para,ind2UI] = elecPreproc(subj,elec,para)
+% 
+% Pre-process electrode names.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 doPredefined = 0;
 doNeck = 0;

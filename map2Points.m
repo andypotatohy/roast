@@ -5,7 +5,11 @@ function [dist,indexOnGoalPoints]= map2Points(inputPoints,goalPoints,criterion,n
 % distance.
 % 
 % Note this function will give "out of memory" error if the input and goal
-% point clounds are too big (>50K)
+% point clouds are too big (>50K).
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 inputPoints = single(inputPoints);
 goalPoints = single(goalPoints);

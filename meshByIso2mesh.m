@@ -1,10 +1,11 @@
 function [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
 % [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
 %
-% generate volumetric tetrahedral mesh using iso2mesh toolbox
+% Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);

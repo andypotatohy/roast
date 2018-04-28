@@ -1,4 +1,11 @@
 function isNewOpt = isNewOptions(optNew,optOld)
+% isNewOpt = isNewOptions(optNew,optOld)
+% 
+% Compare two options to see if they are different.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 isNewOpt = 0;
 

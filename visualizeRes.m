@@ -1,10 +1,12 @@
 function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
 % visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
 %
-% Display the simulation results (in voxel space)
+% Display the simulation results. The 3D rendering is displayed in the
+% world space, while the slice view is done in the voxel space.
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
-% October 2017
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
@@ -74,7 +76,8 @@ node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
 % smooth the surface that's to be displayed
 % just for display, the output data is not smoothed
 
-totInCurMag = sum(abs(inCurrent))/2;
+% totInCurMag = sum(abs(inCurrent))/2;
+totInCurMag = max(abs(inCurrent)); % maybe a user option?
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);

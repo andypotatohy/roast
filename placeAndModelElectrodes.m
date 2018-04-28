@@ -1,4 +1,11 @@
 function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
+% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
+% 
+% Place and generate the point cloud for each placed electrode and gel.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 disp('placing electrodes...')
 
@@ -37,7 +44,7 @@ end
 [Nx, Ny, Nz] = size(scalpFilled); % size of head in RAS orientation
 scalpFilled(:,:,1) = 0; scalpFilled(:,:,Nz) = 0; scalpFilled(:,1,:) = 0; scalpFilled(:,Ny,:) = 0; scalpFilled(1,:,:) = 0; scalpFilled(Nx,:,:) = 0;
 
-figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+% figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
 for i = 1:length(elecPara) % size(elecLoc,1)    
@@ -95,8 +102,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_coor = intersect(pad_coor,gel_layer{ind2allPH(i)},'rows');
             elec_coor = intersect(pad_coor,elec_layer{ind2allPH(i)},'rows');
-            plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-            plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
@@ -125,8 +132,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
             elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
             
-            plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-            plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
@@ -156,11 +163,11 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
             elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
             
-            plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-            plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
     end
 end
-xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
-hold off; % Place electrodes and visualize the results
+% xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
+% hold off; % Place electrodes and visualize the results

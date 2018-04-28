@@ -1,5 +1,11 @@
 function coord = drawLine(p0,direction,len,density,isPlot)
 % coord = drawLine(p0,direction,len,density,isPlot)
+% 
+% Generate a point cloud of a straight line.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 if nargin < 5
     isPlot = 0;

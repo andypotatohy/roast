@@ -5,6 +5,7 @@ function [vol_all,ef_mag] = postGetDP(P,node,uniTag)
 % in the MRI voxel space.
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);

@@ -1,7 +1,15 @@
 function landmarks = getLandmarks(P,T2)
+% landmarks = getLandmarks(P,T2)
+%
+% Mapping landmarks in the TPM (hard-coded) to the individual head, by
+% using the mapping computed during the segmentation process in SPM.
 % 
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(T2)

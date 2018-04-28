@@ -1,4 +1,12 @@
 function [scalpOut,scalpMid] = cleanScalp(scalpIn,scalpSurf)
+% [scalpOut,scalpMid] = cleanScalp(scalpIn,scalpSurf)
+% 
+% Morphological operations on the scalp mask to make it ready to place
+% electrodes.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 disp('cleaning the hair for gel injection...')
 scalpIn(min(scalpSurf(:,1)):max(scalpSurf(:,1)),min(scalpSurf(:,2)):max(scalpSurf(:,2)),min(scalpSurf(:,3))) = 255;

@@ -1,4 +1,11 @@
 function [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+% [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+% 
+% Convert point clouds of electrodes into 3D masks.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 vol_elec = zeros(coordRange);
 rnge = cell(length(elec_allCoord),1);

@@ -1,4 +1,11 @@
 function coord = drawCuboid(center,dim,longAxis,shortAxis,normalAxis,density)
+% coord = drawCuboid(center,dim,longAxis,shortAxis,normalAxis,density)
+% 
+% Generate a point cloud of a cuboid.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 % dim = dim/2; % [length width thickness]
 

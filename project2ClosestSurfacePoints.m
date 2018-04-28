@@ -1,4 +1,12 @@
 function [distMetric_sorted,indexOnSurf] = project2ClosestSurfacePoints(points,surf,surfCenter)
+% [distMetric_sorted,indexOnSurf] = project2ClosestSurfacePoints(points,surf,surfCenter)
+% 
+% Project a point cloud onto a surface, using the center of the surface
+% (approximated center if treating the surface as a sphere).
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 vecP = points - repmat(surfCenter,size(points,1),1);
 % vector connecting center to the point that is to be projected onto a surface

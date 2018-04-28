@@ -1,7 +1,14 @@
 function [permIn,permOut,flipTagInner,flipTagOutter] = how2getRAS(landmarks)
-
+% [permIn,permOut,flipTagInner,flipTagOutter] = how2getRAS(landmarks)
+%
+% Figure out the permutation and flipping from non-RAS head to RAS head.
+% 
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 nasion = landmarks(1,:);
 inion = landmarks(2,:);

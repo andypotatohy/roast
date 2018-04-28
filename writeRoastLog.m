@@ -1,4 +1,11 @@
 function opt = writeRoastLog(subject,opt)
+% opt = writeRoastLog(subject,opt)
+%
+% Write simulation log.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 [dirname,baseFilename] = fileparts(subject);
 if isempty(dirname), dirname = pwd; end

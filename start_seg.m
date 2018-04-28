@@ -18,6 +18,7 @@ function start_seg(P,T2,Template,norm)
 %
 % Adapted from Chris Rorden, 2011.11
 % Yu (Andy) Huang, 2013.05
+% yhuang16@citymail.cuny.edu
 
 if nargin <1 || isempty(P) %no files
     P = spm_select(inf,'image','Select images for new segment');

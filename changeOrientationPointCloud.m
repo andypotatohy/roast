@@ -1,4 +1,12 @@
 function data = changeOrientationPointCloud(data,perm,flipTag,coordRange)
+% data = changeOrientationPointCloud(data,perm,flipTag,coordRange)
+% 
+% Permute and flip a 3D point cloud, using permutation info in "perm" and
+% flipping info in "flipTag".
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 if ~(ndims(data)==2 && ~isempty(find(size(data)==3)))
     error('Unsupported data format. Please supply only 3D point cloud.');

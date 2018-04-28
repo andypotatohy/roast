@@ -4,6 +4,7 @@ function autoPatching(P,T2)
 % Auto-patching to fill in holes that cannot be fully handled by mysegment()
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % (c) Chris Thomas, Soterix Medical Inc.
 % June 2017
 

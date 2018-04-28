@@ -1,7 +1,15 @@
 function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,indNeed,isBiosemi)
+% [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,indNeed,isBiosemi)
 %
+% Place the electrodes with pre-defined coordinates in the standard EEG
+% system (e.g., 10/05 or BioSemi).
+% 
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 nasion = landmarks(1,:);
 inion = landmarks(2,:);

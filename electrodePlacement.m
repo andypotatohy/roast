@@ -1,5 +1,12 @@
 function [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecNeeded,elecPara,uniTag)
-% help text
+% [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecNeeded,elecPara,uniTag)
+%
+% Place electrodes on the scalp surface. elecPara contains all the options
+% info for each electrode.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end

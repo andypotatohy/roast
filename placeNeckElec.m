@@ -1,7 +1,14 @@
 function [neck_coord,neck_center]= placeNeckElec(scalp,scalp_surface,landmarks,indNeed)
+% [neck_coord,neck_center]= placeNeckElec(scalp,scalp_surface,landmarks,indNeed)
 %
+% Place electrodes on the neck.
+% 
 % Landmarks follow the order of: nasion, inion, right, left, front neck,
 % and back neck.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 % nasion = landmarks(1,:);
 % inion = landmarks(2,:);
