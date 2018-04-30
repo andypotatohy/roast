@@ -20,7 +20,6 @@ rHoles = spm_load_mask(fullfile(fileparts(which(mfilename)),'eTPM_Skull Holes.ni
 rEyes = spm_load_mask(fullfile(fileparts(which(mfilename)),'eTPM_ExtraCerebral_CSF.nii'));
 rWMexclude = spm_load_mask(fullfile(fileparts(which(mfilename)),'eTPM_Marked_WM_Surface.nii'));
 % andy 2017-05-04 confirmed on 2017-06-01
-       % worked well for NC015 on 2017-05-04
 d1        = size(tpm.dat{1});
 d1        = d1(1:3);
 M1        = tpm.M;
