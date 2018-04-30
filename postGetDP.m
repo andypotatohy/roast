@@ -53,6 +53,7 @@ disp(['Results saved as ' dirname filesep baseFilename '_' uniTag '_result.mat']
 disp('You can also find the results in the two text files: ');
 disp([dirname filesep baseFilename '_' uniTag '_v.pos']);
 disp(['and ' dirname filesep baseFilename '_' uniTag '_e.pos']);
-disp('Look up the detailed info for this simulation in the log file');
-disp('by using the unique simulation tag.');
+disp('Look up the detailed info for this simulation in the log file: ');
+disp([dirname filesep baseFilename '_log']);
+disp(['by using the simulation tag "' uniTag '".']);
 disp('======================================================');

@@ -238,9 +238,9 @@ function roast(subj,recipe,varargin)
 % 
 % All the options above can be combined to meet your specific simulation
 % needs. For example:
-% roast('path/to/your/subject.nii',{'Fp1',0.3,'FC4',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
+% roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
 %         'electype',{'disc','ring','pad','ring','pad'},...
-%         'elecsize',{[],[7 9 3],[40 20 2],[],[]},...
+%         'elecsize',{[],[7 9 3],[40 20 4],[],[]},...
 %         'elecori','ap','T2','path/to/your/t2.nii',...
 %         'meshoptions',struct('radbound',4,'maxvol',8),...
 %         'simulationTag','awesomeSimulation')
@@ -274,7 +274,7 @@ disp('CHECKING INPUTS...')
 disp('======================================================')
 fprintf('\n');
 
-warning('on');
+% warning('on');
 
 % check subject name
 if nargin<1 || isempty(subj)
@@ -410,6 +410,9 @@ else
         if strcmpi(elecType,'pad') && any(elecSize(:,1) < elecSize(:,2))
             error('For Pad electrodes, the width of the pad should not be bigger than its length. Please enter as [length width height]');
         end
+        if strcmpi(elecType,'pad') && any(elecSize(:,3) < 3)
+            error('For Pad electrodes, the thickness should at least be 3 mm.');
+        end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
@@ -449,6 +452,9 @@ else
                 end
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,1) < elecSize{i}(:,2))
                     error('For Pad electrodes, the width of the pad should not be bigger than its length. Please enter as [length width height]');
+                end
+                if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,3) < 3)
+                    error('For Pad electrodes, the thickness should at least be 3 mm.');
                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -644,7 +650,7 @@ options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',mes
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-Sopt = dir([dirname filesep baseFilename '_20*_options.mat']);
+Sopt = dir([dirname filesep baseFilename '_*_options.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options);
 else
