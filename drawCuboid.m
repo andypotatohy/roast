@@ -11,8 +11,8 @@ function coord = drawCuboid(center,dim,longAxis,shortAxis,normalAxis,density)
 
 corner = center - longAxis*dim(1)/2 - shortAxis*dim(2)/2 - normalAxis*dim(3)/2;
 
-numSamp_shortAxis = dim(2)*density+1;
-numSamp_normalAxis = dim(3)*density+1;
+numSamp_shortAxis = round(dim(2)*density+1);
+numSamp_normalAxis = round(dim(3)*density+1);
 
 coord = cell(numSamp_shortAxis*numSamp_normalAxis,1);
 i=1;

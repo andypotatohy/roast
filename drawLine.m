@@ -13,7 +13,7 @@ end
 
 % direction = (p1 - p0)/norm(p1 - p0); % directional vector
 
-samp = len * density; % how many samples along the line
+samp = round(len * density); % how many samples along the line
 
 coord = zeros(samp+1,3);
 
