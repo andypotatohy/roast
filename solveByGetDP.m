@@ -5,6 +5,7 @@ function solveByGetDP(P,current,uniTag)
 % http://getdp.info/
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);

@@ -119,11 +119,6 @@ for iter=1:nit,
 %             res = load([pth filesep nam '_seg8.mat']);
 % res = load([pwd filesep nam '_seg8.mat']);
 %         end
-        %         res = load('C:\Users\Andy\Documents\MRF segmentation\data and testing\s0004DE\originNewSegIniToMyAlgoGlobalCfromBiksonManSeg\s0004DE_seg8.mat'); % 2012-11-29 by Andy
-        %         res = load('C:\Users\Andy\Documents\MRF segmentation\data and testing\Parra03302012\originNewSeg\parraT1_seg8.mat'); % 2013-04-02 ANDY
-        %         res = load('C:\Users\Andy\Documents\MRF segmentation\data and testing\Parra03302012\parraT1_seg8.mat'); % 2013-04-02 ANDY
-        %         res = load('C:\Users\Andy\Documents\MRF segmentation\brainWebNormalHead\originNewSeg\t1_icbm_normal_1mm_pn3_rf20_seg8.mat'); % 2013-04-29 ANDY
-        %           res = load('C:\Users\Andy\Documents\MRF segmentation\brainWeb20Normal\04\originNewSeg\subject04_t1w_p4_seg8.mat');
         
         if iter==nit,
             % Final iteration, so write out the required data.

@@ -34,10 +34,12 @@ else
 end
 
 if nargin<4 || isempty(clim)
-    if min(img(:))==max(img(:))
+    if all(isnan(img(:)))
+        error('The image volume you provided does not have any meaningful values.');
+    elseif double(min(img(:)))==double(max(img(:)))
         mydata.clim = 'auto';
     else
-        mydata.clim = [min(img(:)) max(img(:))];
+        mydata.clim = double([min(img(:)) max(img(:))]);
     end
 else
     mydata.clim = clim;
@@ -102,8 +104,8 @@ h(3)=subplot(2,2,3); imagesc(squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1
 val = mydata.img(mydata.pos(1),mydata.pos(2),mydata.pos(3));
 for i=1:3
     subplot(2,2,i);
-    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'*','color',[1 1 1]); hold off;
-    axis xy; axis equal; axis tight; caxis(mydata.clim);
+    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[0 0 0],'linewidth',3); hold off;
+    axis xy; axis equal; axis tight; axis off; caxis(mydata.clim);
     title([num2str(mydata.pos(d(i,:))) ': ' num2str(val,'%.2f')])
 end
 

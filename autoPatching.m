@@ -1,13 +1,21 @@
-function autoPatching(P)
-% autoPatching(P)
+function autoPatching(P,T2)
+% autoPatching(P,T2)
 %
 % Auto-patching to fill in holes that cannot be fully handled by mysegment()
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % (c) Chris Thomas, Soterix Medical Inc.
 % June 2017
 
 [dirname,baseFilename] = fileparts(P);
+if isempty(dirname), dirname = pwd; end
+
+if isempty(T2)
+    baseFilename = [baseFilename '_T1orT2'];
+else
+    baseFilename = [baseFilename '_T1andT2'];
+end
 
 load([dirname filesep baseFilename '_rmask.mat'],'holes_vol','eyes_vol','WMexclude_vol');
 maskName = {'gray','white','csf','bone','skin','air'};

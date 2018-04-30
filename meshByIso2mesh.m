@@ -1,10 +1,11 @@
-function [node,elem,face] = meshByIso2mesh(P,uniTag)
-% [node,elem,face] = meshByIso2mesh(P,uniTag)
+function [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
+% [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
 %
-% generate volumetric tetrahedral mesh using iso2mesh toolbox
+% Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);
@@ -14,10 +15,14 @@ maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
 
 for i=1:length(maskName)
     
-    if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec') 
+    if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
         data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
     else
-        data = load_untouch_nii([dirname filesep baseFilename '_mask_' maskName{i} '.nii']);
+        if isempty(T2)
+            data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_' maskName{i} '.nii']);
+        else
+            data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_' maskName{i} '.nii']);
+        end
     end
     img = data.img;
     
@@ -31,14 +36,14 @@ drawnow
 
 allMask = uint8(allMask);
 
-opt.radbound = 5; % default 6, maximum surface element size
-opt.angbound = 30; % default 30, miminum angle of a surface triangle
-opt.distbound = 0.4; % default 0.5, maximum distance
-% between the center of the surface bounding circle and center of the element bounding sphere
-opt.reratio = 3; % default 3, maximum radius-edge ratio
-maxvol = 10; %100; % target maximum tetrahedral elem volume
+% opt.radbound = 5; % default 6, maximum surface element size
+% opt.angbound = 30; % default 30, miminum angle of a surface triangle
+% opt.distbound = 0.4; % default 0.5, maximum distance
+% % between the center of the surface bounding circle and center of the element bounding sphere
+% opt.reratio = 3; % default 3, maximum radius-edge ratio
+% maxvol = 10; %100; % target maximum tetrahedral elem volume
 
-[node,elem,face] = cgalv2m(allMask,opt,maxvol);
+[node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 
 % figure;

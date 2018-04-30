@@ -5,12 +5,17 @@ function [vol_all,ef_mag] = postGetDP(P,node,uniTag)
 % in the MRI voxel space.
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
 
-data = load_untouch_nii([dirname filesep baseFilename '_mask_skin.nii']);
+if ~strcmp(baseFilename,'nyhead')
+    data = load_untouch_nii(P);
+else
+    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']);
+end
 [xi,yi,zi] = ndgrid(1:size(data.img,1), 1:size(data.img,2), 1:size(data.img,3));
 
 % node = node + 0.5; already done right after mesh
@@ -49,5 +54,5 @@ disp('You can also find the results in the two text files: ');
 disp([dirname filesep baseFilename '_' uniTag '_v.pos']);
 disp(['and ' dirname filesep baseFilename '_' uniTag '_e.pos']);
 disp('Look up the detailed info for this simulation in the log file');
-disp('by using the date-time string in the file name.');
+disp('by using the unique simulation tag.');
 disp('======================================================');

@@ -1,9 +1,10 @@
-function prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
-% prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+function [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+% [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
 %
-% prepare to solve in getDP
+% Prepare to solve in getDP
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
 % October 2017
 
 [dirname,baseFilename] = fileparts(P);
@@ -11,9 +12,9 @@ if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
 
-element_electrode = elem(find(elem(:,5) == 8),1:4);
-X = zeros(size(element_electrode,1),3);
-for e = 1:size(element_electrode,1), X(e,:) = mean ( node(element_electrode(e,:),1:3) ); end
+indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
+X = zeros(size(indNode_elecElm,1),3);
+for e = 1:size(indNode_elecElm,1), X(e,:) = mean ( node(indNode_elecElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
 label_elec = zeros(size(X,1),1);
@@ -33,9 +34,9 @@ for i = 1:size(X,1)
 end
 % figure; plot3(X(find(label_elec==1),1),X(find(label_elec==1),2),X(find(label_elec==1),3),'r.')
 
-element_gel = elem(find(elem(:,5) == 7),1:4);
-X = zeros(size(element_gel,1),3);
-for e = 1:size(element_gel,1), X(e,:) = mean ( node(element_gel(e,:),1:3) ); end
+indNode_gelElm = elem(find(elem(:,5) == 7),1:4);
+X = zeros(size(indNode_gelElm,1),3);
+for e = 1:size(indNode_gelElm,1), X(e,:) = mean ( node(indNode_gelElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
 label_gel = zeros(size(X,1),1);
@@ -54,19 +55,25 @@ for i = 1:size(X,1)
     %     end
 end
 % figure; plot3(X(find(label_gel==1),1),X(find(label_gel==1),2),X(find(label_gel==1),3),'r.')
+save([dirname filesep baseFilename '_' uniTag '_elecMeshLabels.mat'],'label_elec','label_gel');
 
-fid = fopen('./BioSemi74.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
-elec = C{4};
-for i=1:length(elec), elec{i} = strrep(elec{i},'.',''); end
-[~,indElecNeeded] = ismember(elecNeeded,elec);
-element_elecNeeded = cell(length(indElecNeeded),1);
-area_elecNeeded = zeros(length(indElecNeeded),1);
+element_elecNeeded = cell(length(elecNeeded),1);
+area_elecNeeded = zeros(length(elecNeeded),1);
+
+if isempty(T2)
+    template = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']); % Load the scalp mask
+else
+    template = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_skin.nii']); % Load the scalp mask
+end
+resolution = mean(template.hdr.dime.pixdim(2:4));
+% mean() here to handle anisotropic resolution; ugly. Maybe just
+% resample MRI to isotropic in the very beginning?
 
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
-    [faces_elec,verts_elec] = freeBoundary(TriRep(element_electrode(label_elec==indElecNeeded(i),:),node(:,1:3)));
-    [faces_gel,verts_gel] = freeBoundary(TriRep(element_gel(label_gel==indElecNeeded(i),:),node(:,1:3)));
+    [faces_elec,verts_elec] = freeBoundary(TriRep(indNode_elecElm(label_elec==i,:),node(:,1:3)));
+    [faces_gel,verts_gel] = freeBoundary(TriRep(indNode_gelElm(label_gel==i,:),node(:,1:3)));
     [~,iE,iG] = intersect(verts_elec,verts_gel,'rows');
     tempTag = ismember(faces_elec,iE);
     % faces_overlap = faces_elec(sum(tempTag,2)==3,:);
@@ -74,8 +81,8 @@ for i=1:length(element_elecNeeded)
     [~,Loc] = ismember(verts_elec,node(:,1:3),'rows');
     element_elecNeeded{i} = Loc(faces_elecOuter);
     % calculate the surface area
-    a = verts_elec(faces_elecOuter(:, 2), :) - verts_elec(faces_elecOuter(:, 1), :);
-    b = verts_elec(faces_elecOuter(:, 3), :) - verts_elec(faces_elecOuter(:, 1), :);
+    a = (verts_elec(faces_elecOuter(:, 2),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
+    b = (verts_elec(faces_elecOuter(:, 3),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
     c = cross(a, b, 2);
     area_elecNeeded(i) = sum(0.5*sqrt(sum(c.^2, 2)));
     
