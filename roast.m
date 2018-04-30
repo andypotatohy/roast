@@ -17,7 +17,7 @@ function roast(subj,recipe,varargin)
 % EEG system (see the Microsoft Excel file capInfo.xls under the root directory
 % of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 % they sum up to 0. You can also place electrodes at customized locations
-% on the scalp. See example 5 for details.
+% on the scalp. See Example 5 for details.
 %
 % Example 1: roast
 %
@@ -94,10 +94,10 @@ function roast(subj,recipe,varargin)
 % orientation for each pad electrode separately, you need to specify
 % the orientation for each pad correspondingly using the pre-defined
 % keywords in a 1-by-N cell (Example 12) or the direction vectors of the
-% long axis in a N-row matrix (Example 13), where N is the number of pad 
+% long axis in a N-by-3 matrix (Example 13), where N is the number of pad 
 % electrodes to be placed; if you're placing more than one type of electrodes
 % and also want to customize the pad orientations, you need to put the
-% orientations into a N-row matrix (Example 14; or just one-row vector or a
+% orientations into a N-by-3 matrix (Example 14; or just a 1-by-3 vector or a
 % single pre-defined keyword if same orientation for all the pads) where N
 % is the number of pad electrodes, or into a 1-by-N cell (Example 15), where N
 % is the number of all electrodes to be placed (put [] for non-pad electrodes).

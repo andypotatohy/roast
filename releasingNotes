@@ -1,0 +1,15 @@
+ROAST V2.0:
+
+Major feature added: costumized electrode placement. Users can specify any electrode from EEG 10/20, 10/10, 10/05 and BioSemi-256 system, and even electrodes at customized locations. They can customize the shape, size and orientation (only for pad electrode) of each electrode individually.
+
+Can use T2 to help segmentation.
+
+Can control mesh options of iso2mesh.
+
+Can give each simulation a customized tag.
+
+The New York head added.
+
+Can handle non-1mm resolution MRI and non-RAS MRI.
+
+Improved the visualization function.
