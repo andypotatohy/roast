@@ -31,7 +31,7 @@ function roast(subj,recipe,varargin)
 % 
 % ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 % and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-% machine of 16GB memory and above is recommended for running New York
+% machine of 32GB memory and above is recommended for running New York
 % head. Again electrodes are modeled by default as small disc electrodes.
 % See options below for details.
 %
@@ -246,7 +246,7 @@ function roast(subj,recipe,varargin)
 %         'simulationTag','awesomeSimulation')
 % Now you should know what this will do.
 %
-% ROAST outputs 6 figures for quick visualization of the simulation
+% ROAST outputs 6 or 7 figures for quick visualization of the simulation
 % results. It also save the results as "subjName_simulationTag_result.mat".
 % 
 % For a formal description of ROAST, one is referred to (please use this as reference):
@@ -285,8 +285,16 @@ if strcmpi(subj,'nyhead')
     subj = 'example/nyhead.nii';
 end
 
-if isempty(strfind(subj,'nyhead')) && ~exist(subj,'file')
+if ~strcmpi(subj,'example/nyhead.nii') && ~exist(subj,'file')
     error(['The subject MRI you provided ' subj ' does not exist.']);
+end
+
+% check if high-resolution MRI (< 0.8 mm in any direction)
+if ~strcmpi(subj,'example/nyhead.nii')
+    t1Data = load_untouch_nii(subj);
+    if any(t1Data.hdr.dime.pixdim(2:4)<0.8)
+        warning(['The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling process more computationally expensive and thus slower. If you wish to run faster using just 1-mm model, you can re-sample the MRI into 1 mm. Just run resampToOneMM(''' subj ''') before calling roast().']);
+    end
 end
 
 % check recipe syntax
@@ -690,7 +698,7 @@ if ~strcmp(baseFilename,'nyhead')
     if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
             (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
         disp('======================================================')
-        disp('            STEP 1: SEGMENT THE MRI...                ')
+        disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
         disp('======================================================')
         start_seg(subj,T2);
     else
@@ -702,7 +710,7 @@ if ~strcmp(baseFilename,'nyhead')
     if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
             (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
         disp('======================================================')
-        disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
+        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
         mysegment(subj,T2);
         autoPatching(subj,T2);
@@ -717,13 +725,13 @@ else
     disp('======================================================')
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
-    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have decent machine to run ROAST with New York head.')
+    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>32GB memory) to run ROAST with New York head.')
     
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
-    disp('          STEP 3: ELECTRODE PLACEMENT...              ')
+    disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
     [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecName,elecPara,uniqueTag);
 else
@@ -735,7 +743,7 @@ end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
-    disp('            STEP 4: MESH GENERATION...                ')
+    disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
     [node,elem,face] = meshByIso2mesh(subj,T2,meshOpt,uniqueTag);
 else
@@ -747,7 +755,7 @@ end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
-    disp('           STEP 5: SOLVING THE MODEL...               ')
+    disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
     label_elec = prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
@@ -760,7 +768,7 @@ end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('======================================================')
-    disp('     STEP 6: SAVING AND VISUALIZING THE RESULTS...    ')
+    disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
     [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
     visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,0);

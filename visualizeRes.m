@@ -72,9 +72,10 @@ indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
 indNode_elecFace = face(find(face(:,4) == 8),1:3);
 indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
 
-node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
-% smooth the surface that's to be displayed
-% just for display, the output data is not smoothed
+% node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
+% % smooth the surface that's to be displayed
+% % just for display, the output data is not smoothed
+% % very slow if mesh is big
 
 % totInCurMag = sum(abs(inCurrent))/2;
 totInCurMag = max(abs(inCurrent)); % maybe a user option?

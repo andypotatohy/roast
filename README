@@ -32,7 +32,7 @@ Example 2: roast('nyhead')
 
 ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-machine of 16GB memory and above is recommended for running New York
+machine of 32GB memory and above is recommended for running New York
 head. Again electrodes are modeled by default as small disc electrodes.
 See options below for details.
 
@@ -247,7 +247,7 @@ roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custo
         'simulationTag','awesomeSimulation')
 Now you should know what this will do.
 
-ROAST outputs 6 figures for quick visualization of the simulation
+ROAST outputs 6 or 7 figures for quick visualization of the simulation
 results. It also save the results as "subjName_simulationTag_result.mat".
 
 For a formal description of ROAST, one is referred to (please use this as reference):
