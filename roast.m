@@ -268,6 +268,8 @@ function roast(subj,recipe,varargin)
 % yhuang16@citymail.cuny.edu
 % April 2018
 
+addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+
 fprintf('\n\n');
 disp('======================================================')
 disp('CHECKING INPUTS...')
@@ -289,12 +291,12 @@ if ~strcmpi(subj,'example/nyhead.nii') && ~exist(subj,'file')
     error(['The subject MRI you provided ' subj ' does not exist.']);
 end
 
-% check if high-resolution MRI (< 0.8 mm in any direction)
 if ~strcmpi(subj,'example/nyhead.nii')
     t1Data = load_untouch_nii(subj);
-    if any(t1Data.hdr.dime.pixdim(2:4)<0.8)
-        warning(['The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling process more computationally expensive and thus slower. If you wish to run faster using just 1-mm model, you can re-sample the MRI into 1 mm. Just run resampToOneMM(''' subj ''') before calling roast().']);
+    if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
     end
+    % check if bad MRI header
 end
 
 % check recipe syntax
@@ -337,8 +339,14 @@ while indArg <= length(varargin)
         case 'simulationtag'
             simTag = varargin{indArg+1};
             indArg = indArg+2;
+        case 'resampling'
+            doResamp = varargin{indArg+1};
+            indArg = indArg+2;
+        case 'zeropadding'
+            paddingAmt = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'' and ''simulationTag''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -604,6 +612,12 @@ if ~exist('T2','var')
     T2 = [];
 else
     if ~exist(T2,'file'), error(['The T2 MRI you provided ' T2 ' does not exist.']); end
+    
+    t2Data = load_untouch_nii(T2);
+    if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
+    end
+    % check if bad MRI header    
 end
 
 if ~exist('meshOpt','var')
@@ -623,6 +637,60 @@ else
 end
 
 if ~exist('simTag','var'), simTag = []; end
+
+if ~exist('doResamp','var')
+    doResamp = 0;
+else
+    if ~ischar(doResamp), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.'); end
+    if strcmpi(doResamp,'off')
+        doResamp = 0;
+    elseif strcmpi(doResamp,'on')
+        doResamp = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.');
+    end
+end
+
+if ~exist('paddingAmt','var')
+    paddingAmt = 0;
+else
+    if paddingAmt<=0 || mod(paddingAmt,1)~=0
+        error('Unrecognized option value. Please enter positive integer value for option ''zeroPadding''. A recommended value is 10.');
+    end
+end
+
+% preprocess MRI data
+if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
+    
+    if any(t1Data.hdr.dime.pixdim(2:4)<0.8) && ~doResamp
+        warning('The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling process more computationally expensive and thus slower. If you wish to run faster using just 1-mm model, you can ask ROAST to re-sample the MRI into 1 mm first, by turning on the ''resampling'' option.');
+    end
+    % check if high-resolution MRI (< 0.8 mm in any direction)
+    
+    if doResamp
+        subjRS = resampToOneMM(subj);
+    else
+        subjRS = subj;
+    end
+    
+    if paddingAmt>0
+        subjRSPD = zeroPadding(subjRS,paddingAmt);
+    else
+        subjRSPD = subjRS;
+    end
+    
+    t1Data = load_untouch_nii(subjRSPD);
+    if exist('t2Data','var') && any(size(t1Data.img)~=size(t2Data.img))
+%         error('T2 image is not registered to T1 image space.');
+       realignT2();
+    end
+    % check if T2 is aligned with T1
+    
+else
+    
+    subjRSPD = subj;
+    
+end
 
 % preprocess electrodes
 [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
@@ -690,8 +758,6 @@ disp([dirname filesep baseFilename '_log,'])
 disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
-
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
 if ~strcmp(baseFilename,'nyhead')
     

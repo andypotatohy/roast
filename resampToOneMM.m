@@ -1,9 +1,9 @@
-function resampToOneMM(mri)
-% resampToOneMM(mri)
-% 
+function mriRS = resampToOneMM(mri)
+% mriRS = resampToOneMM(mri)
+%
 % Resample the MRI into 1 mm isotropic resolution if it has non-1 mm
 % resolution.
-% 
+%
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % April 2018
@@ -15,17 +15,16 @@ pixdim = [V.mat(1,1) V.mat(2,2) V.mat(3,3)];
 if all(pixdim==1)
     
     warning(['The MRI ' mri ' already has a 1 mm isotropic resolution. No need to resample.']);
-    return;
+    mriRS = mri;
     
 else
     
     [dirname,baseFilename,ext] = fileparts(mri);
+    mriRS = [dirname filesep baseFilename '_1mm' ext];
     
-    if exist([dirname filesep 'r' baseFilename ext],'file')
+    if exist(mriRS,'file')
         
-        disp([mri ' has already been resampled to 1mm resolution and saved as ' dirname filesep 'r' baseFilename ext]);
-        disp('Please use that file as the input for ROAST main function.');
-        return;
+        warning([mri ' has already been resampled to 1mm resolution and saved as ' mriRS '. ROAST will use that file as the input.']);
         
     else
         
@@ -37,11 +36,11 @@ else
         VV(1).mat = spm_matrix([bb(1,:) 0 0 0 voxsiz])*spm_matrix([-1 -1 -1]);
         VV(1).dim = ceil(VV(1).mat \ [bb(2,:) 1]' - 0.1)';
         VV(1).dim = VV(1).dim(1:3);
-        spm_reslice(VV,struct('mean',false,'which',1,'interp',7)); % 1 for linear
+        spm_reslice(VV,struct('mean',false,'which',1,'interp',7,'suffix','_1mm')); % 1 for linear
         
         disp([mri ' has been resampled to 1 mm isotropic resolution, and is saved as:']);
-        disp([dirname filesep 'r' baseFilename ext]);
-        disp('Please use this file as the input for ROAST main function.');
+        disp(mriRS);
+        disp('It''ll be used as the input for ROAST.');
         
     end
     

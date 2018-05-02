@@ -72,6 +72,10 @@ resolution = mean(template.hdr.dime.pixdim(2:4));
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
+    if isempty(indNode_elecElm(label_elec==i,:))
+        error(['Electrode ' elecNeeded{i} ' goes out of image boundary. ROAST cannot solve without a properly placed electrode. Please do zero-padding to the MRI before running ROAST.']);
+    end
+        
     [faces_elec,verts_elec] = freeBoundary(TriRep(indNode_elecElm(label_elec==i,:),node(:,1:3)));
     [faces_gel,verts_gel] = freeBoundary(TriRep(indNode_gelElm(label_gel==i,:),node(:,1:3)));
     [~,iE,iG] = intersect(verts_elec,verts_gel,'rows');

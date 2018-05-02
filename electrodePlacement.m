@@ -124,7 +124,7 @@ elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 resolution = mean(template.hdr.dime.pixdim(2:4));
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution);
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,1);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
