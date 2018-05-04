@@ -131,6 +131,13 @@ function roast(subj,recipe,varargin)
 % simulation (Example 18), then you can find it more easily later. Also all the
 % simulation history with options info for each simulation are saved in the
 % log file (named as "subjName_log"), parsed by the simulation tags.
+% 
+% 'resampling':
+% 
+% 
+% 'zeroPadding':
+% 
+% 
 %
 % More advanced examples with these options:
 % 
@@ -681,8 +688,8 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
     t1Data = load_untouch_nii(subjRSPD);
     if exist('t2Data','var') && any(size(t1Data.img)~=size(t2Data.img))
-%         error('T2 image is not registered to T1 image space.');
-       realignT2();
+       warning('T2 image is not aligned to T1 image space. ROAST will align it now.');
+       T2 = realignT2(T2,subjRSPD);
     end
     % check if T2 is aligned with T1
     
@@ -720,7 +727,7 @@ for i=1:length(elecName)
 end
 configTxt = configTxt(1:end-2);
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -761,25 +768,27 @@ fprintf('\n\n');
 
 if ~strcmp(baseFilename,'nyhead')
     
-    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
+    [~,baseFilenameRSPD] = fileparts(subjRSPD);
+    
+    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1orT2.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1andT2.nii'],'file'))
         disp('======================================================')
         disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
         disp('======================================================')
-        start_seg(subj,T2);
+        start_seg(subjRSPD,T2);
     else
         disp('======================================================')
         disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_mask_gray.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_mask_gray.nii'],'file'))
         disp('======================================================')
         disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
-        mysegment(subj,T2);
-        autoPatching(subj,T2);
+        mysegment(subjRSPD,T2);
+        autoPatching(subjRSPD,T2);
     else
         disp('======================================================')
         disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
@@ -799,7 +808,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecName,elecPara,uniqueTag);
+    [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
@@ -811,7 +820,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,T2,meshOpt,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRSPD,T2,meshOpt,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -823,7 +832,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
-    label_elec = prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
+    label_elec = prepareForGetDP(subj,node,elem,rnge_elec,rnge_gel,hdrInfo,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')
@@ -836,12 +845,12 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('======================================================')
     disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
-    [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,0);
+    [vol_all,ef_mag] = postGetDP(subj,node,hdrInfo,uniqueTag);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,1);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,1);
 end

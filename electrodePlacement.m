@@ -1,31 +1,40 @@
-function [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecNeeded,elecPara,uniTag)
-% [rnge_elec,rnge_gel] = electrodePlacement(P,T2,elecNeeded,elecPara,uniTag)
+function [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+% [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 %
-% Place electrodes on the scalp surface. elecPara contains all the options
+% Place electrodes on the scalp surface. options.elecPara contains all the options
 % info for each electrode.
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % April 2018
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
+[~,baseFilenameRSPD] = fileparts(P2);
+if isempty(T2)
+    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+else
+    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+end
+
+elecPara = options.elecPara;
 
 indP = elecPara(1).indP;
 indN = elecPara(1).indN;
 indC = elecPara(1).indC;
 
 %% can be any non-ras head (to be consistent with user-provided coordinates)
-landmarks_original = getLandmarks(P,T2);
+landmarks_original = getLandmarks(P2,T2);
 
 [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-if isempty(T2)
-    template = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']); % Load the scalp mask
-else
-    template = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_skin.nii']); % Load the scalp mask
-end
+template = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_skin.nii']); % Load the scalp mask
 % template is used for saving the results with the same header info as the input
+pixdim = template.hdr.dime.pixdim(2:4);
+dim = size(template.img);
+v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
+hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
+% keep the header info for use later
 scalp_original = template.img;
 
 scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
@@ -39,6 +48,14 @@ if ~isempty(indC)
     capInfo_C = textscan(fid,'%s %f %f %f');
     fclose(fid);
     elecLoc_C = cell2mat(capInfo_C(2:4));
+    % update customized elec coords according to options of resamp and zeroPad
+    if options.resamp
+        data = load_untouch_nii(P1);
+        elecLoc_C = elecLoc_C.*repmat(data.hdr.dime.pixdim(2:4),size(elecLoc_C,1),1);
+    end
+    if options.zeroPad>0
+        elecLoc_C = elecLoc_C + options.zeroPad;
+    end
     elecLoc_C = elecLoc_C(indC,:);
     elecLoc_C = changeOrientationPointCloud(elecLoc_C,perm,isFlipInner,size(scalp));
 end
@@ -54,7 +71,7 @@ if ~isempty(indP)
        isBiosemi = 0;
        load('./cap1005FullWithExtra.mat','capInfo');
    end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,capInfo,indP,isBiosemi);
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi);
 else
     electrode_coord_P = []; center_P = [];
 end
@@ -121,7 +138,7 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
 %% placing and model the electrodes
-resolution = mean(template.hdr.dime.pixdim(2:4));
+resolution = mean(pixdim);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
 [elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,1);
@@ -141,11 +158,7 @@ end
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
 volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlap with the electrode
-if isempty(T2)
-    bone = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_bone.nii']);
-else
-    bone = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_bone.nii']);
-end
+bone = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_bone.nii']);
 volume_bone = bone.img;
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 

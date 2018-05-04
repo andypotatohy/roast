@@ -1,5 +1,5 @@
 function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
-% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
+% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
 % 
 % Place and generate the point cloud for each placed electrode and gel.
 % 
@@ -139,7 +139,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             if isDebug
                 plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');'
+                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
