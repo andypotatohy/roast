@@ -134,6 +134,7 @@ function roast(subj,recipe,varargin)
 % 
 % 'resampling':
 % 
+% non-1mm speed; anisotropic not perfect yet
 % 
 % 'zeroPadding':
 % 
@@ -674,6 +675,11 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     end
     % check if high-resolution MRI (< 0.8 mm in any direction)
     
+    if length(unique(t1Data.hdr.dime.pixdim(2:4)))>1 && ~doResamp
+        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.1) of ROAST cannot perfectly handle anisotropic MRI as the input.');
+    end
+    % check if anisotropic resolution MRI
+    
     if doResamp
         subjRS = resampToOneMM(subj);
     else
@@ -814,6 +820,7 @@ else
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'rnge_elec','rnge_gel');
+    load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')

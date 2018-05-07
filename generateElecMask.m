@@ -17,7 +17,7 @@ for i = 1:length(elec_allCoord)
             & temp(:,2)>0 & temp(:,2)<=coordRange(2)...
             & temp(:,3)>0 & temp(:,3)<=coordRange(3));
         if isempty(ind)
-            error(['Electrode ' elec{i} ' goes out of image boundary. ROAST cannot solve without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
+            error(['Electrode ' elec{i} ' goes out of image boundary. ROAST cannot proceed without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
             elec_allCoord{i} = [];
             rnge{i} = [];
         else

@@ -68,7 +68,7 @@ warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
     if isempty(indNode_elecElm(label_elec==i,:))
-        error(['Electrode ' elecNeeded{i} ' goes out of image boundary. ROAST cannot solve without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
+        error(['Electrode ' elecNeeded{i} ' goes out of image boundary. ROAST cannot proceed without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
     end
         
     [faces_elec,verts_elec] = freeBoundary(TriRep(indNode_elecElm(label_elec==i,:),node(:,1:3)));

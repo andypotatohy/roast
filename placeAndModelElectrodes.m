@@ -179,6 +179,6 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     end
 end
 if isDebug
-    xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
+    xlabel('x');ylabel('y');zlabel('z'); view([270 0]); axis equal;
     hold off; % Place electrodes and visualize the results
 end

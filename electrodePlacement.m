@@ -177,3 +177,7 @@ save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.ni
 % % this may not be needed for iso2mesh mesher.
 
 save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');
+[~,baseFilenameRSPD] = fileparts(P2);
+if ~exist([dirname filesep baseFilenameRSPD '_header.mat'],'file')
+    save([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
+end

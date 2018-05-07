@@ -21,7 +21,7 @@ if showAll
     
     if ~strcmp(baseFilename,'nyhead')
         disp('showing MRI and segmentations...');
-        data = load_untouch_nii(P); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
+        data = load_untouch_nii(P2); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
         
         if ~isempty(T2) %T2 specified
             data = load_untouch_nii(T2);

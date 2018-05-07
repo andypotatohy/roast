@@ -18,10 +18,10 @@ matlabbatch{1}.spm.spatial.coreg.estwrite.eoptions.fwhm = [7 7];
 matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.interp = 1;
 matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.wrap = [0 0 0];
 matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.mask = 0;
-matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.prefix = 'r';
+matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.suffix = '_aligned';
 
 spm_jobman('run',matlabbatch);
 
 [pth,nam,ext] = fileparts(src);
-srcR = [pth filesep 'r' nam ext];
+srcR = [pth filesep nam '_aligned' ext];
 disp(['Done. Aligned T2 is saved as ' srcR ', and will be used by ROAST.']);

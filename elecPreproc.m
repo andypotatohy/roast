@@ -35,7 +35,7 @@ for i=1:length(elec)
             if isempty(dirname), dirname = pwd; end
             fid = fopen([dirname filesep baseFilename '_customLocations']);
             if fid==-1
-                error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder');
+                error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder.');
             end
             capInfo_C = textscan(fid,'%s %f %f %f');
             elecPool_C = capInfo_C{1};

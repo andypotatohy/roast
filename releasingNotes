@@ -8,8 +8,13 @@ Can control mesh options of iso2mesh.
 
 Can give each simulation a customized tag.
 
-The New York head added.
+The New York head is added.
 
 Can handle non-1mm resolution MRI and non-RAS MRI.
 
 Improved the visualization function.
+
+
+ROAST V2.1:
+Fixed a bug on placing electrodes on non-1mm data
+Added resampling and zero-padding options
