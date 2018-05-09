@@ -18,3 +18,4 @@ Improved the visualization function.
 ROAST V2.1:
 Fixed a bug on placing electrodes on non-1mm data
 Added resampling and zero-padding options
+Can align T2 automatically if it's not aligned with T1

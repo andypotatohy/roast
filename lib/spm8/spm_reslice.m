@@ -41,12 +41,12 @@ function spm_reslice(P,flags)
 %                  each of the dimensions. For fMRI, [1 1 0] would be used.
 %                  For PET, it would be [0 0 0]. [default: [0 0 0]]
 %
-%         suffix - suffix for resliced images [default: 'r']
+%         prefix - prefix for resliced images [default: 'r']
 %
 %__________________________________________________________________________
 %
 % The spatially realigned images are written to the original subdirectory
-% with the same (suffixed) filename. They are all aligned with the first.
+% with the same (prefixed) filename. They are all aligned with the first.
 %
 % Inputs:
 % A series of images conforming to SPM data format (see 'Data Format'). The
@@ -54,7 +54,7 @@ function spm_reslice(P,flags)
 %
 % Outputs:
 % The routine uses information in their headers and writes the realigned 
-% image files to the same subdirectory with a suffix.
+% image files to the same subdirectory with a prefix.
 %__________________________________________________________________________
 % Copyright (C) 2008 Wellcome Trust Centre for Neuroimaging
 
@@ -99,7 +99,7 @@ function spm_reslice(P,flags)
 
 
 def_flags        = spm_get_defaults('realign.write');
-def_flags.suffix = 'r';
+def_flags.prefix = 'r';
 if nargin < 2
     flags = def_flags;
 else
@@ -223,7 +223,7 @@ for i = 1:numel(P)
         if write_vol
             VO         = P(i);
             [pth,nm,xt,vr] = spm_fileparts(deblank(P(i).fname));
-            VO.fname   = fullfile(pth,[nm flags.suffix xt vr]);
+            VO.fname   = fullfile(pth,[nm flags.prefix xt vr]);
             VO.dim     = P(1).dim(1:3);
             VO.dt      = P(i).dt;
             VO.pinfo   = P(i).pinfo;

@@ -36,7 +36,9 @@ else
         VV(1).mat = spm_matrix([bb(1,:) 0 0 0 voxsiz])*spm_matrix([-1 -1 -1]);
         VV(1).dim = ceil(VV(1).mat \ [bb(2,:) 1]' - 0.1)';
         VV(1).dim = VV(1).dim(1:3);
-        spm_reslice(VV,struct('mean',false,'which',1,'interp',7,'suffix','_1mm')); % 1 for linear
+        spm_reslice(VV,struct('mean',false,'which',1,'interp',7,'prefix','_1mm'));
+        % 'interp' option: 1 for linear, 7 is highest degree (most accurate, slowest)
+        % keep using 'prefix' as it's bad to hack SPM variable names
         
         disp([mri ' has been resampled to 1 mm isotropic resolution, and is saved as:']);
         disp(mriRS);

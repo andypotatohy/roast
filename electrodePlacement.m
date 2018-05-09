@@ -78,7 +78,7 @@ end
 
 if ~isempty(indN)
     if any(landmarks(5:6,3)<=0)
-        error('MRI does not cover the neck, so cannot place electrodes on the neck.');
+        error('MRI does not cover the neck, so cannot place electrodes on the neck. Consider using ''zeroPadding'' option to extend the input MRI.');
     else
         [electrode_coord_N,center_N] = placeNeckElec(scalp,scalp_surface,landmarks,indN);
     end

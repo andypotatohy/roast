@@ -19,7 +19,7 @@ mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];
 
 if exist(mriPD,'file')
     
-    warning([mri ' has already been zero-padded and saved as ' mriPD '. ROAST will use that file as the input.']);
+    warning([mri ' has already been zero-padded by ' num2str(padNum) ' empty slices in the six directions and saved as ' mriPD '. ROAST will use that file as the input.']);
     
 else
     

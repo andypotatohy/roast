@@ -132,13 +132,24 @@ function roast(subj,recipe,varargin)
 % simulation history with options info for each simulation are saved in the
 % log file (named as "subjName_log"), parsed by the simulation tags.
 % 
-% 'resampling':
+% 'resampling': re-sample the input MRI to 1mm isotropic resolution
+% 'on' | 'off' (default)
+% Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
+% While higher resolution can give more accurate models, the computation
+% will be more expensive and thus slower. If you want a faster simulation,
+% you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
+% turning on this option (Example 19). Also it is recommended to turn on
+% this option if your input MRI has anisotropic resolution (e.g., 1 mm by
+% 1.2 mm by 1.2 mm), as the current version (V2.1) is still not perfect in
+% accurately modeling anisotropic images.
 % 
-% non-1mm speed; anisotropic not perfect yet
-% 
-% 'zeroPadding':
-% 
-% 
+% 'zeroPadding': extend the input MRI by some amount, to avoid
+% complications when electrodes are placed by the image boundaries. Default
+% is not padding any slices to the MRI. You can ask ROAST to pad N empty
+% slices in all the six directions of the input MRI (left, right, front,
+% back, up and down), where N is a positive integer. This is very useful
+% when placing big electrodes on the locations close to image boundaries
+% (Example 20).
 %
 % More advanced examples with these options:
 % 
@@ -243,6 +254,18 @@ function roast(subj,recipe,varargin)
 % Example 18: roast([],[],'simulationTag','roastDemo')
 % 
 % Give the default run of ROAST a tag as 'roastDemo'.
+% 
+% Example 19: roast('example/subject1.nii',[],'resampling','on')
+% 
+% Run simulaiton on subject1 with default recipe, but resample the MRI of
+% subject1 to 1mm isotropic resolution first (the original MRI of subject1
+% has resolution of 1mm by 0.99mm by 0.99mm).
+% 
+% Example 20: to be finished (pad on the nose?)
+% 
+% Run simulation on the MNI152 averaged head, but add 20 empty slices on
+% each of the six directions to the MRI first, to allow placement of
+% electrode Ex19, which is by the bottom edge of the MRI.
 % 
 % All the options above can be combined to meet your specific simulation
 % needs. For example:
@@ -437,6 +460,9 @@ else
         if strcmpi(elecType,'pad') && any(elecSize(:,3) < 3)
             error('For Pad electrodes, the thickness should at least be 3 mm.');
         end
+        if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
+            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+        end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
@@ -479,6 +505,9 @@ else
                 end
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,3) < 3)
                     error('For Pad electrodes, the thickness should at least be 3 mm.');
+                end
+                if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
+                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -692,10 +721,8 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
         subjRSPD = subjRS;
     end
     
-    t1Data = load_untouch_nii(subjRSPD);
-    if exist('t2Data','var') && any(size(t1Data.img)~=size(t2Data.img))
-       warning('T2 image is not aligned to T1 image space. ROAST will align it now.');
-       T2 = realignT2(T2,subjRSPD);
+    if ~isempty(T2)
+        T2 = realignT2(T2,subjRSPD);
     end
     % check if T2 is aligned with T1
     

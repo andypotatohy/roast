@@ -34,7 +34,7 @@ if ~isempty(indPad)
     gel_layer = cell(length(allPH),1);
     elec_layer = cell(length(allPH),1);
     for i=1:length(allPH)
-        strel = ones(round(allPH(i)),round(allPH(i)),round(allPH(i)));
+        strel = ones(round(allPH(i)),round(allPH(i)),round(allPH(i))); % this is not perfect yet
         [gel_layer{i},scalpDilated] = mask2EdgePointCloud(scalpFilled,'dilate',strel);
         elec_layer{i} = mask2EdgePointCloud(scalpDilated,'dilate',strel);
         % Get the layer of electrode/gel to intersect with placed pad
@@ -76,9 +76,9 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             pad_length = elecPara(i).elecSize(1)/res;
             pad_width = elecPara(i).elecSize(2)/res;
-%             pad_height = elecPara(i).elecSize(3)/res;
             
-            dimTry = mean([pad_length pad_width]); % needs improve
+            dimTry = mean([pad_length pad_width]);
+            % bigger electrode needs bigger dimTry (needs to establish a better relation)
             
             if ischar(elecPara(i).elecOri)
                 switch lower(elecPara(i).elecOri)
@@ -125,8 +125,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             NOP = 500; verSamp = 10;
             r = 0.05:0.05:disc_radius; % parameters used for modeling of electrodes and gel
             
-            gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
-            elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
+            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
+            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
             for j = 1:length(r)
                 [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
                 [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
@@ -158,8 +158,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             NOP = 500; verSamp = 10;
             r = ring_radiusIn:0.05:ring_radiusOut; % parameters used for modeling of electrodes and gel
             
-            gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
-            elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
+            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
+            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
             for j = 1:length(r)
                 [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
                 [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
