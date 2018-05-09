@@ -52,7 +52,7 @@ for i=1:length(elec)
 end
 
 if unknownElec>0
-    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes).');
+    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you picked up one of the electrodes that falls on the ears or eyes (which are removed, see capInfo.xls); 4) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes).');
 end
 
 if doPredefined

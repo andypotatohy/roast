@@ -12,7 +12,9 @@ rnge = cell(length(elec_allCoord),1);
 
 for i = 1:length(elec_allCoord)
     temp = elec_allCoord{i};
-    if ~isempty(temp)
+    if isempty(temp)
+        error(['Electrode ' elec{i} ' goes out of image boundary. ROAST cannot proceed without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
+    else
         ind = find(temp(:,1)>0 & temp(:,1)<=coordRange(1)...
             & temp(:,2)>0 & temp(:,2)<=coordRange(2)...
             & temp(:,3)>0 & temp(:,3)<=coordRange(3));

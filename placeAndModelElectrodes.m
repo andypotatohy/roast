@@ -24,7 +24,7 @@ end
 padH = zeros(length(elecPara),1);
 for i=1:length(elecPara)
     if strcmpi(elecPara(i).elecType,'pad')
-        padH(i) = elecPara(i).elecSize(3);
+        padH(i) = elecPara(i).elecSize(3)/res;
     end
 end
 indPad = find(padH>0);
@@ -34,7 +34,7 @@ if ~isempty(indPad)
     gel_layer = cell(length(allPH),1);
     elec_layer = cell(length(allPH),1);
     for i=1:length(allPH)
-        strel = ones(allPH(i),allPH(i),allPH(i));
+        strel = ones(round(allPH(i)),round(allPH(i)),round(allPH(i)));
         [gel_layer{i},scalpDilated] = mask2EdgePointCloud(scalpFilled,'dilate',strel);
         elec_layer{i} = mask2EdgePointCloud(scalpDilated,'dilate',strel);
         % Get the layer of electrode/gel to intersect with placed pad
@@ -76,9 +76,9 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             pad_length = elecPara(i).elecSize(1)/res;
             pad_width = elecPara(i).elecSize(2)/res;
-            pad_height = elecPara(i).elecSize(3)/res;
+%             pad_height = elecPara(i).elecSize(3)/res;
             
-            dimTry = 10*pad_height; % should at least be 4*pad_height, so that one direction can cover 2 pad_height
+            dimTry = mean([pad_length pad_width]); % needs improve
             
             if ischar(elecPara(i).elecOri)
                 switch lower(elecPara(i).elecOri)
