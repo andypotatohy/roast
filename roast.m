@@ -261,11 +261,21 @@ function roast(subj,recipe,varargin)
 % subject1 to 1mm isotropic resolution first (the original MRI of subject1
 % has resolution of 1mm by 0.99mm by 0.99mm).
 % 
-% Example 20: to be finished (pad on the nose?)
+% Example 20: roast([],{'Exx19',1,'C4',-1},'zeropadding',30)
 % 
-% Run simulation on the MNI152 averaged head, but add 20 empty slices on
+% Run simulation on the MNI152 averaged head, but add 30 empty slices on
 % each of the six directions to the MRI first, to allow placement of
-% electrode Ex19, which is by the bottom edge of the MRI.
+% electrode Exx19, which is outside of the MRI (i.e., several centimeters
+% below the most bottom slice of the MRI). If you run this without zero
+% padding first, you'll get strange results.
+% Note it is always a good practice to add empty slices to the MRI if you 
+% want to place electrodes close to, or even out of, the image boundary.
+% ROAST can detect if part or all of your electrode goes out of image boundary,
+% but sometimes it cannot tell (it's not that smart yet :-). So do a 'zeroPadding'
+% of 10 to start with, and if you're not happy with the results, just increase
+% the amount of zero padding. But the best solution is to get an MRI that covers
+% the area where you want to place the electrodes.
+% 
 % 
 % All the options above can be combined to meet your specific simulation
 % needs. For example:

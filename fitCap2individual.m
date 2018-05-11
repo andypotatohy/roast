@@ -79,9 +79,13 @@ end
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
 elec_template = cell2mat(capInfo(2:4));
 elec_template = elec_template(indFit,:);
-data = load_untouch_nii(P2);
-elec_template = elec_template./repmat(data.hdr.dime.pixdim(2:4),length(indFit),1);
-% account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
+if ~strcmpi(P2,'example/nyhead.nii')
+    data = load_untouch_nii(P2);
+    elec_template = elec_template./repmat(data.hdr.dime.pixdim(2:4),length(indFit),1);
+    % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
+else
+    elec_template = elec_template./repmat([0.5 0.5 0.5],length(indFit),1);
+end
 
 theta = 23;
 alpha = ((360-10*theta)/2)*(pi/180);

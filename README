@@ -133,6 +133,25 @@ simulation (Example 18), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
 log file (named as "subjName_log"), parsed by the simulation tags.
 
+'resampling': re-sample the input MRI to 1mm isotropic resolution
+'on' | 'off' (default)
+Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
+While higher resolution can give more accurate models, the computation
+will be more expensive and thus slower. If you want a faster simulation,
+you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
+turning on this option (Example 19). Also it is recommended to turn on
+this option if your input MRI has anisotropic resolution (e.g., 1 mm by
+1.2 mm by 1.2 mm), as the current version (V2.1) is still not perfect in
+accurately modeling anisotropic images.
+
+'zeroPadding': extend the input MRI by some amount, to avoid
+complications when electrodes are placed by the image boundaries. Default
+is not padding any slices to the MRI. You can ask ROAST to pad N empty
+slices in all the six directions of the input MRI (left, right, front,
+back, up and down), where N is a positive integer. This is very useful
+when placing big electrodes on the locations close to image boundaries
+(Example 20).
+
 More advanced examples with these options:
 
 Example 4: roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
@@ -236,6 +255,28 @@ the mesh options are customized.
 Example 18: roast([],[],'simulationTag','roastDemo')
 
 Give the default run of ROAST a tag as 'roastDemo'.
+
+Example 19: roast('example/subject1.nii',[],'resampling','on')
+
+Run simulaiton on subject1 with default recipe, but resample the MRI of
+subject1 to 1mm isotropic resolution first (the original MRI of subject1
+has resolution of 1mm by 0.99mm by 0.99mm).
+
+Example 20: roast([],{'Exx19',1,'C4',-1},'zeropadding',30)
+
+Run simulation on the MNI152 averaged head, but add 30 empty slices on
+each of the six directions to the MRI first, to allow placement of
+electrode Exx19, which is outside of the MRI (i.e., several centimeters
+below the most bottom slice of the MRI). If you run this without zero
+padding first, you'll get strange results.
+Note it is always a good practice to add empty slices to the MRI if you 
+want to place electrodes close to, or even out of, the image boundary.
+ROAST can detect if part or all of your electrode goes out of image boundary,
+but sometimes it cannot tell (it's not that smart yet :-). So do a 'zeroPadding'
+of 10 to start with, and if you're not happy with the results, just increase
+the amount of zero padding. But the best solution is to get an MRI that covers
+the area where you want to place the electrodes.
+
 
 All the options above can be combined to meet your specific simulation
 needs. For example:
