@@ -60,6 +60,8 @@ function spm_reslice(P,flags)
 
 % John Ashburner
 % $Id: spm_reslice.m 4179 2011-01-28 13:57:20Z volkmar $
+%
+% Yu (Andy) Huang modified for ROAST. May 2018.
 
 %__________________________________________________________________________
 %
@@ -221,7 +223,7 @@ for i = 1:numel(P)
         if write_vol
             VO         = P(i);
             [pth,nm,xt,vr] = spm_fileparts(deblank(P(i).fname));
-            VO.fname   = fullfile(pth,[flags.prefix nm xt vr]);
+            VO.fname   = fullfile(pth,[nm flags.prefix xt vr]);
             VO.dim     = P(1).dim(1:3);
             VO.dt      = P(i).dt;
             VO.pinfo   = P(i).pinfo;

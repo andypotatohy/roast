@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
-% [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
+function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,uniTag)
+% [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -8,8 +8,14 @@ function [node,elem,face] = meshByIso2mesh(P,T2,opt,uniTag)
 % yhuang16@citymail.cuny.edu
 % October 2017
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
+[~,baseFilenameRSPD] = fileparts(P2);
+if isempty(T2)
+    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+else
+    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+end
 
 maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
 
@@ -18,11 +24,7 @@ for i=1:length(maskName)
     if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
         data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
     else
-        if isempty(T2)
-            data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_' maskName{i} '.nii']);
-        else
-            data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_' maskName{i} '.nii']);
-        end
+        data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
     end
     img = data.img;
     

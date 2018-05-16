@@ -1,5 +1,5 @@
-function [vol_all,ef_mag] = postGetDP(P,node,uniTag)
-% [vol_all,ef_mag] = postGetDP(P,node,uniTag)
+function [vol_all,ef_mag] = postGetDP(P,node,hdrInfo,uniTag)
+% [vol_all,ef_mag] = postGetDP(P,node,hdrInfo,uniTag)
 % 
 % Post processing after solving the model. Save the result in Matlab format
 % in the MRI voxel space.
@@ -11,12 +11,7 @@ function [vol_all,ef_mag] = postGetDP(P,node,uniTag)
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
 
-if ~strcmp(baseFilename,'nyhead')
-    data = load_untouch_nii(P);
-else
-    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']);
-end
-[xi,yi,zi] = ndgrid(1:size(data.img,1), 1:size(data.img,2), 1:size(data.img,3));
+[xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
 
 % node = node + 0.5; already done right after mesh
 
@@ -36,7 +31,7 @@ fgetl(fid);
 C = textscan(fid,'%d %f %f %f');
 fclose(fid);
 
-ef_all = zeros([size(data.img) 3]);
+ef_all = zeros([hdrInfo.dim 3]);
 F = TriScatteredInterp(node(C{1},1:3), C{2});
 ef_all(:,:,:,1) = F(xi,yi,zi);
 F = TriScatteredInterp(node(C{1},1:3), C{3});

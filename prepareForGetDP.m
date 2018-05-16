@@ -1,5 +1,5 @@
-function [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
-% [label_elec,label_gel] = prepareForGetDP(P,T2,node,elem,rnge_elec,rnge_gel,elecNeeded,uniTag)
+function [label_elec,label_gel] = prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,hdrInfo,elecNeeded,uniTag)
+% [label_elec,label_gel] = prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,hdrInfo,elecNeeded,uniTag)
 %
 % Prepare to solve in getDP
 %
@@ -60,18 +60,17 @@ save([dirname filesep baseFilename '_' uniTag '_elecMeshLabels.mat'],'label_elec
 element_elecNeeded = cell(length(elecNeeded),1);
 area_elecNeeded = zeros(length(elecNeeded),1);
 
-if isempty(T2)
-    template = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']); % Load the scalp mask
-else
-    template = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_skin.nii']); % Load the scalp mask
-end
-resolution = mean(template.hdr.dime.pixdim(2:4));
+resolution = mean(hdrInfo.pixdim);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
 
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:length(element_elecNeeded)
     
+    if isempty(indNode_elecElm(label_elec==i,:))
+        error(['Electrode ' elecNeeded{i} ' goes out of image boundary. ROAST cannot proceed without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
+    end
+        
     [faces_elec,verts_elec] = freeBoundary(TriRep(indNode_elecElm(label_elec==i,:),node(:,1:3)));
     [faces_gel,verts_gel] = freeBoundary(TriRep(indNode_gelElm(label_gel==i,:),node(:,1:3)));
     [~,iE,iG] = intersect(verts_elec,verts_gel,'rows');

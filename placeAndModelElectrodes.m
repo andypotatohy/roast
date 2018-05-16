@@ -1,5 +1,5 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
-% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
+% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
 % 
 % Place and generate the point cloud for each placed electrode and gel.
 % 
@@ -24,7 +24,7 @@ end
 padH = zeros(length(elecPara),1);
 for i=1:length(elecPara)
     if strcmpi(elecPara(i).elecType,'pad')
-        padH(i) = elecPara(i).elecSize(3);
+        padH(i) = elecPara(i).elecSize(3)/res;
     end
 end
 indPad = find(padH>0);
@@ -34,7 +34,7 @@ if ~isempty(indPad)
     gel_layer = cell(length(allPH),1);
     elec_layer = cell(length(allPH),1);
     for i=1:length(allPH)
-        strel = ones(allPH(i),allPH(i),allPH(i));
+        strel = ones(round(allPH(i)),round(allPH(i)),round(allPH(i))); % this is not perfect yet
         [gel_layer{i},scalpDilated] = mask2EdgePointCloud(scalpFilled,'dilate',strel);
         elec_layer{i} = mask2EdgePointCloud(scalpDilated,'dilate',strel);
         % Get the layer of electrode/gel to intersect with placed pad
@@ -44,7 +44,9 @@ end
 [Nx, Ny, Nz] = size(scalpFilled); % size of head in RAS orientation
 scalpFilled(:,:,1) = 0; scalpFilled(:,:,Nz) = 0; scalpFilled(:,1,:) = 0; scalpFilled(:,Ny,:) = 0; scalpFilled(1,:,:) = 0; scalpFilled(Nx,:,:) = 0;
 
-% figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+if isDebug
+    figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+end
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
 for i = 1:length(elecPara) % size(elecLoc,1)    
@@ -74,9 +76,9 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             pad_length = elecPara(i).elecSize(1)/res;
             pad_width = elecPara(i).elecSize(2)/res;
-            pad_height = elecPara(i).elecSize(3)/res;
             
-            dimTry = 10*pad_height; % should at least be 4*pad_height, so that one direction can cover 2 pad_height
+            dimTry = mean([pad_length pad_width]);
+            % bigger electrode needs bigger dimTry (needs to establish a better relation)
             
             if ischar(elecPara(i).elecOri)
                 switch lower(elecPara(i).elecOri)
@@ -102,8 +104,11 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_coor = intersect(pad_coor,gel_layer{ind2allPH(i)},'rows');
             elec_coor = intersect(pad_coor,elec_layer{ind2allPH(i)},'rows');
-%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            
+            if isDebug
+                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
@@ -120,8 +125,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             NOP = 500; verSamp = 10;
             r = 0.05:0.05:disc_radius; % parameters used for modeling of electrodes and gel
             
-            gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
-            elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
+            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
+            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
             for j = 1:length(r)
                 [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
                 [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
@@ -132,8 +137,10 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
             elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
             
-%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            if isDebug
+                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
@@ -151,8 +158,8 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             NOP = 500; verSamp = 10;
             r = ring_radiusIn:0.05:ring_radiusOut; % parameters used for modeling of electrodes and gel
             
-            gel_X = zeros(length(r)*verSamp*4,NOP); gel_Y = zeros(length(r)*verSamp*4,NOP); gel_Z = zeros(length(r)*verSamp*4,NOP);
-            elec_X = zeros(length(r)*verSamp,NOP); elec_Y = zeros(length(r)*verSamp,NOP); elec_Z = zeros(length(r)*verSamp,NOP);
+            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
+            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
             for j = 1:length(r)
                 [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
                 [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
@@ -163,11 +170,15 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
             elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
             
-%             plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-%             plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            if isDebug
+                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+            end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
     end
 end
-% xlabel('x');ylabel('y');zlabel('z'); view([270 0]);
-% hold off; % Place electrodes and visualize the results
+if isDebug
+    xlabel('x');ylabel('y');zlabel('z'); view([270 0]); axis equal;
+    hold off; % Place electrodes and visualize the results
+end

@@ -31,7 +31,7 @@ function roast(subj,recipe,varargin)
 % 
 % ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 % and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-% machine of 16GB memory and above is recommended for running New York
+% machine of 32GB memory and above is recommended for running New York
 % head. Again electrodes are modeled by default as small disc electrodes.
 % See options below for details.
 %
@@ -131,6 +131,25 @@ function roast(subj,recipe,varargin)
 % simulation (Example 18), then you can find it more easily later. Also all the
 % simulation history with options info for each simulation are saved in the
 % log file (named as "subjName_log"), parsed by the simulation tags.
+% 
+% 'resampling': re-sample the input MRI to 1mm isotropic resolution
+% 'on' | 'off' (default)
+% Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
+% While higher resolution can give more accurate models, the computation
+% will be more expensive and thus slower. If you want a faster simulation,
+% you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
+% turning on this option (Example 19). Also it is recommended to turn on
+% this option if your input MRI has anisotropic resolution (e.g., 1 mm by
+% 1.2 mm by 1.2 mm), as the current version (V2.1) is still not perfect in
+% accurately modeling anisotropic images.
+% 
+% 'zeroPadding': extend the input MRI by some amount, to avoid
+% complications when electrodes are placed by the image boundaries. Default
+% is not padding any slices to the MRI. You can ask ROAST to pad N empty
+% slices in all the six directions of the input MRI (left, right, front,
+% back, up and down), where N is a positive integer. This is very useful
+% when placing big electrodes on the locations close to image boundaries
+% (Example 20).
 %
 % More advanced examples with these options:
 % 
@@ -236,6 +255,28 @@ function roast(subj,recipe,varargin)
 % 
 % Give the default run of ROAST a tag as 'roastDemo'.
 % 
+% Example 19: roast('example/subject1.nii',[],'resampling','on')
+% 
+% Run simulaiton on subject1 with default recipe, but resample the MRI of
+% subject1 to 1mm isotropic resolution first (the original MRI of subject1
+% has resolution of 1mm by 0.99mm by 0.99mm).
+% 
+% Example 20: roast([],{'Exx19',1,'C4',-1},'zeropadding',30)
+% 
+% Run simulation on the MNI152 averaged head, but add 30 empty slices on
+% each of the six directions to the MRI first, to allow placement of
+% electrode Exx19, which is outside of the MRI (i.e., several centimeters
+% below the most bottom slice of the MRI). If you run this without zero
+% padding first, you'll get strange results.
+% Note it is always a good practice to add empty slices to the MRI if you 
+% want to place electrodes close to, or even out of, the image boundary.
+% ROAST can detect if part or all of your electrode goes out of image boundary,
+% but sometimes it cannot tell (it's not that smart yet :-). So do a 'zeroPadding'
+% of 10 to start with, and if you're not happy with the results, just increase
+% the amount of zero padding. But the best solution is to get an MRI that covers
+% the area where you want to place the electrodes.
+% 
+% 
 % All the options above can be combined to meet your specific simulation
 % needs. For example:
 % roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
@@ -246,7 +287,7 @@ function roast(subj,recipe,varargin)
 %         'simulationTag','awesomeSimulation')
 % Now you should know what this will do.
 %
-% ROAST outputs 6 figures for quick visualization of the simulation
+% ROAST outputs 6 or 7 figures for quick visualization of the simulation
 % results. It also save the results as "subjName_simulationTag_result.mat".
 % 
 % For a formal description of ROAST, one is referred to (please use this as reference):
@@ -268,6 +309,8 @@ function roast(subj,recipe,varargin)
 % yhuang16@citymail.cuny.edu
 % April 2018
 
+addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+
 fprintf('\n\n');
 disp('======================================================')
 disp('CHECKING INPUTS...')
@@ -285,8 +328,16 @@ if strcmpi(subj,'nyhead')
     subj = 'example/nyhead.nii';
 end
 
-if isempty(strfind(subj,'nyhead')) && ~exist(subj,'file')
+if ~strcmpi(subj,'example/nyhead.nii') && ~exist(subj,'file')
     error(['The subject MRI you provided ' subj ' does not exist.']);
+end
+
+if ~strcmpi(subj,'example/nyhead.nii')
+    t1Data = load_untouch_nii(subj);
+    if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
+    end
+    % check if bad MRI header
 end
 
 % check recipe syntax
@@ -329,8 +380,14 @@ while indArg <= length(varargin)
         case 'simulationtag'
             simTag = varargin{indArg+1};
             indArg = indArg+2;
+        case 'resampling'
+            doResamp = varargin{indArg+1};
+            indArg = indArg+2;
+        case 'zeropadding'
+            paddingAmt = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'' and ''simulationTag''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -413,6 +470,9 @@ else
         if strcmpi(elecType,'pad') && any(elecSize(:,3) < 3)
             error('For Pad electrodes, the thickness should at least be 3 mm.');
         end
+        if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
+            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+        end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
@@ -455,6 +515,9 @@ else
                 end
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,3) < 3)
                     error('For Pad electrodes, the thickness should at least be 3 mm.');
+                end
+                if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
+                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -596,6 +659,12 @@ if ~exist('T2','var')
     T2 = [];
 else
     if ~exist(T2,'file'), error(['The T2 MRI you provided ' T2 ' does not exist.']); end
+    
+    t2Data = load_untouch_nii(T2);
+    if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
+    end
+    % check if bad MRI header    
 end
 
 if ~exist('meshOpt','var')
@@ -615,6 +684,63 @@ else
 end
 
 if ~exist('simTag','var'), simTag = []; end
+
+if ~exist('doResamp','var')
+    doResamp = 0;
+else
+    if ~ischar(doResamp), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.'); end
+    if strcmpi(doResamp,'off')
+        doResamp = 0;
+    elseif strcmpi(doResamp,'on')
+        doResamp = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.');
+    end
+end
+
+if ~exist('paddingAmt','var')
+    paddingAmt = 0;
+else
+    if paddingAmt<=0 || mod(paddingAmt,1)~=0
+        error('Unrecognized option value. Please enter positive integer value for option ''zeroPadding''. A recommended value is 10.');
+    end
+end
+
+% preprocess MRI data
+if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
+    
+    if any(t1Data.hdr.dime.pixdim(2:4)<0.8) && ~doResamp
+        warning('The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling process more computationally expensive and thus slower. If you wish to run faster using just 1-mm model, you can ask ROAST to re-sample the MRI into 1 mm first, by turning on the ''resampling'' option.');
+    end
+    % check if high-resolution MRI (< 0.8 mm in any direction)
+    
+    if length(unique(t1Data.hdr.dime.pixdim(2:4)))>1 && ~doResamp
+        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.1) of ROAST cannot perfectly handle anisotropic MRI as the input.');
+    end
+    % check if anisotropic resolution MRI
+    
+    if doResamp
+        subjRS = resampToOneMM(subj);
+    else
+        subjRS = subj;
+    end
+    
+    if paddingAmt>0
+        subjRSPD = zeroPadding(subjRS,paddingAmt);
+    else
+        subjRSPD = subjRS;
+    end
+    
+    if ~isempty(T2)
+        T2 = realignT2(T2,subjRSPD);
+    end
+    % check if T2 is aligned with T1
+    
+else
+    
+    subjRSPD = subj;
+    
+end
 
 % preprocess electrodes
 [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
@@ -644,7 +770,7 @@ for i=1:length(elecName)
 end
 configTxt = configTxt(1:end-2);
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -683,29 +809,29 @@ disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
-
 if ~strcmp(baseFilename,'nyhead')
     
-    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1orT2.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilename '_T1andT2.nii'],'file'))
+    [~,baseFilenameRSPD] = fileparts(subjRSPD);
+    
+    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1orT2.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1andT2.nii'],'file'))
         disp('======================================================')
-        disp('            STEP 1: SEGMENT THE MRI...                ')
+        disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
         disp('======================================================')
-        start_seg(subj,T2);
+        start_seg(subjRSPD,T2);
     else
         disp('======================================================')
         disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilename '_T1orT2_mask_gray.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilename '_T1andT2_mask_gray.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_mask_gray.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_mask_gray.nii'],'file'))
         disp('======================================================')
-        disp('          STEP 2: SEGMENTATION TOUCHUP...             ')
+        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
-        mysegment(subj,T2);
-        autoPatching(subj,T2);
+        mysegment(subjRSPD,T2);
+        autoPatching(subjRSPD,T2);
     else
         disp('======================================================')
         disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
@@ -717,27 +843,29 @@ else
     disp('======================================================')
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
-    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have decent machine to run ROAST with New York head.')
+    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>32GB memory) to run ROAST with New York head.')
+    [~,baseFilenameRSPD] = fileparts(subjRSPD);
     
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
     disp('======================================================')
-    disp('          STEP 3: ELECTRODE PLACEMENT...              ')
+    disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    [rnge_elec,rnge_gel] = electrodePlacement(subj,T2,elecName,elecPara,uniqueTag);
+    [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'rnge_elec','rnge_gel');
+    load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
-    disp('            STEP 4: MESH GENERATION...                ')
+    disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,T2,meshOpt,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRSPD,T2,meshOpt,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -747,9 +875,9 @@ end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
-    disp('           STEP 5: SOLVING THE MODEL...               ')
+    disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
-    label_elec = prepareForGetDP(subj,T2,node,elem,rnge_elec,rnge_gel,elecName,uniqueTag);
+    label_elec = prepareForGetDP(subj,node,elem,rnge_elec,rnge_gel,hdrInfo,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')
@@ -760,14 +888,14 @@ end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('======================================================')
-    disp('     STEP 6: SAVING AND VISUALIZING THE RESULTS...    ')
+    disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
-    [vol_all,ef_mag] = postGetDP(subj,node,uniqueTag);
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,0);
+    [vol_all,ef_mag] = postGetDP(subj,node,hdrInfo,uniqueTag);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,uniqueTag,1);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,1);
 end

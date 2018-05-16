@@ -123,3 +123,13 @@ if optNew.meshOpt.maxvol~=optOld.meshOpt.maxvol
     isNewOpt = 1;
     return
 end
+
+if optNew.resamp ~= optOld.resamp
+    isNewOpt = 1;
+    return
+end
+
+if optNew.zeroPad ~= optOld.zeroPad
+    isNewOpt = 1;
+    return
+end

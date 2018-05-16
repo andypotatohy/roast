@@ -105,8 +105,24 @@ end
 fprintf(fid,'\n');
 
 fprintf(fid,'meshOpt:\t');
-fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d\n',...
+fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
     opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
+fprintf(fid,'\n');
+
+fprintf(fid,'reSampling:\t');
+if opt.resamp
+    fprintf(fid,'on');
+else
+    fprintf(fid,'off');
+end
+fprintf(fid,'\n');
+
+fprintf(fid,'zeroPadding:\t');
+if opt.zeroPad>0
+    fprintf(fid,'%d',opt.zeroPad);
+else
+    fprintf(fid,'none');
+end
 
 fprintf(fid,'\n\n');
 fclose(fid);

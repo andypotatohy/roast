@@ -1,5 +1,5 @@
-function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
-% visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,uniTag,showAll)
+function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,hdrInfo,uniTag,showAll)
+% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,hdrInfo,uniTag,showAll)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -8,14 +8,20 @@ function visualizeRes(P,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,un
 % yhuang16@citymail.cuny.edu
 % April 2018
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
+[~,baseFilenameRSPD] = fileparts(P2);
+if isempty(T2)
+    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+else
+    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+end
 
 if showAll
     
     if ~strcmp(baseFilename,'nyhead')
         disp('showing MRI and segmentations...');
-        data = load_untouch_nii(P); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
+        data = load_untouch_nii(P2); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
         
         if ~isempty(T2) %T2 specified
             data = load_untouch_nii(T2);
@@ -32,11 +38,7 @@ if showAll
         if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
             data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
         else
-            if isempty(T2)
-                data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_' maskName{i} '.nii']);
-            else
-                data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_' maskName{i} '.nii']);
-            end
+            data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
         end
         img = data.img;
         
@@ -55,14 +57,8 @@ end
 % scrsz = get(groot,'ScreenSize');
 
 disp('generating 3D renderings...')
-if ~strcmp(baseFilename,'nyhead')
-    data = load_untouch_nii(P);
-else
-    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_skin.nii']);
-end
-M1 = [data.hdr.hist.srow_x;data.hdr.hist.srow_y;data.hdr.hist.srow_z;0 0 0 1];
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
-worldCoord = (M1*voxCoord')';
+worldCoord = (hdrInfo.v2w*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
 % sliceshow below is still in voxel space though
 node(:,1:3) = worldCoord(:,1:3);
@@ -72,9 +68,10 @@ indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
 indNode_elecFace = face(find(face(:,4) == 8),1:3);
 indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
 
-node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
-% smooth the surface that's to be displayed
-% just for display, the output data is not smoothed
+% node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
+% % smooth the surface that's to be displayed
+% % just for display, the output data is not smoothed
+% % very slow if mesh is big
 
 % totInCurMag = sum(abs(inCurrent))/2;
 totInCurMag = max(abs(inCurrent)); % maybe a user option?
@@ -165,13 +162,8 @@ drawnow
 
 disp('generating slice views...');
 
-if isempty(T2)
-    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_gray.nii']); gray = data.img;
-    data = load_untouch_nii([dirname filesep baseFilename '_T1orT2_mask_white.nii']); white = data.img;
-else
-    data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_gray.nii']); gray = data.img;
-    data = load_untouch_nii([dirname filesep baseFilename '_T1andT2_mask_white.nii']); white = data.img;
-end
+data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_gray.nii']); gray = data.img;
+data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_white.nii']); white = data.img;
 brain = gray | white;
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
@@ -182,3 +174,5 @@ sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anyw
 
 figName = ['Electric field in Simulation: ' uniTag];
 sliceshow(ef_mag.*nan_mask_brain,[],cm,[0 0.3*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+
+disp('=======================ALL DONE=======================');

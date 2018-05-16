@@ -15,7 +15,7 @@ end
 
 samp = round(len * density); % how many samples along the line
 
-coord = zeros(samp+1,3);
+coord = zeros(samp+1,3,'single');
 
 for j = 1:size(coord,1)
     coord(j,:) = p0 + 1/density * direction * (j-1);
