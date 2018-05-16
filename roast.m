@@ -844,6 +844,7 @@ else
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>32GB memory) to run ROAST with New York head.')
+    [~,baseFilenameRSPD] = fileparts(subjRSPD);
     
 end
 
