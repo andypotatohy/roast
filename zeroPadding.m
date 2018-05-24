@@ -15,7 +15,11 @@ if strfind(mri,'_padded')
     return;
 end
 
-mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];
+if strfind(mri,'example/nyhead_')
+    mriPD = [];
+else
+    mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];
+end
 
 if exist(mriPD,'file')
     

@@ -291,6 +291,8 @@ Now you should know what this will do.
 ROAST outputs 6 or 7 figures for quick visualization of the simulation
 results. It also save the results as "subjName_simulationTag_result.mat".
 
+Note ROAST was not designed to build models for pathological heads.
+
 For a formal description of ROAST, one is referred to (please use this as reference):
 https://www.biorxiv.org/content/early/2017/11/10/217331
 
@@ -315,4 +317,4 @@ General Public License version 3 or later.
 
 This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
 
-Note: ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts and documentation in this package and exclude those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
+Note: ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.

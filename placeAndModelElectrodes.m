@@ -146,24 +146,19 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             ring_radiusOut = elecPara(i).elecSize(2)/res;
             ring_height = elecPara(i).elecSize(3)/res;
             
+            dimTry = mean([ring_radiusOut ring_radiusIn]);
+            
             gel_out = elecLoc(i,:) +  2*ring_height*normal;
             electrode = gel_out + ring_height*normal;
-            gel_in = gel_out - 4*ring_height*normal; % coordinates of the boundaries of gel and electrode
+            gel_in = gel_out - dimTry*normal; % coordinates of the boundaries of gel and electrode
             
-            NOP = 500; den = 10;
-            r = ring_radiusIn:0.05:ring_radiusOut; % parameters used for modeling of electrodes and gel
+            den = 2; % 2 points per pixel
+            gel_coor = drawCylinder(ring_radiusIn,ring_radiusOut,gel_in,gel_out,den);
+            elec_coor = drawCylinder(ring_radiusIn,ring_radiusOut,gel_out,electrode,den);
+            % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
             
-            gel_X = zeros(length(r)*den*4,NOP,'single'); gel_Y = zeros(length(r)*den*4,NOP,'single'); gel_Z = zeros(length(r)*den*4,NOP,'single');
-            elec_X = zeros(length(r)*den,NOP,'single'); elec_Y = zeros(length(r)*den,NOP,'single'); elec_Z = zeros(length(r)*den,NOP,'single');
-            for j = 1:length(r)
-                [gel_X(((j-1)*den*4+1):den*4*j,:), gel_Y(((j-1)*den*4+1):den*4*j,:), gel_Z(((j-1)*den*4+1):den*4*j,:)] = cylinder2P(ones(den*4)*r(j),NOP,gel_in,gel_out);
-                [elec_X(((j-1)*den+1):den*j,:), elec_Y(((j-1)*den+1):den*j,:), elec_Z(((j-1)*den+1):den*j,:)] = cylinder2P(ones(den)*r(j),NOP,gel_out,electrode);
-            end % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
-            
-            gel_coor = floor([gel_X(:) gel_Y(:) gel_Z(:)]);
-            gel_coor = unique(gel_coor,'rows');
-            elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
-            elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
+            gel_coor = unique(round(gel_coor),'rows');
+            elec_coor = unique(round(elec_coor),'rows'); % clean-up of the coordinates
             
             if isDebug
                 plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');

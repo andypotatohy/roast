@@ -290,6 +290,8 @@ function roast(subj,recipe,varargin)
 % ROAST outputs 6 or 7 figures for quick visualization of the simulation
 % results. It also save the results as "subjName_simulationTag_result.mat".
 % 
+% Note ROAST was not designed to build models for pathological heads.
+% 
 % For a formal description of ROAST, one is referred to (please use this as reference):
 % https://www.biorxiv.org/content/early/2017/11/10/217331
 %
@@ -470,9 +472,9 @@ else
         if strcmpi(elecType,'pad') && any(elecSize(:,3) < 3)
             error('For Pad electrodes, the thickness should at least be 3 mm.');
         end
-        if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
-            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
-        end
+%         if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
+%             warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+%         end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
@@ -516,9 +518,9 @@ else
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,3) < 3)
                     error('For Pad electrodes, the thickness should at least be 3 mm.');
                 end
-                if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
-                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
-                end
+%                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
+%                     warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+%                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
                 end
@@ -738,8 +740,24 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
 else
     
-    subjRSPD = subj;
+    if doResamp
+        error('The beauty of New York head is its 0.5 mm resolution. It''s a bad practice to resample it into 1 mm. Use another head ''example/MNI152_T1_1mm.nii'' for 1 mm model.');
+    end
     
+    if paddingAmt>0
+        maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
+        for i=1:length(maskName)
+            subjRSPD = zeroPadding(['example/nyhead_T1orT2_mask_' maskName{i} '.nii'],paddingAmt);
+        end
+    else
+        subjRSPD = subj;
+    end
+    
+    if ~isempty(T2)
+       warning('New York head selected. Any specified T2 image will be ignored.');
+       T2 = [];
+    end
+        
 end
 
 % preprocess electrodes
