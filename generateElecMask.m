@@ -1,5 +1,5 @@
-function [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
-% [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+function [vol_elec,vol_elecLabel] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+% [vol_elec,vol_elecLabel] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
 % 
 % Convert point clouds of electrodes into 3D masks.
 % 
@@ -8,7 +8,8 @@ function [vol_elec,rnge,elec_allCoord] = generateElecMask(elec_allCoord,coordRan
 % April 2018
 
 vol_elec = zeros(coordRange);
-rnge = cell(length(elec_allCoord),1);
+vol_elecLabel = zeros(coordRange);
+% rnge = cell(length(elec_allCoord),1);
 
 for i = 1:length(elec_allCoord)
     temp = elec_allCoord{i};
@@ -20,8 +21,8 @@ for i = 1:length(elec_allCoord)
             & temp(:,3)>0 & temp(:,3)<=coordRange(3));
         if isempty(ind)
             error(['Electrode ' elec{i} ' goes out of image boundary. ROAST cannot proceed without a properly placed electrode. Please expand the input MRI by specifying the ''zeroPadding'' option.']);
-            elec_allCoord{i} = [];
-            rnge{i} = [];
+%             elec_allCoord{i} = [];
+%             rnge{i} = [];
         else
             if length(ind)<size(temp,1)
                 if doWarn
@@ -29,11 +30,13 @@ for i = 1:length(elec_allCoord)
                 end
             end
             temp = temp(ind,:);
-            elec_allCoord{i} = temp;
-            rnge{i} = [max(temp);min(temp)];
+            vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3)))=1;
+            vol_elecLabel(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3)))=i;
+%             elec_allCoord{i} = temp;
+%             rnge{i} = [max(temp);min(temp)];
         end
     end
 end
 
-allCoord = cell2mat(elec_allCoord);
-vol_elec(sub2ind(size(vol_elec),allCoord(:,1),allCoord(:,2),allCoord(:,3)))=1;
+% allCoord = cell2mat(elec_allCoord);
+% vol_elec(sub2ind(size(vol_elec),allCoord(:,1),allCoord(:,2),allCoord(:,3)))=1;

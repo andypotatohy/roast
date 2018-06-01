@@ -745,9 +745,17 @@ else
     end
     
     if paddingAmt>0
-        maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
+        maskName = {'white','gray','csf','bone','skin','air'};
         for i=1:length(maskName)
-            subjRSPD = zeroPadding(['example/nyhead_T1orT2_mask_' maskName{i} '.nii'],paddingAmt);
+            zeroPadding(['example/nyhead_T1orT2_mask_' maskName{i} '.nii'],paddingAmt);
+        end
+        subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
+        if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
+            load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
+            origin = inv(image.mat)*[0;0;0;1];
+            origin = origin(1:3) + paddingAmt;
+            image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
+            save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
         end
     else
         subjRSPD = subj;
@@ -866,16 +874,16 @@ else
     
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
+if ~exist([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
+    [volume_elecLabel,volume_gelLabel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'rnge_elec','rnge_gel');
+    load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
     load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
 end
 
@@ -895,7 +903,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
-    label_elec = prepareForGetDP(subj,node,elem,rnge_elec,rnge_gel,hdrInfo,elecName,uniqueTag);
+    label_elec = prepareForGetDP(subj,node,elem,volume_elecLabel,volume_gelLabel,hdrInfo,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')

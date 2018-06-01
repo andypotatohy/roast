@@ -16,7 +16,7 @@ if strfind(mri,'_padded')
 end
 
 if strfind(mri,'example/nyhead_')
-    mriPD = [];
+    mriPD = ['example/nyhead_padded' num2str(padNum) baseFilename(7:end) ext];
 else
     mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];
 end

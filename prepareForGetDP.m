@@ -1,5 +1,5 @@
-function [label_elec,label_gel] = prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,hdrInfo,elecNeeded,uniTag)
-% [label_elec,label_gel] = prepareForGetDP(P,node,elem,rnge_elec,rnge_gel,hdrInfo,elecNeeded,uniTag)
+function [label_elec,label_gel] = prepareForGetDP(P,node,elem,volume_elecLabel,volume_gelLabel,hdrInfo,elecNeeded,uniTag)
+% [label_elec,label_gel] = prepareForGetDP(P,node,elem,volume_elecLabel,volume_gelLabel,hdrInfo,elecNeeded,uniTag)
 %
 % Prepare to solve in getDP
 %
@@ -17,44 +17,25 @@ X = zeros(size(indNode_elecElm,1),3);
 for e = 1:size(indNode_elecElm,1), X(e,:) = mean ( node(indNode_elecElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
-label_elec = zeros(size(X,1),1);
-for i = 1:size(X,1)
-    offset = 0;
-    while label_elec(i)==0
-        for k = 1:length(rnge_elec)
-            if ~isempty(rnge_elec{k}) && X(i,1)>rnge_elec{k}(2,1)-offset && X(i,1)<rnge_elec{k}(1,1)+offset && X(i,2)>rnge_elec{k}(2,2)-offset && X(i,2)<rnge_elec{k}(1,2)+offset && X(i,3)>rnge_elec{k}(2,3)-offset && X(i,3)<rnge_elec{k}(1,3)+offset
-                label_elec(i) = k;
-            end
-        end
-        offset = offset+0.1;
-    end
-    %     if mod(i,100) == 0
-    %         fprintf('%f%% completed...\n',i*100/length(X))
-    %     end
-end
-% figure; plot3(X(find(label_elec==1),1),X(find(label_elec==1),2),X(find(label_elec==1),3),'r.')
+Xt = round(X);
+label_elec = volume_elecLabel(sub2ind(size(volume_elecLabel),Xt(:,1),Xt(:,2),Xt(:,3)));
+indBad = find(label_elec==0);
+indGood = find(label_elec>0);
+[~,indOnGood] = map2Points(X(indBad,:),X(indGood,:),'closest'); % using nearest neighbor to fix bad labeling
+label_elec(indBad) = label_elec(indGood(indOnGood));
 
 indNode_gelElm = elem(find(elem(:,5) == 7),1:4);
 X = zeros(size(indNode_gelElm,1),3);
 for e = 1:size(indNode_gelElm,1), X(e,:) = mean ( node(indNode_gelElm(e,:),1:3) ); end
 % figure; plot3(X(:,1),X(:,2),X(:,3),'r.');
 
-label_gel = zeros(size(X,1),1);
-for i = 1:size(X,1)
-    offset = 0;
-    while label_gel(i)==0
-        for k = 1:length(rnge_gel)
-            if ~isempty(rnge_gel{k}) && X(i,1)>rnge_gel{k}(2,1)-offset && X(i,1)<rnge_gel{k}(1,1)+offset && X(i,2)>rnge_gel{k}(2,2)-offset && X(i,2)<rnge_gel{k}(1,2)+offset && X(i,3)>rnge_gel{k}(2,3)-offset && X(i,3)<rnge_gel{k}(1,3)+offset
-                label_gel(i) = k;
-            end
-        end
-        offset = offset+0.1;
-    end
-    %     if mod(i,100) == 0
-    %         fprintf('%f%% completed...\n',i*100/length(X))
-    %     end
-end
-% figure; plot3(X(find(label_gel==1),1),X(find(label_gel==1),2),X(find(label_gel==1),3),'r.')
+Xt = round(X);
+label_gel = volume_gelLabel(sub2ind(size(volume_gelLabel),Xt(:,1),Xt(:,2),Xt(:,3)));
+indBad = find(label_gel==0);
+indGood = find(label_gel>0);
+[~,indOnGood] = map2Points(X(indBad,:),X(indGood,:),'closest'); % using nearest neighbor to fix bad labeling
+label_gel(indBad) = label_gel(indGood(indOnGood));
+
 save([dirname filesep baseFilename '_' uniTag '_elecMeshLabels.mat'],'label_elec','label_gel');
 
 element_elecNeeded = cell(length(elecNeeded),1);

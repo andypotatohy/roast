@@ -1,5 +1,5 @@
-function [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
-% [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+function [volume_elecLabel,volume_gelLabel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+% [volume_elecLabel,volume_gelLabel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 %
 % Place electrodes on the scalp surface. options.elecPara contains all the options
 % info for each electrode.
@@ -152,8 +152,8 @@ for i = 1:length(elec_C)
     end
 end
 
-[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
-[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
+[volume_elec,volume_elecLabel] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
+[volume_gel,volume_gelLabel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
 
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
@@ -176,7 +176,7 @@ save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.ni
 % end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
 % % this may not be needed for iso2mesh mesher.
 
-save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');
+save([dirname filesep baseFilename '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
 [~,baseFilenameRSPD] = fileparts(P2);
 if ~exist([dirname filesep baseFilenameRSPD '_header.mat'],'file')
     save([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
