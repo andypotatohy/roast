@@ -17,26 +17,17 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
-maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
-
-for i=1:length(maskName)
-    
-    if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
-        data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
-    else
-        data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
-    end
-    img = data.img;
-    
-    if i==1, [dim1,dim2,dim3] = size(img); allMask = zeros(dim1,dim2,dim3); end
-    
-    allMask(img==255) = i;
-end
+data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+allMask = data.img;
+data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+allMask(data.img==255) = 7;
+data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+allMask(data.img==255) = 8;
 
 sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
 drawnow
 
-allMask = uint8(allMask);
+% allMask = uint8(allMask);
 
 % opt.radbound = 5; % default 6, maximum surface element size
 % opt.angbound = 30; % default 30, miminum angle of a surface triangle

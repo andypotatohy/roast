@@ -28,14 +28,14 @@ landmarks_original = getLandmarks(P2,T2);
 
 [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-template = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_skin.nii']); % Load the scalp mask
-% template is used for saving the results with the same header info as the input
+template = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+% Load the scalp mask; template is used for saving the results with the same header info as the input
 pixdim = template.hdr.dime.pixdim(2:4);
 dim = size(template.img);
 v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
 hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 % keep the header info for use later
-scalp_original = template.img;
+scalp_original = template.img==5;
 
 scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
 
@@ -158,13 +158,16 @@ end
 disp('final clean-up...')
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
 volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlap with the electrode
-bone = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_bone.nii']);
-volume_bone = bone.img;
+volume_bone = template.img==4;
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 
 % disp('saving the results...')
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_elec'];
+template.hdr.hist.descrip = 'electrode mask';
 template.img = uint8(volume_elec)*255;
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_gel'];
+template.hdr.hist.descrip = 'gel mask';
 template.img = uint8(volume_gel)*255;
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 

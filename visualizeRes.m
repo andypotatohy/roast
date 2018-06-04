@@ -31,21 +31,12 @@ if showAll
         disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
     end
     
-    maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
-    
-    for i=1:length(maskName)
-        
-        if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
-            data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
-        else
-            data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
-        end
-        img = data.img;
-        
-        if i==1, [dim1,dim2,dim3] = size(img); allMask = zeros(dim1,dim2,dim3); end
-        
-        allMask(img==255) = i;
-    end
+    data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+    allMask = data.img;
+    data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+    allMask(data.img==255) = 7;
+    data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+    allMask(data.img==255) = 8;
     
     sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
     drawnow
@@ -162,9 +153,8 @@ drawnow
 
 disp('generating slice views...');
 
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_gray.nii']); gray = data.img;
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_white.nii']); white = data.img;
-brain = gray | white;
+data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']); allMask = data.img;
+brain = (allMask==1 | allMask==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 

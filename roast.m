@@ -717,7 +717,7 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     % check if high-resolution MRI (< 0.8 mm in any direction)
     
     if length(unique(t1Data.hdr.dime.pixdim(2:4)))>1 && ~doResamp
-        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.1) of ROAST cannot perfectly handle anisotropic MRI as the input.');
+        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.2) of ROAST cannot perfectly handle anisotropic MRI as the input.');
     end
     % check if anisotropic resolution MRI
     
@@ -745,10 +745,7 @@ else
     end
     
     if paddingAmt>0
-        maskName = {'white','gray','csf','bone','skin','air'};
-        for i=1:length(maskName)
-            zeroPadding(['example/nyhead_T1orT2_mask_' maskName{i} '.nii'],paddingAmt);
-        end
+        zeroPadding('example/nyhead_T1orT2_masks.nii',paddingAmt);
         subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
         if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
             load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
@@ -851,13 +848,12 @@ if ~strcmp(baseFilename,'nyhead')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_mask_gray.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_mask_gray.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_masks.nii'],'file'))
         disp('======================================================')
         disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
-        mysegment(subjRSPD,T2);
-        autoPatching(subjRSPD,T2);
+        segTouchup(subjRSPD,T2);
     else
         disp('======================================================')
         disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
