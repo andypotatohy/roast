@@ -740,6 +740,10 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
 else
     
+    if ~exist('example/nyhead_T1orT2_masks.nii','file')
+        unzip('example/nyhead_T1orT2_masks.nii.zip','example')
+    end
+    
     if doResamp
         error('The beauty of New York head is its 0.5 mm resolution. It''s a bad practice to resample it into 1 mm. Use another head ''example/MNI152_T1_1mm.nii'' for 1 mm model.');
     end
