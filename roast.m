@@ -472,9 +472,9 @@ else
         if strcmpi(elecType,'pad') && any(elecSize(:,3) < 3)
             error('For Pad electrodes, the thickness should at least be 3 mm.');
         end
-%         if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
-%             warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
-%         end
+        if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
+            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
+        end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
         end
@@ -518,9 +518,9 @@ else
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:,3) < 3)
                     error('For Pad electrodes, the thickness should at least be 3 mm.');
                 end
-%                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
-%                     warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
-%                 end
+                if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
+                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
+                end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
                 end
@@ -717,7 +717,7 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     % check if high-resolution MRI (< 0.8 mm in any direction)
     
     if length(unique(t1Data.hdr.dime.pixdim(2:4)))>1 && ~doResamp
-        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.2) of ROAST cannot perfectly handle anisotropic MRI as the input.');
+        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the electrode size will not be exact if the model is built from an MRI with anisotropic resolution.');
     end
     % check if anisotropic resolution MRI
     
@@ -916,7 +916,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('======================================================')
     disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
-    [vol_all,ef_mag] = postGetDP(subj,node,hdrInfo,uniqueTag);
+    [vol_all,ef_mag] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
     visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,0);
 else
     disp('======================================================')
