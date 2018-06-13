@@ -289,9 +289,14 @@ roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custo
 Now you should know what this will do.
 
 ROAST outputs 6 or 7 figures for quick visualization of the simulation
-results. It also save the results as "subjName_simulationTag_result.mat".
+results. It also saves the results as
+"subjName_simulationTag_result.mat", and as NIFTI files:
+Voltage: "subjName_simulationTag_v.nii"
+E-field: "subjName_simulationTag_e.nii"
+E-field magnitude: "subjName_simulationTag_emag.nii"
 
-Note ROAST was not designed to build models for pathological heads.
+Note ROAST was not designed to build models for pathological heads, but 
+there are plans to add this capability in the future versions.
 
 For a formal description of ROAST, one is referred to (please use this as reference):
 https://www.biorxiv.org/content/early/2017/11/10/217331

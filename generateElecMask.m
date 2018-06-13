@@ -1,5 +1,5 @@
-function [vol_elec,vol_elecLabel] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
-% [vol_elec,vol_elecLabel] = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+function vol_elec = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
+% vol_elec = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
 % 
 % Convert point clouds of electrodes into 3D masks.
 % 
@@ -8,7 +8,7 @@ function [vol_elec,vol_elecLabel] = generateElecMask(elec_allCoord,coordRange,el
 % April 2018
 
 vol_elec = zeros(coordRange);
-vol_elecLabel = zeros(coordRange);
+% vol_elecLabel = zeros(coordRange);
 % rnge = cell(length(elec_allCoord),1);
 
 for i = 1:length(elec_allCoord)
@@ -30,8 +30,10 @@ for i = 1:length(elec_allCoord)
                 end
             end
             temp = temp(ind,:);
-            vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3)))=1;
-            vol_elecLabel(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3)))=i;
+%             can detect elec overlap here
+%             vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = 1;
+            vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = i; % individual mask/color for each elec & gel
+%             vol_elecLabel(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = i;
 %             elec_allCoord{i} = temp;
 %             rnge{i} = [max(temp);min(temp)];
         end

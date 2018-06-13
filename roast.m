@@ -288,9 +288,14 @@ function roast(subj,recipe,varargin)
 % Now you should know what this will do.
 %
 % ROAST outputs 6 or 7 figures for quick visualization of the simulation
-% results. It also save the results as "subjName_simulationTag_result.mat".
+% results. It also saves the results as
+% "subjName_simulationTag_result.mat", and as NIFTI files:
+% Voltage: "subjName_simulationTag_v.nii"
+% E-field: "subjName_simulationTag_e.nii"
+% E-field magnitude: "subjName_simulationTag_emag.nii"
 % 
-% Note ROAST was not designed to build models for pathological heads.
+% Note ROAST was not designed to build models for pathological heads, but
+% there are plans to add this capability in the future versions.
 % 
 % For a formal description of ROAST, one is referred to (please use this as reference):
 % https://www.biorxiv.org/content/early/2017/11/10/217331
@@ -874,16 +879,16 @@ else
     
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'file')
+if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    [volume_elecLabel,volume_gelLabel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
+    hdrInfo = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
+%     load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
     load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
 end
 
@@ -903,13 +908,13 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
-    label_elec = prepareForGetDP(subj,node,elem,volume_elecLabel,volume_gelLabel,hdrInfo,elecName,uniqueTag);
+    prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
     solveByGetDP(subj,injectCurrent,uniqueTag);
 else
     disp('======================================================')
     disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+%     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
@@ -917,11 +922,11 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
     [vol_all,ef_mag] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,0);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,hdrInfo,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
     load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,1);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,hdrInfo,uniqueTag,1);
 end
