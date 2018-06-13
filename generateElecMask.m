@@ -8,6 +8,7 @@ function vol_elec = generateElecMask(elec_allCoord,coordRange,elec,doWarn)
 % April 2018
 
 vol_elec = zeros(coordRange);
+vol_isElec = zeros(coordRange); % for detecting electrodes overlap
 % vol_elecLabel = zeros(coordRange);
 % rnge = cell(length(elec_allCoord),1);
 
@@ -30,10 +31,14 @@ for i = 1:length(elec_allCoord)
                 end
             end
             temp = temp(ind,:);
-%             can detect elec overlap here
-%             vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = 1;
-            vol_elec(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = i; % individual mask/color for each elec & gel
-%             vol_elecLabel(sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3))) = i;
+            indElec = sub2ind(size(vol_elec),temp(:,1),temp(:,2),temp(:,3));
+            if any(vol_isElec(indElec))
+                error(['Electrode ' elec{i} ' overlaps with Electrode ' elec{i-1} '. ROAST cannot continue as overlapping electrodes will confuse ROAST when setting up the boundary conditions for the model. To avoid overlapping, please do not place two electrodes too close to each other, or reduce the size of any neighboring electrodes.']);
+            end
+%             vol_elec(indElec) = 1;
+            vol_elec(indElec) = i; % individual mask/color for each elec & gel
+            vol_isElec(indElec) = 1;            
+%             vol_elecLabel(indElec) = i;
 %             elec_allCoord{i} = temp;
 %             rnge{i} = [max(temp);min(temp)];
         end

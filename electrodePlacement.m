@@ -95,6 +95,12 @@ end
 
 %% head clean up for placing electrodes
 [scalp_clean,scalp_filled] = cleanScalp(scalp,scalp_surface);
+temp1 = scalp_filled(:,:,[1 end]);
+temp2 = scalp_filled(:,[1 end],:);
+temp3 = scalp_filled([1 end],:,:);
+if any([temp1(:);temp2(:);temp3(:)])
+    warning('Scalp touches image boundary. Electrodes may go out of image boundary. ROAST can continue but results may not be accurate. It is recommended that you expand the input MRI by specifying the ''zeroPadding'' option.');
+end    
 scalp_clean_surface = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
