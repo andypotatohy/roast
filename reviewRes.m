@@ -1,17 +1,40 @@
-function reviewRes(subj,simTag,tissue,climEF,fastRender)
-% reviewRes(subj,simTag,tissue,climEF,fastRender)
+function reviewRes(subj,simTag,tissue,fastRender)
+% reviewRes(subj,simTag,tissue,fastRender)
 %
 % A simpler interface to visualize the simulations that are already done.
 % Users do not have to enter all the simulation parameters as they would
 % have in roast() main function. Instead, they just need to enter the path
 % to the input MRI and the unique simulation tag for that MRI.
 %
-% Required input: subj, simTag
-% Optional: xxx
-% climEF will be related to conductivity values
+% Required input:
+% subj -- path to the MRI that was used for simulations, defaults to the
+% MRI of the MNI152 head.
+% simTag -- the unique simulation tag of each simulation, which can be
+% looked up in the log file of the subject.
+% 
+% Optional input:
+% tissue -- which tissue to show in the visualization, defaults to the
+% brain. You can also choose from white matter, gray matter, CSF, bone,
+% skin, and air cavities.
+% fastRender -- do fast 3D rendering or not. By default it's fast
+% rendering. If you turn this option off, it'll generate a smoother surface
+% rendering but also needs more time if the mesh is big.
 %
-% Example:
+% Examples:
 %
+% reviewRes([],'awesomeSimulation','white')
+% Review the results from simulation tagged 'awesomeSimulation' on the
+% MNI152 head, showing the results in white matter specifically.
+% 
+% reviewRes('nyhead','20180611T185950')
+% Review the results from simulation tagged '20180611T185950' on the
+% New York head, showing the results in the brian specifically.
+% 
+% reviewRes('example/subject1.nii','20180613T142621','bone',0)
+% Review the results from simulation tagged '20180613T142621' on subject
+% example/subject1.nii, showing the results in the bone specifically, with
+% smoothed surface rendering.
+% 
 % Note the 3D rendering is displayed in the world space, while the slice view
 % is done in the voxel space.
 %
@@ -44,36 +67,32 @@ switch lower(tissue)
     case 'white'
         indSurfShow = 1;
         indSliceShow = 1;
-        scalar = 0.3;
     case 'gray'
         indSurfShow = 2;
         indSliceShow = 2;
-        scalar = 0.3;
     case 'csf'
         indSurfShow = 3;
         indSliceShow = 3;
-        scalar = 1;
     case 'bone'
         indSurfShow = 4;
         indSliceShow = 4;
-        scalar = 3;
     case 'skin'
         indSurfShow = 5;
         indSliceShow = 5;
-        scalar = 3;
     case 'air'
         indSurfShow = 6;
         indSliceShow = 6;
-        scalar = 1;
     case 'brain'
         indSurfShow = 2;
         indSliceShow = 1:2;
-        scalar = 0.3;
     otherwise
         error('Supported tissues to be displayed are: ''white'', ''gray'', ''CSF'', ''bone'', ''skin'', ''air'' and ''brain''.');
 end
 
-% check other 2 input
+% check if do fast rendering
+if nargin<4 || isempty(fastRender)
+    fastRender = 1; % no smoothing on surface
+end
 
 [dirname,baseFilename,ext] = fileparts(subj);
 if ~exist([dirname filesep baseFilename '_' simTag '_options.mat'],'file')
@@ -173,10 +192,11 @@ end
 indNode_showFace = face(find(face(:,4) == indSurfShow),1:3);
 indNode_showElm = elem(find(elem(:,5) == indSurfShow),1:4);
 
-% node(:,1:3) = sms(node(:,1:3),indNode_showFace);
-% % smooth the surface that's to be displayed
-% % just for display, the output data is not smoothed
-% % very slow if mesh is big
+if ~fastRender
+    node(:,1:3) = sms(node(:,1:3),indNode_showFace);
+    % smooth the surface that's to be displayed (just for display, the output data is not smoothed)
+    % very slow if mesh is big
+end
 
 hdrFile = [dirname filesep baseFilenameRSPD '_header.mat'];
 if ~exist(hdrFile,'file')
@@ -194,8 +214,6 @@ node(:,1:3) = worldCoord(:,1:3);
 indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
 indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
 
-% totInCurMag = sum(abs(inCurrent))/2;
-totInCurMag = max(abs(inCurrent)); % maybe a user option?
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
 volFile = [dirname filesep baseFilename '_' simTag '_v.pos'];
@@ -267,7 +285,8 @@ figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
 set(gcf,'color','w');
 colormap(jet);
 plotmesh(dataShow,indNode_showFace,indNode_showElm,'LineStyle','none');
-dataShowRange = [0 scalar*totInCurMag];
+dataShowVal = dataShow(unique(indNode_showElm(:)),4);
+dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
 dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
 for i=1:length(inCurrent)
     %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
@@ -315,4 +334,4 @@ figName = ['Voltage in Simulation: ' simTag];
 sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' simTag];
-sliceshow(ef_mag.*nan_mask,[],cm,[0 scalar*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+sliceshow(ef_mag.*nan_mask,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow

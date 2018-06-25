@@ -68,8 +68,6 @@ indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
 % % just for display, the output data is not smoothed
 % % very slow if mesh is big
 
-% totInCurMag = sum(abs(inCurrent))/2;
-totInCurMag = max(abs(inCurrent)); % maybe a user option?
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
@@ -131,7 +129,8 @@ figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
 set(gcf,'color','w');
 colormap(jet);
 plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
-dataShowRange = [0 0.3*totInCurMag];
+dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
+dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
 dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
 for i=1:length(inCurrent)
 %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
@@ -168,6 +167,6 @@ figName = ['Voltage in Simulation: ' uniTag];
 sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' uniTag];
-sliceshow(ef_mag.*nan_mask_brain,[],cm,[0 0.3*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
 
 disp('=======================ALL DONE=======================');

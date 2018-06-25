@@ -103,34 +103,44 @@ csf_temp=csf_temp|contin;
 disp('removing disconnected voxels...')
 % disp('removing disconnected voxels for GM...')
 siz = sizeOfObject(gray_temp,conn);
-thres = siz(2)+1; % may not be robust, but will be tested in future data % ANDY 2017-05-17
-gray_temp = bwareaopen(gray_temp,thres,conn);
+if length(siz)>=2
+    thres = siz(2)+1; % may not be robust, but will be tested in future data % ANDY 2017-05-17
+    gray_temp = bwareaopen(gray_temp,thres,conn);
+end
 
 % disp('removing disconnected voxels for WM...')
 siz = sizeOfObject(white_temp,conn);
-thres = siz(2)+1; % may not be robust, but will be tested in future data % ANDY 2017-05-17
-white_temp = bwareaopen(white_temp,thres,conn);
+if length(siz)>=2
+    thres = siz(2)+1; % may not be robust, but will be tested in future data % ANDY 2017-05-17
+    white_temp = bwareaopen(white_temp,thres,conn);
+end
 
 % disp('removing disconnected voxels for CSF...')
 siz = sizeOfObject(csf_temp,conn);
-thres = siz(4)+1;
-csf_temp = bwareaopen(csf_temp,thres,conn);
+if length(siz)>=4
+    thres = siz(4)+1;
+    csf_temp = bwareaopen(csf_temp,thres,conn);
+end
 
 % disp('removing disconnected voxels for bone...')
 siz = sizeOfObject(bone_temp,conn);
-thres = siz(2)+1; % this is aggressive, removing all floating structures including those in the spine.
+if length(siz)>=2
+    thres = siz(2)+1; % this is aggressive, removing all floating structures including those in the spine.
                   % But maybe it does not matter much, as we don't care much about the lower part of the head
                   % ANDY 2017-05-17
                   % If we do this less aggressively, ie, those wrong
                   % floatings will be kept, then the model may not be
                   % solved without manually removing them
-% thres = 300; % this is hard to generalize robustly
-bone_temp = bwareaopen(bone_temp,thres,conn);
+    % thres = 300; % this is hard to generalize robustly
+    bone_temp = bwareaopen(bone_temp,thres,conn);
+end
 
 % disp('removing disconnected voxels for skin...')
 siz = sizeOfObject(skin_temp,conn);
-thres = siz(2)+1;
-skin_temp = bwareaopen(skin_temp,thres,conn);
+if length(siz)>=2
+    thres = siz(2)+1;
+    skin_temp = bwareaopen(skin_temp,thres,conn);
+end
 
 % disp('removing disconnected voxels for air...')
 thres = 20;
