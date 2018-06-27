@@ -1,5 +1,5 @@
-function solveByGetDP(P,current,uniTag)
-% solveByGetDP(P,current,uniTag)
+function solveByGetDP(P,current,sigma,uniTag)
+% solveByGetDP(P,current,sigma,uniTag)
 % 
 % Solve in getDP, a free FEM solver available at 
 % http://getdp.info/
@@ -52,19 +52,19 @@ fprintf(fid,'%s\n\n',['AllDomain = Region[{white, gray, csf, bone, skin, air, ' 
 fprintf(fid,'%s\n\n','}');
 
 fprintf(fid,'%s\n\n','Function {');
-fprintf(fid,'%s\n','sigma[white] = 0.126;');
-fprintf(fid,'%s\n','sigma[gray] = 0.276;');
-fprintf(fid,'%s\n','sigma[csf] = 1.65;');
-fprintf(fid,'%s\n','sigma[bone] = 0.01;');
-fprintf(fid,'%s\n','sigma[skin] = 0.465;');
-fprintf(fid,'%s\n','sigma[air] = 2.5e-14;');
+fprintf(fid,'%s\n',['sigma[white] = ' num2str(sigma.white) ';']);
+fprintf(fid,'%s\n',['sigma[gray] = ' num2str(sigma.gray) ';']);
+fprintf(fid,'%s\n',['sigma[csf] = ' num2str(sigma.csf) ';']);
+fprintf(fid,'%s\n',['sigma[bone] = ' num2str(sigma.bone) ';']);
+fprintf(fid,'%s\n',['sigma[skin] = ' num2str(sigma.skin) ';']);
+fprintf(fid,'%s\n',['sigma[air] = ' num2str(sigma.air) ';']);
 % fprintf(fid,'%s\n','sigma[gel] = 0.3;');
 % fprintf(fid,'%s\n','sigma[elec] = 5.9e7;');
 for i=1:numOfElec
-    fprintf(fid,'%s\n',['sigma[gel' num2str(i) '] = 0.3;']);
+    fprintf(fid,'%s\n',['sigma[gel' num2str(i) '] = ' num2str(sigma.gel(i)) ';']);
 end
 for i=1:numOfElec
-    fprintf(fid,'%s\n',['sigma[elec' num2str(i) '] = 5.9e7;']);
+    fprintf(fid,'%s\n',['sigma[elec' num2str(i) '] = ' num2str(sigma.electrode(i)) ';']);
 end
 
 for i=1:numOfElec

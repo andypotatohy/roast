@@ -120,7 +120,7 @@ function roast(subj,recipe,varargin)
 % meshOpt.reratio: maximal radius-edge ratio, default 3;
 % meshOpt.maxvol: target maximal tetrahedral element volume, default 10.
 % See iso2mesh documentation for more details on these options.
-%
+% 
 % 'simulationTag': a unique tag that identifies each simulation.
 % dateTime string (default) | user-provided string
 % This tag is used by ROAST for managing simulation data. ROAST can
@@ -150,6 +150,9 @@ function roast(subj,recipe,varargin)
 % back, up and down), where N is a positive integer. This is very useful
 % when placing big electrodes on the locations close to image boundaries
 % (Example 20).
+% 
+% 'conductivities': advanced options of ROAST, for controlling tissue
+% conductivities (see Example 21-22). 
 %
 % More advanced examples with these options:
 % 
@@ -393,8 +396,11 @@ while indArg <= length(varargin)
         case 'zeropadding'
             paddingAmt = varargin{indArg+1};
             indArg = indArg+2;
+        case 'conductivities'
+            conductivities = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -677,17 +683,47 @@ end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 else
-    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
+    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
     meshOptNam = fieldnames(meshOpt);
     if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
-        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+    end
+    if ~isfield(meshOpt,'radbound')
+        meshOpt.radbound = 5;
+    else
+        if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
+            error('Please enter a positive number for the mesh option ''radbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'angbound')
+        meshOpt.angbound = 30;
+    else
+        if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
+            error('Please enter a positive number for the mesh option ''angbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'distbound')
+        meshOpt.distbound = 0.4;
+    else
+        if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
+            error('Please enter a positive number for the mesh option ''distbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'reratio')
+        meshOpt.reratio = 3;
+    else
+        if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
+            error('Please enter a positive number for the mesh option ''reratio''.');
+        end
+    end
+    if ~isfield(meshOpt,'maxvol')
+        meshOpt.maxvol = 10;
+    else
+        if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
+            error('Please enter a positive number for the mesh option ''maxvol''.');
+        end
     end
     warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
-    if ~isfield(meshOpt,'radbound'), meshOpt.radbound = 5; end
-    if ~isfield(meshOpt,'angbound'), meshOpt.angbound = 30; end
-    if ~isfield(meshOpt,'distbound'), meshOpt.distbound = 0.4; end
-    if ~isfield(meshOpt,'reratio'), meshOpt.reratio = 3; end
-    if ~isfield(meshOpt,'maxvol'), meshOpt.maxvol = 10; end
 end
 
 if ~exist('simTag','var'), simTag = []; end
@@ -711,6 +747,93 @@ else
     if paddingAmt<=0 || mod(paddingAmt,1)~=0
         error('Unrecognized option value. Please enter positive integer value for option ''zeroPadding''. A recommended value is 10.');
     end
+end
+
+if ~exist('conductivities','var')
+    conductivities = struct('white',0.126,'gray',0.276,'csf',1.65,'bone',0.01,...
+                           'skin',0.465,'air',2.5e-14,'gel',0.3,'electrode',5.9e7); % literature values
+else
+    if ~isstruct(conductivities), error('Unrecognized format of conductivity values. Please enter as a structure, with field names as ''white'', ''gray'', ''csf'', ''bone'', ''skin'', ''air'', ''gel'' and ''electrode''.'); end
+    conductivitiesNam = fieldnames(conductivities);
+    if isempty(conductivitiesNam) || ~all(ismember(conductivitiesNam,{'white';'gray';'csf';'bone';'skin';'air';'gel';'electrode'}))
+        error('Unrecognized tissue names detected. Supported tissue names in the conductivity option are ''white'', ''gray'', ''csf'', ''bone'', ''skin'', ''air'', ''gel'' and ''electrode''.');
+    end
+    if ~isfield(conductivities,'white')
+        conductivities.white = 0.126;
+    else
+        if ~isnumeric(conductivities.white) || any(conductivities.white(:)<=0)
+            error('Please enter a positive number for the white matter conductivity.');
+        end
+        if length(conductivities.white(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'gray')
+        conductivities.gray = 0.276;
+    else
+        if ~isnumeric(conductivities.gray) || any(conductivities.gray(:)<=0)
+            error('Please enter a positive number for the gray matter conductivity.');
+        end
+        if length(conductivities.gray(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'csf')
+        conductivities.csf = 1.65;
+    else
+        if ~isnumeric(conductivities.csf) || any(conductivities.csf(:)<=0)
+            error('Please enter a positive number for the CSF conductivity.');
+        end
+        if length(conductivities.csf(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'bone')
+        conductivities.bone = 0.01;
+    else
+        if ~isnumeric(conductivities.bone) || any(conductivities.bone(:)<=0)
+            error('Please enter a positive number for the bone conductivity.');
+        end
+        if length(conductivities.bone(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'skin')
+        conductivities.skin = 0.465;
+    else
+        if ~isnumeric(conductivities.skin) || any(conductivities.skin(:)<=0)
+            error('Please enter a positive number for the skin conductivity.');
+        end
+        if length(conductivities.skin(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'air')
+        conductivities.air = 2.5e-14;
+    else
+        if ~isnumeric(conductivities.air) || any(conductivities.air(:)<=0)
+            error('Please enter a positive number for the air conductivity.');
+        end
+        if length(conductivities.air(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'gel')
+        conductivities.gel = 0.3;
+    else
+        if ~isnumeric(conductivities.gel) || any(conductivities.gel(:)<=0)
+            error('Please enter a positive number for the gel conductivity.');
+        end
+        if length(conductivities.gel(:))>1 && length(conductivities.gel(:))~=length(elecName)
+           error('You want to assign different conductivities to the conducting media under different electrodes, but didn''t tell ROAST clearly which conductivity each electrode should use. Please follow the order of electrodes you put in ''recipe'' to give each of them the corresponding conductivity in a vector as the value for the ''gel'' field in option ''conductivities''.');
+        end
+    end
+    if ~isfield(conductivities,'electrode')
+        conductivities.electrode = 5.9e7;
+    else
+        if ~isnumeric(conductivities.electrode) || any(conductivities.electrode(:)<=0)
+            error('Please enter a positive number for the electrode conductivity.');
+        end
+        if length(conductivities.electrode(:))>1 && length(conductivities.electrode(:))~=length(elecName)
+           error('You want to assign different conductivities to different electrodes, but didn''t tell ROAST clearly which conductivity each electrode should use. Please follow the order of electrodes you put in ''recipe'' to give each of them the corresponding conductivity in a vector as the value for the ''electrode'' field in option ''conductivities''.');
+        end
+    end
+    warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep conductivity values default.');
+end
+
+if length(conductivities.gel(:))==1
+    conductivities.gel = repmat(conductivities.gel,1,length(elecName));
+end
+if length(conductivities.electrode(:))==1
+    conductivities.electrode = repmat(conductivities.electrode,1,length(elecName));
 end
 
 % preprocess MRI data
@@ -783,6 +906,8 @@ if abs(sum(injectCurrent))>eps
 end
 elecName = elecName(ind2usrInput);
 injectCurrent = injectCurrent(ind2usrInput);
+conductivities.gel = conductivities.gel(ind2usrInput);
+conductivities.electrode = conductivities.electrode(ind2usrInput);
 
 % sort elec options
 if length(elecPara)==1
@@ -802,7 +927,7 @@ for i=1:length(elecName)
 end
 configTxt = configTxt(1:end-2);
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -909,7 +1034,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
     prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
-    solveByGetDP(subj,injectCurrent,uniqueTag);
+    solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
 else
     disp('======================================================')
     disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')

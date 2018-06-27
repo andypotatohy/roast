@@ -109,6 +109,15 @@ fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %
     opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
 fprintf(fid,'\n');
 
+fprintf(fid,'conductivities:\t');
+fprintf(fid,'white: %.3f; gray: %.3f; CSF: %.3f; bone: %.3f; skin: %.3f; air: %.1e; ',...
+    opt.conductivities.white,opt.conductivities.gray,opt.conductivities.csf,opt.conductivities.bone,opt.conductivities.skin,opt.conductivities.air);
+fprintf(fid,'gel: ');
+for i=1:length(opt.conductivities.gel), fprintf(fid,'%.3f; ',opt.conductivities.gel(i)); end
+fprintf(fid,'electrode: ');
+for i=1:length(opt.conductivities.electrode), fprintf(fid,'%.3f; ',opt.conductivities.electrode(i)); end
+fprintf(fid,'\n');
+
 fprintf(fid,'reSampling:\t');
 if opt.resamp
     fprintf(fid,'on');

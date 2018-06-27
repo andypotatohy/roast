@@ -124,6 +124,46 @@ if optNew.meshOpt.maxvol~=optOld.meshOpt.maxvol
     return
 end
 
+if optNew.conductivities.white~=optOld.conductivities.white
+    isNewOpt = 1;
+    return
+end
+
+if optNew.conductivities.gray~=optOld.conductivities.gray
+    isNewOpt = 1;
+    return
+end
+
+if optNew.conductivities.csf~=optOld.conductivities.csf
+    isNewOpt = 1;
+    return
+end
+
+if optNew.conductivities.bone~=optOld.conductivities.bone
+    isNewOpt = 1;
+    return
+end
+
+if optNew.conductivities.skin~=optOld.conductivities.skin
+    isNewOpt = 1;
+    return
+end
+
+if optNew.conductivities.air~=optOld.conductivities.air
+    isNewOpt = 1;
+    return
+end
+
+if any(optNew.conductivities.gel~=optOld.conductivities.gel)
+    isNewOpt = 1;
+    return
+end
+
+if any(optNew.conductivities.electrode~=optOld.conductivities.electrode)
+    isNewOpt = 1;
+    return
+end
+
 if optNew.resamp ~= optOld.resamp
     isNewOpt = 1;
     return
