@@ -43,10 +43,14 @@ ef_all(:,:,:,3) = F(xi,yi,zi);
 ef_mag = sqrt(sum(ef_all.^2,4));
 
 disp('saving the final results...')
-save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag');
+save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag','-v7.3');
 
-template = load_untouch_nii(P2);
-% Load the original MRI to save the results as NIFTI format
+if ~strfind(P2,'example/nyhead')
+    template = load_untouch_nii(P2);
+else
+    template = load_untouch_nii([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii']);
+end % Load the original MRI to save the results as NIFTI format
+
 template.hdr.dime.datatype = 16;
 template.hdr.dime.bitpix = 32;
 template.hdr.dime.scl_slope = 1; % so that display of NIFTI will not alter the data
