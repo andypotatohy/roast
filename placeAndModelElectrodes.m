@@ -1,5 +1,5 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
-% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug,uniTag)
+% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug,uniTag)
 % 
 % Place and generate the point cloud for each placed electrode and gel.
 % 
@@ -45,7 +45,11 @@ end
 scalpFilled(:,:,1) = 0; scalpFilled(:,:,Nz) = 0; scalpFilled(:,1,:) = 0; scalpFilled(:,Ny,:) = 0; scalpFilled(1,:,:) = 0; scalpFilled(Nx,:,:) = 0;
 
 if isDebug
-    figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+    figName = ['Electrode placement in Simulation: ' uniTag];
+    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+    set(gcf,'color','w');
+    plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+    hold on;
 end
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
@@ -169,6 +173,6 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     end
 end
 if isDebug
-    xlabel('x');ylabel('y');zlabel('z'); view([270 0]); axis equal;
-    hold off; % Place electrodes and visualize the results
+    xlabel('x');ylabel('y');zlabel('z'); axis equal;
+    hold off; rotate3d on; % Place electrodes and visualize the results
 end

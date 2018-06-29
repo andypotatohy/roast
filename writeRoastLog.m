@@ -115,7 +115,7 @@ fprintf(fid,'white: %.3f; gray: %.3f; CSF: %.3f; bone: %.3f; skin: %.3f; air: %.
 fprintf(fid,'gel: ');
 for i=1:length(opt.conductivities.gel), fprintf(fid,'%.3f; ',opt.conductivities.gel(i)); end
 fprintf(fid,'electrode: ');
-for i=1:length(opt.conductivities.electrode), fprintf(fid,'%.3f; ',opt.conductivities.electrode(i)); end
+for i=1:length(opt.conductivities.electrode), fprintf(fid,'%.1e; ',opt.conductivities.electrode(i)); end
 fprintf(fid,'\n');
 
 fprintf(fid,'reSampling:\t');

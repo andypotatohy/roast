@@ -141,8 +141,8 @@ will be more expensive and thus slower. If you want a faster simulation,
 you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
 turning on this option (Example 19). Also it is recommended to turn on
 this option if your input MRI has anisotropic resolution (e.g., 1 mm by
-1.2 mm by 1.2 mm), as the current version (V2.1) is still not perfect in
-accurately modeling anisotropic images.
+1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
+is built from an MRI with anisotropic resolution.
 
 'zeroPadding': extend the input MRI by some amount, to avoid
 complications when electrodes are placed by the image boundaries. Default
@@ -151,6 +151,16 @@ slices in all the six directions of the input MRI (left, right, front,
 back, up and down), where N is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
 (Example 20).
+
+'conductivities': advanced options of ROAST, the values are stored as a 
+structure, with the following field names: white (default 0.126 S/m),
+gray (default 0.276 S/m), csf (default 1.65 S/m), bone (default 0.01 S/m),
+skin (default 0.465 S/m), air (default 2.5e-14 S/m), gel (default 0.3 S/m)
+and electrode (default 5.9e7 S/m). You can use this option to customize the
+electrical conductivity for each tissue, each electrode, as well as the
+conducting medium under each electrode. You can even assign different conductivity
+values to different electrodes and their conducting media (e.g., 'gel'). See
+Examples 21-22 for details.
 
 More advanced examples with these options:
 
@@ -277,6 +287,23 @@ of 10 to start with, and if you're not happy with the results, just increase
 the amount of zero padding. But the best solution is to get an MRI that covers
 the area where you want to place the electrodes.
 
+Example 21: roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))
+
+Run simulation on the MNI152 averaged head with specified recipe. The
+conductivity values of CSF and electrodes are customized. Conductivities
+of other tissues will use the literature values.
+
+Example 22: roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))
+
+Run simulation on the MNI152 averaged head with specified recipe.
+Different conductivities are assigned to pad and disc electrodes. For pad
+electrodes, 'gel' is given 1 S/m and 'electrode' is 0.1 S/m; for the disc
+electrode, 'gel' is given 0.3 S/m and 'electrode' is 59000000 S/m. When
+you control the conductivity values for each electrode individually, keep
+in mind that the values you put in the vector in 'gel' and 'electrode'
+field in 'conductivities' option should follow the order of electrodes
+you put in the 'recipe' argument.
+
 
 All the options above can be combined to meet your specific simulation
 needs. For example:
@@ -285,15 +312,23 @@ roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custo
         'elecsize',{[],[7 9 3],[40 20 4],[],[]},...
         'elecori','ap','T2','path/to/your/t2.nii',...
         'meshoptions',struct('radbound',4,'maxvol',8),...
+        'conductivities',struct('csf',0.6,'skin',1.0),...
+        'resampling','on','zeropadding',30,...
         'simulationTag','awesomeSimulation')
 Now you should know what this will do.
 
-ROAST outputs 6 or 7 figures for quick visualization of the simulation
+ROAST outputs 7 or 8 figures for quick visualization of the simulation
 results. It also saves the results as
 "subjName_simulationTag_result.mat", and as NIFTI files:
 Voltage: "subjName_simulationTag_v.nii"
 E-field: "subjName_simulationTag_e.nii"
 E-field magnitude: "subjName_simulationTag_emag.nii"
+
+You can also use the other function reviewRes() to review/visualize the
+simulations that you already run before. reviewRes() has a simpler
+interface than roast() so that you do not have to enter all the
+simulation parameters again as you would have to do in roast(). Type
+'help reviewRes' for more info.
 
 Note ROAST was not designed to build models for pathological heads, but 
 there are plans to add this capability in the future versions.
@@ -315,7 +350,7 @@ targeting. NeuroImage,140, 150-162
 
 (c) Yu (Andy) Huang, Parra Lab at CCNY
 yhuang16@citymail.cuny.edu
-April 2018
+June 2018
 
 License:
 General Public License version 3 or later.

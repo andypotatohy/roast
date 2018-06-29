@@ -19,3 +19,31 @@ ROAST V2.1:
 Fixed a bug on placing electrodes on non-1mm data
 Added resampling and zero-padding options
 Can align T2 automatically if it's not aligned with T1
+
+ROAST V2.6:
+
+Improved disc and ring placement so that for large electrodes, gel can be fully filled between scalp surface and the electrodes.
+
+Memory improvement when placing big electrodes.
+
+Allow zero-padding on New York head, but prevent users from resampling New York head to 1 mm resolution.
+
+Fixed the problem that iso2mesh will crash on 64-bit Windows for large models.
+
+Fixed a bug on removing connected objects in segmentation touch-up routine.
+
+Combined 6 mask files into one single color file, so that users can save disk space, and also New York head can be uploaded to github.
+
+Added function of saving all the results in the NIFTI format.
+
+Improved the logic for labeling different electrodes, so that some electrode montages can now be simulated (cannot be done under the old labeling logic).
+
+Model each electrode/gel as a separate mask, so that they can be assigned to different conductivity values (e.g. different conductivities for pad vs. disc).
+
+Added logic to detect if neighboring electrodes are overlapping each other. Throw out errors if they overlap.
+
+Introduced a new function (reviewRes.m) with simpler interface to review ROAST results, and it allows users to choose which tissue to display.
+
+Opened conductivities as user options.
+
+Can output a 3D rendering of electrode placement result, before building the FEM model.
