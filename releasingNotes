@@ -44,6 +44,8 @@ Added logic to detect if neighboring electrodes are overlapping each other. Thro
 
 Introduced a new function (reviewRes.m) with simpler interface to review ROAST results, and it allows users to choose which tissue to display.
 
+Added display of flow of electric field by small arrows in the slice show.
+
 Opened conductivities as user options.
 
 Can output a 3D rendering of electrode placement result, before building the FEM model.

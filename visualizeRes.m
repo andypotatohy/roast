@@ -1,5 +1,5 @@
-function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,hdrInfo,uniTag,showAll)
-% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,hdrInfo,uniTag,showAll)
+function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
+% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -162,11 +162,12 @@ brain = (allMask==1 | allMask==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
-cm = colormap(jet(512)); cm = [1 1 1;cm];
+cm = colormap(jet(1024)); cm = [1 1 1;cm];
 figName = ['Voltage in Simulation: ' uniTag];
 sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' uniTag];
-sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
+sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
 
 disp('=======================ALL DONE=======================');

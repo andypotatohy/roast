@@ -1,5 +1,5 @@
-function [vol_all,ef_mag] = postGetDP(P1,P2,node,hdrInfo,uniTag)
-% [vol_all,ef_mag] = postGetDP(P1,P2,node,hdrInfo,uniTag)
+function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag)
+% [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag)
 % 
 % Post processing after solving the model. Save the result in Matlab format
 % in the MRI voxel space.

@@ -15,7 +15,7 @@ function reviewRes(subj,simTag,tissue,fastRender)
 % Optional input:
 % tissue -- which tissue to show in the visualization, defaults to the
 % brain. You can also choose from white matter, gray matter, CSF, bone,
-% skin, and air cavities.
+% skin, air cavities, and all of them.
 % fastRender -- do fast 3D rendering or not. By default it's fast
 % rendering. If you turn this option off, it'll generate a smoother surface
 % rendering but also needs more time if the mesh is big.
@@ -33,7 +33,8 @@ function reviewRes(subj,simTag,tissue,fastRender)
 % reviewRes('example/subject1.nii','20180613T142621','bone',0)
 % Review the results from simulation tagged '20180613T142621' on subject
 % example/subject1.nii, showing the results in the bone specifically, with
-% smoothed surface rendering.
+% smoothed surface rendering. If you change 'bone' to 'all', then it'll
+% show the slice views of the results in all the tissues.
 % 
 % Note the 3D rendering is displayed in the world space, while the slice view
 % is done in the voxel space.
@@ -85,8 +86,11 @@ switch lower(tissue)
     case 'brain'
         indSurfShow = 2;
         indSliceShow = 1:2;
+    case 'all'
+        indSurfShow = 5;
+        indSliceShow = 1:6;
     otherwise
-        error('Supported tissues to be displayed are: ''white'', ''gray'', ''CSF'', ''bone'', ''skin'', ''air'' and ''brain''.');
+        error('Supported tissues to be displayed are: ''white'', ''gray'', ''CSF'', ''bone'', ''skin'', ''air'', ''brain'' and ''all''.');
 end
 
 % check if do fast rendering
@@ -326,12 +330,13 @@ resFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
 if ~exist(resFile,'file')
     error(['Result file ' resFile ' not found. Check if you run through post processing after solving.']);
 else
-    load(resFile,'vol_all','ef_mag');
+    load(resFile,'vol_all','ef_mag','ef_all');
 end
 
-cm = colormap(jet(512)); cm = [1 1 1;cm];
+cm = colormap(jet(1024)); cm = [1 1 1;cm];
 figName = ['Voltage in Simulation: ' simTag];
 sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' simTag];
-sliceshow(ef_mag.*nan_mask,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
+sliceshow(ef_mag.*nan_mask,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
