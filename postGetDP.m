@@ -45,7 +45,7 @@ ef_mag = sqrt(sum(ef_all.^2,4));
 disp('saving the final results...')
 save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag','-v7.3');
 
-if ~strfind(P2,'example/nyhead')
+if isempty(strfind(P2,'example/nyhead'))
     template = load_untouch_nii(P2);
 else
     template = load_untouch_nii([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii']);

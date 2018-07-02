@@ -79,7 +79,7 @@ end
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
 elec_template = cell2mat(capInfo(2:4));
 elec_template = elec_template(indFit,:);
-if ~strfind(P2,'example/nyhead')
+if isempty(strfind(P2,'example/nyhead'))
     data = load_untouch_nii(P2);
     elec_template = elec_template./repmat(data.hdr.dime.pixdim(2:4),length(indFit),1);
     % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)

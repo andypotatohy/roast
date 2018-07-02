@@ -9,13 +9,13 @@ function mriPD = zeroPadding(mri,padNum)
 % April 2018
 
 [dirname,baseFilename,ext] = fileparts(mri);
-if strfind(mri,'_padded')
+if ~isempty(strfind(mri,'_padded'))
     warning([mri ' has already been zero-padded. Nothing will happen here. If you meant to add empty slices on the MRI, please provide MRI name without the _padded suffix.']);
     mriPD = mri;
     return;
 end
 
-if strfind(mri,'example/nyhead_')
+if ~isempty(strfind(mri,'example/nyhead_'))
     mriPD = ['example/nyhead_padded' num2str(padNum) baseFilename(7:end) ext];
 else
     mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];

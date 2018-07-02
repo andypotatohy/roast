@@ -51,13 +51,13 @@ else
     mydata.clim = clim;
 end
 
-if nargin<5
+if nargin<5 || isempty(label)
     mydata.label=[];
 else
     mydata.label=label;
 end
 
-if nargin<6
+if nargin<6 || isempty(figName)
     figName = '';
 end
 
@@ -117,23 +117,29 @@ mydata  = get(gcf,'UserData');
 h(1)=subplot(2,2,1);
 imagesc(squeeze(mydata.img(:,mydata.pos(2),:))'); d(1,:)=[1 3];
 if ~isempty(mydata.vecImg)
+    hold on;
     rngx=1:5:size(mydata.xi,1); rngy=mydata.pos(2); rngz=1:5:size(mydata.xi,3);
-    coneplot(mydata.xi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,2),0.08,'nointerp');
+    quiver3(mydata.xi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,2),2,'color','k'); %,0.08,'nointerp');
+    hold off;
 end
 h(2)=subplot(2,2,2);
 imagesc(squeeze(mydata.img(mydata.pos(1),:,:))'); d(2,:)=[2 3];
 if ~isempty(mydata.vecImg)
+    hold on;
     rngx=mydata.pos(1); rngy=1:5:size(mydata.xi,2); rngz=1:5:size(mydata.xi,3);
-    coneplot(mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.xi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,1),0.08,'nointerp');
+    quiver3(mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.xi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,1),2,'color','k'); %,0.08,'nointerp');
+    hold off;
 end
 h(3)=subplot(2,2,3);
 imagesc(squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1 2];
 if ~isempty(mydata.vecImg)
+    hold on;
     rngx=1:5:size(mydata.xi,1); rngy=1:5:size(mydata.xi,2); rngz=mydata.pos(3);
-    coneplot(mydata.xi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),0.08,'nointerp');
+    quiver3(mydata.xi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),2,'color','k'); %,0.08,'nointerp');
+    hold off;
 end
 
 % some aesthetics
