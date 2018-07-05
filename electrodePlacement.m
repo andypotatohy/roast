@@ -1,5 +1,5 @@
-function [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
-% [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+function hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+% hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 %
 % Place electrodes on the scalp surface. options.elecPara contains all the options
 % info for each electrode.
@@ -28,14 +28,14 @@ landmarks_original = getLandmarks(P2,T2);
 
 [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-template = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_skin.nii']); % Load the scalp mask
-% template is used for saving the results with the same header info as the input
+template = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+% Load the scalp mask; template is used for saving the results with the same header info as the input
 pixdim = template.hdr.dime.pixdim(2:4);
 dim = size(template.img);
 v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
 hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 % keep the header info for use later
-scalp_original = template.img;
+scalp_original = template.img==5;
 
 scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
 
@@ -95,6 +95,12 @@ end
 
 %% head clean up for placing electrodes
 [scalp_clean,scalp_filled] = cleanScalp(scalp,scalp_surface);
+temp1 = scalp_filled(:,:,[1 end]);
+temp2 = scalp_filled(:,[1 end],:);
+temp3 = scalp_filled([1 end],:,:);
+if any([temp1(:);temp2(:);temp3(:)])
+    warning('Scalp touches image boundary. Electrodes may go out of image boundary. ROAST can continue but results may not be accurate. It is recommended that you expand the input MRI by specifying the ''zeroPadding'' option.');
+end    
 scalp_clean_surface = mask2EdgePointCloud(scalp_clean,'erode',ones(3,3,3));
 
 disp('calculating gel amount for each electrode...')
@@ -141,7 +147,7 @@ elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 resolution = mean(pixdim);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,1);
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,1,uniTag);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
@@ -152,31 +158,32 @@ for i = 1:length(elec_C)
     end
 end
 
-[volume_elec,rnge_elec] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
-[volume_gel,rnge_gel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
+% [volume_elec,volume_elecLabel] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
+% [volume_gel,volume_gelLabel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
+volume_elec_C = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
+volume_gel_C = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
 
 disp('final clean-up...')
+volume_elec = volume_elec_C>0;
+volume_gel = volume_gel_C>0;
 volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
 volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlap with the electrode
-bone = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_bone.nii']);
-volume_bone = bone.img;
+volume_bone = template.img==4;
 volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
 
 % disp('saving the results...')
-template.img = uint8(volume_elec)*255;
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_elec'];
+template.hdr.hist.descrip = 'electrode mask';
+% template.img = uint8(volume_elec)*255;
+template.img = uint8(volume_elec_C.*volume_elec);
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
-template.img = uint8(volume_gel)*255;
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_gel'];
+template.hdr.hist.descrip = 'gel mask';
+% template.img = uint8(volume_gel)*255;
+template.img = uint8(volume_gel_C.*volume_gel);
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 
-% for i=1:length(rnge_elec)
-%     if ~isempty(rnge_elec{i})
-%         rnge_elec{i} = rnge_elec{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-%         rnge_gel{i} = rnge_gel{i}.*repmat(template.hdr.dime.pixdim(2:4),2,1);
-%     end
-% end % use NIFTI header info to convert range info into world coordinates for subsequent electrode labeling
-% % this may not be needed for iso2mesh mesher.
-
-save([dirname filesep baseFilename '_' uniTag '_rnge.mat'],'rnge_elec','rnge_gel');
+% save([dirname filesep baseFilename '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
 [~,baseFilenameRSPD] = fileparts(P2);
 if ~exist([dirname filesep baseFilenameRSPD '_header.mat'],'file')
     save([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');

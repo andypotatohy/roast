@@ -1,5 +1,5 @@
-function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
-% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug)
+function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug,uniTag)
+% [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRange,scalpCleanSurf,scalpFilled,elecPlacing,elecPara,res,isDebug,uniTag)
 % 
 % Place and generate the point cloud for each placed electrode and gel.
 % 
@@ -45,7 +45,11 @@ end
 scalpFilled(:,:,1) = 0; scalpFilled(:,:,Nz) = 0; scalpFilled(:,1,:) = 0; scalpFilled(:,Ny,:) = 0; scalpFilled(1,:,:) = 0; scalpFilled(Nx,:,:) = 0;
 
 if isDebug
-    figure;hold on;plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+    figName = ['Electrode placement in Simulation: ' uniTag];
+    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+    set(gcf,'color','w');
+    plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+    hold on;
 end
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
@@ -95,7 +99,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             padOriLong = cross(normal,padOriShort); padOriLong = padOriLong/norm(padOriLong);
             
             %     startPt = elecLoc(i,:) + normal * dimTry/4;
-            den = 5;
+            den = 2; % 2 points per pixel
             pad_coor = drawCuboid(elecLoc(i,:),[pad_length pad_width dimTry],padOriLong,padOriShort,normal,den);
             
             pad_coor = unique(round(pad_coor),'rows'); % clean-up of the coordinates
@@ -118,24 +122,19 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             disc_radius = elecPara(i).elecSize(1)/res;
             disc_height = elecPara(i).elecSize(2)/res;
             
+            dimTry = disc_radius;
+            
             gel_out = elecLoc(i,:) +  2*disc_height*normal;
             electrode = gel_out + disc_height*normal;
-            gel_in = gel_out - 4*disc_height*normal; % coordinates of the boundaries of gel and electrode
+            gel_in = gel_out - dimTry*normal; % coordinates of the boundaries of gel and electrode
             
-            NOP = 500; verSamp = 10;
-            r = 0.05:0.05:disc_radius; % parameters used for modeling of electrodes and gel
+            den = 2; % 2 points per pixel
+            gel_coor = drawCylinder(0,disc_radius,gel_in,gel_out,den);
+            elec_coor = drawCylinder(0,disc_radius,gel_out,electrode,den);
+            % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
             
-            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
-            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
-            for j = 1:length(r)
-                [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
-                [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
-            end % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
-            
-            gel_coor = floor([gel_X(:) gel_Y(:) gel_Z(:)]);
-            gel_coor = unique(gel_coor,'rows');
-            elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
-            elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
+            gel_coor = unique(round(gel_coor),'rows');
+            elec_coor = unique(round(elec_coor),'rows'); % clean-up of the coordinates
             
             if isDebug
                 plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
@@ -151,24 +150,19 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             ring_radiusOut = elecPara(i).elecSize(2)/res;
             ring_height = elecPara(i).elecSize(3)/res;
             
+            dimTry = mean([ring_radiusOut ring_radiusIn]);
+            
             gel_out = elecLoc(i,:) +  2*ring_height*normal;
             electrode = gel_out + ring_height*normal;
-            gel_in = gel_out - 4*ring_height*normal; % coordinates of the boundaries of gel and electrode
+            gel_in = gel_out - dimTry*normal; % coordinates of the boundaries of gel and electrode
             
-            NOP = 500; verSamp = 10;
-            r = ring_radiusIn:0.05:ring_radiusOut; % parameters used for modeling of electrodes and gel
+            den = 2; % 2 points per pixel
+            gel_coor = drawCylinder(ring_radiusIn,ring_radiusOut,gel_in,gel_out,den);
+            elec_coor = drawCylinder(ring_radiusIn,ring_radiusOut,gel_out,electrode,den);
+            % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
             
-            gel_X = zeros(length(r)*verSamp*4,NOP,'single'); gel_Y = zeros(length(r)*verSamp*4,NOP,'single'); gel_Z = zeros(length(r)*verSamp*4,NOP,'single');
-            elec_X = zeros(length(r)*verSamp,NOP,'single'); elec_Y = zeros(length(r)*verSamp,NOP,'single'); elec_Z = zeros(length(r)*verSamp,NOP,'single');
-            for j = 1:length(r)
-                [gel_X(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Y(((j-1)*verSamp*4+1):verSamp*4*j,:), gel_Z(((j-1)*verSamp*4+1):verSamp*4*j,:)] = cylinder2P(ones(verSamp*4)*r(j),NOP,gel_in,gel_out);
-                [elec_X(((j-1)*verSamp+1):verSamp*j,:), elec_Y(((j-1)*verSamp+1):verSamp*j,:), elec_Z(((j-1)*verSamp+1):verSamp*j,:)] = cylinder2P(ones(verSamp)*r(j),NOP,gel_out,electrode);
-            end % Use cylinders to model electrodes and gel, and calculate the coordinates of the points that make up the cylinder
-            
-            gel_coor = floor([gel_X(:) gel_Y(:) gel_Z(:)]);
-            gel_coor = unique(gel_coor,'rows');
-            elec_coor = floor([elec_X(:) elec_Y(:) elec_Z(:)]);
-            elec_coor = unique(elec_coor,'rows'); % clean-up of the coordinates
+            gel_coor = unique(round(gel_coor),'rows');
+            elec_coor = unique(round(elec_coor),'rows'); % clean-up of the coordinates
             
             if isDebug
                 plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
@@ -179,6 +173,6 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     end
 end
 if isDebug
-    xlabel('x');ylabel('y');zlabel('z'); view([270 0]); axis equal;
-    hold off; % Place electrodes and visualize the results
+    xlabel('x');ylabel('y');zlabel('z'); axis equal;
+    hold off; rotate3d on; % Place electrodes and visualize the results
 end

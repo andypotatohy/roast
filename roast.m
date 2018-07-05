@@ -120,7 +120,7 @@ function roast(subj,recipe,varargin)
 % meshOpt.reratio: maximal radius-edge ratio, default 3;
 % meshOpt.maxvol: target maximal tetrahedral element volume, default 10.
 % See iso2mesh documentation for more details on these options.
-%
+% 
 % 'simulationTag': a unique tag that identifies each simulation.
 % dateTime string (default) | user-provided string
 % This tag is used by ROAST for managing simulation data. ROAST can
@@ -140,8 +140,8 @@ function roast(subj,recipe,varargin)
 % you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
 % turning on this option (Example 19). Also it is recommended to turn on
 % this option if your input MRI has anisotropic resolution (e.g., 1 mm by
-% 1.2 mm by 1.2 mm), as the current version (V2.1) is still not perfect in
-% accurately modeling anisotropic images.
+% 1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
+% is built from an MRI with anisotropic resolution.
 % 
 % 'zeroPadding': extend the input MRI by some amount, to avoid
 % complications when electrodes are placed by the image boundaries. Default
@@ -150,6 +150,16 @@ function roast(subj,recipe,varargin)
 % back, up and down), where N is a positive integer. This is very useful
 % when placing big electrodes on the locations close to image boundaries
 % (Example 20).
+%
+% 'conductivities': advanced options of ROAST, the values are stored as a 
+% structure, with the following field names: white (default 0.126 S/m),
+% gray (default 0.276 S/m), csf (default 1.65 S/m), bone (default 0.01 S/m),
+% skin (default 0.465 S/m), air (default 2.5e-14 S/m), gel (default 0.3 S/m)
+% and electrode (default 5.9e7 S/m). You can use this option to customize the
+% electrical conductivity for each tissue, each electrode, as well as the
+% conducting medium under each electrode. You can even assign different conductivity
+% values to different electrodes and their conducting media (e.g., 'gel'). See
+% Examples 21-22 for details.
 %
 % More advanced examples with these options:
 % 
@@ -276,6 +286,23 @@ function roast(subj,recipe,varargin)
 % the amount of zero padding. But the best solution is to get an MRI that covers
 % the area where you want to place the electrodes.
 % 
+% Example 21: roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))
+% 
+% Run simulation on the MNI152 averaged head with specified recipe. The
+% conductivity values of CSF and electrodes are customized. Conductivities
+% of other tissues will use the literature values.
+% 
+% Example 22: roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))
+% 
+% Run simulation on the MNI152 averaged head with specified recipe.
+% Different conductivities are assigned to pad and disc electrodes. For pad
+% electrodes, 'gel' is given 1 S/m and 'electrode' is 0.1 S/m; for the disc
+% electrode, 'gel' is given 0.3 S/m and 'electrode' is 59000000 S/m. When
+% you control the conductivity values for each electrode individually, keep
+% in mind that the values you put in the vector in 'gel' and 'electrode'
+% field in 'conductivities' option should follow the order of electrodes
+% you put in the 'recipe' argument.
+% 
 % 
 % All the options above can be combined to meet your specific simulation
 % needs. For example:
@@ -284,11 +311,26 @@ function roast(subj,recipe,varargin)
 %         'elecsize',{[],[7 9 3],[40 20 4],[],[]},...
 %         'elecori','ap','T2','path/to/your/t2.nii',...
 %         'meshoptions',struct('radbound',4,'maxvol',8),...
+%         'conductivities',struct('csf',0.6,'skin',1.0),...
+%         'resampling','on','zeropadding',30,...
 %         'simulationTag','awesomeSimulation')
 % Now you should know what this will do.
 %
-% ROAST outputs 6 or 7 figures for quick visualization of the simulation
-% results. It also save the results as "subjName_simulationTag_result.mat".
+% ROAST outputs 7 or 8 figures for quick visualization of the simulation
+% results. It also saves the results as
+% "subjName_simulationTag_result.mat", and as NIFTI files:
+% Voltage: "subjName_simulationTag_v.nii"
+% E-field: "subjName_simulationTag_e.nii"
+% E-field magnitude: "subjName_simulationTag_emag.nii"
+% 
+% You can also use the other function reviewRes() to review/visualize the
+% simulations that you already run before. reviewRes() has a simpler
+% interface than roast() so that you do not have to enter all the
+% simulation parameters again as you would have to do in roast(). Type
+% 'help reviewRes' for more info.
+% 
+% Note ROAST was not designed to build models for pathological heads, but
+% there are plans to add this capability in the future versions.
 % 
 % For a formal description of ROAST, one is referred to (please use this as reference):
 % https://www.biorxiv.org/content/early/2017/11/10/217331
@@ -307,7 +349,7 @@ function roast(subj,recipe,varargin)
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% April 2018
+% June 2018
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
@@ -386,8 +428,11 @@ while indArg <= length(varargin)
         case 'zeropadding'
             paddingAmt = varargin{indArg+1};
             indArg = indArg+2;
+        case 'conductivities'
+            conductivities = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -471,7 +516,7 @@ else
             error('For Pad electrodes, the thickness should at least be 3 mm.');
         end
         if strcmpi(elecType,'pad') && any(elecSize(:) > 80)
-            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+            warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
         end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
             error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -517,7 +562,7 @@ else
                     error('For Pad electrodes, the thickness should at least be 3 mm.');
                 end
                 if strcmpi(elecType{i},'pad') && any(elecSize{i}(:) > 80)
-                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). Make sure you have a decent machine as it may need much memory.');
+                    warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
                     error('For Ring electrodes, the inner radius should be smaller than outter radius.');
@@ -670,17 +715,47 @@ end
 if ~exist('meshOpt','var')
     meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
 else
-    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
+    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
     meshOptNam = fieldnames(meshOpt);
     if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
-        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'',''angbound'',''distbound'',''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+    end
+    if ~isfield(meshOpt,'radbound')
+        meshOpt.radbound = 5;
+    else
+        if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
+            error('Please enter a positive number for the mesh option ''radbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'angbound')
+        meshOpt.angbound = 30;
+    else
+        if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
+            error('Please enter a positive number for the mesh option ''angbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'distbound')
+        meshOpt.distbound = 0.4;
+    else
+        if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
+            error('Please enter a positive number for the mesh option ''distbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'reratio')
+        meshOpt.reratio = 3;
+    else
+        if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
+            error('Please enter a positive number for the mesh option ''reratio''.');
+        end
+    end
+    if ~isfield(meshOpt,'maxvol')
+        meshOpt.maxvol = 10;
+    else
+        if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
+            error('Please enter a positive number for the mesh option ''maxvol''.');
+        end
     end
     warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
-    if ~isfield(meshOpt,'radbound'), meshOpt.radbound = 5; end
-    if ~isfield(meshOpt,'angbound'), meshOpt.angbound = 30; end
-    if ~isfield(meshOpt,'distbound'), meshOpt.distbound = 0.4; end
-    if ~isfield(meshOpt,'reratio'), meshOpt.reratio = 3; end
-    if ~isfield(meshOpt,'maxvol'), meshOpt.maxvol = 10; end
 end
 
 if ~exist('simTag','var'), simTag = []; end
@@ -706,6 +781,93 @@ else
     end
 end
 
+if ~exist('conductivities','var')
+    conductivities = struct('white',0.126,'gray',0.276,'csf',1.65,'bone',0.01,...
+                           'skin',0.465,'air',2.5e-14,'gel',0.3,'electrode',5.9e7); % literature values
+else
+    if ~isstruct(conductivities), error('Unrecognized format of conductivity values. Please enter as a structure, with field names as ''white'', ''gray'', ''csf'', ''bone'', ''skin'', ''air'', ''gel'' and ''electrode''.'); end
+    conductivitiesNam = fieldnames(conductivities);
+    if isempty(conductivitiesNam) || ~all(ismember(conductivitiesNam,{'white';'gray';'csf';'bone';'skin';'air';'gel';'electrode'}))
+        error('Unrecognized tissue names detected. Supported tissue names in the conductivity option are ''white'', ''gray'', ''csf'', ''bone'', ''skin'', ''air'', ''gel'' and ''electrode''.');
+    end
+    if ~isfield(conductivities,'white')
+        conductivities.white = 0.126;
+    else
+        if ~isnumeric(conductivities.white) || any(conductivities.white(:)<=0)
+            error('Please enter a positive number for the white matter conductivity.');
+        end
+        if length(conductivities.white(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'gray')
+        conductivities.gray = 0.276;
+    else
+        if ~isnumeric(conductivities.gray) || any(conductivities.gray(:)<=0)
+            error('Please enter a positive number for the gray matter conductivity.');
+        end
+        if length(conductivities.gray(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'csf')
+        conductivities.csf = 1.65;
+    else
+        if ~isnumeric(conductivities.csf) || any(conductivities.csf(:)<=0)
+            error('Please enter a positive number for the CSF conductivity.');
+        end
+        if length(conductivities.csf(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'bone')
+        conductivities.bone = 0.01;
+    else
+        if ~isnumeric(conductivities.bone) || any(conductivities.bone(:)<=0)
+            error('Please enter a positive number for the bone conductivity.');
+        end
+        if length(conductivities.bone(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'skin')
+        conductivities.skin = 0.465;
+    else
+        if ~isnumeric(conductivities.skin) || any(conductivities.skin(:)<=0)
+            error('Please enter a positive number for the skin conductivity.');
+        end
+        if length(conductivities.skin(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'air')
+        conductivities.air = 2.5e-14;
+    else
+        if ~isnumeric(conductivities.air) || any(conductivities.air(:)<=0)
+            error('Please enter a positive number for the air conductivity.');
+        end
+        if length(conductivities.air(:))>1, error('Tensor conductivity not supported by ROAST. Please enter a scalar value for conductivity.'); end
+    end
+    if ~isfield(conductivities,'gel')
+        conductivities.gel = 0.3;
+    else
+        if ~isnumeric(conductivities.gel) || any(conductivities.gel(:)<=0)
+            error('Please enter a positive number for the gel conductivity.');
+        end
+        if length(conductivities.gel(:))>1 && length(conductivities.gel(:))~=length(elecName)
+           error('You want to assign different conductivities to the conducting media under different electrodes, but didn''t tell ROAST clearly which conductivity each electrode should use. Please follow the order of electrodes you put in ''recipe'' to give each of them the corresponding conductivity in a vector as the value for the ''gel'' field in option ''conductivities''.');
+        end
+    end
+    if ~isfield(conductivities,'electrode')
+        conductivities.electrode = 5.9e7;
+    else
+        if ~isnumeric(conductivities.electrode) || any(conductivities.electrode(:)<=0)
+            error('Please enter a positive number for the electrode conductivity.');
+        end
+        if length(conductivities.electrode(:))>1 && length(conductivities.electrode(:))~=length(elecName)
+           error('You want to assign different conductivities to different electrodes, but didn''t tell ROAST clearly which conductivity each electrode should use. Please follow the order of electrodes you put in ''recipe'' to give each of them the corresponding conductivity in a vector as the value for the ''electrode'' field in option ''conductivities''.');
+        end
+    end
+    warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep conductivity values default.');
+end
+
+if length(conductivities.gel(:))==1
+    conductivities.gel = repmat(conductivities.gel,1,length(elecName));
+end
+if length(conductivities.electrode(:))==1
+    conductivities.electrode = repmat(conductivities.electrode,1,length(elecName));
+end
+
 % preprocess MRI data
 if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
@@ -715,7 +877,7 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     % check if high-resolution MRI (< 0.8 mm in any direction)
     
     if length(unique(t1Data.hdr.dime.pixdim(2:4)))>1 && ~doResamp
-        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the current version (V2.1) of ROAST cannot perfectly handle anisotropic MRI as the input.');
+        warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the electrode size will not be exact if the model is built from an MRI with anisotropic resolution.');
     end
     % check if anisotropic resolution MRI
     
@@ -738,8 +900,33 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
 else
     
-    subjRSPD = subj;
+    if ~exist('example/nyhead_T1orT2_masks.nii','file')
+        unzip('example/nyhead_T1orT2_masks.nii.zip','example')
+    end
     
+    if doResamp
+        error('The beauty of New York head is its 0.5 mm resolution. It''s a bad practice to resample it into 1 mm. Use another head ''example/MNI152_T1_1mm.nii'' for 1 mm model.');
+    end
+    
+    if paddingAmt>0
+        zeroPadding('example/nyhead_T1orT2_masks.nii',paddingAmt);
+        subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
+        if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
+            load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
+            origin = inv(image.mat)*[0;0;0;1];
+            origin = origin(1:3) + paddingAmt;
+            image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
+            save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
+        end
+    else
+        subjRSPD = subj;
+    end
+    
+    if ~isempty(T2)
+       warning('New York head selected. Any specified T2 image will be ignored.');
+       T2 = [];
+    end
+        
 end
 
 % preprocess electrodes
@@ -751,6 +938,8 @@ if abs(sum(injectCurrent))>eps
 end
 elecName = elecName(ind2usrInput);
 injectCurrent = injectCurrent(ind2usrInput);
+conductivities.gel = conductivities.gel(ind2usrInput);
+conductivities.electrode = conductivities.electrode(ind2usrInput);
 
 % sort elec options
 if length(elecPara)==1
@@ -770,7 +959,7 @@ for i=1:length(elecName)
 end
 configTxt = configTxt(1:end-2);
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -825,13 +1014,12 @@ if ~strcmp(baseFilename,'nyhead')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_mask_gray.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_mask_gray.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_masks.nii'],'file'))
         disp('======================================================')
         disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
-        mysegment(subjRSPD,T2);
-        autoPatching(subjRSPD,T2);
+        segTouchup(subjRSPD,T2);
     else
         disp('======================================================')
         disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
@@ -848,16 +1036,16 @@ else
     
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'file')
+if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    [rnge_elec,rnge_gel,hdrInfo] = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
+    hdrInfo = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_rnge.mat'],'rnge_elec','rnge_gel');
+%     load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
     load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
 end
 
@@ -877,25 +1065,25 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('======================================================')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
-    label_elec = prepareForGetDP(subj,node,elem,rnge_elec,rnge_gel,hdrInfo,elecName,uniqueTag);
-    solveByGetDP(subj,injectCurrent,uniqueTag);
+    prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
+    solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
 else
     disp('======================================================')
     disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+%     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
     disp('======================================================')
     disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
     disp('======================================================')
-    [vol_all,ef_mag] = postGetDP(subj,node,hdrInfo,uniqueTag);
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,0);
+    [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
 else
     disp('======================================================')
     disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag');
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,injectCurrent,label_elec,hdrInfo,uniqueTag,1);
+    load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
+    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
 end

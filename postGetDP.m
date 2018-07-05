@@ -1,5 +1,5 @@
-function [vol_all,ef_mag] = postGetDP(P,node,hdrInfo,uniTag)
-% [vol_all,ef_mag] = postGetDP(P,node,hdrInfo,uniTag)
+function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag)
+% [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag)
 % 
 % Post processing after solving the model. Save the result in Matlab format
 % in the MRI voxel space.
@@ -8,8 +8,9 @@ function [vol_all,ef_mag] = postGetDP(P,node,hdrInfo,uniTag)
 % yhuang16@citymail.cuny.edu
 % October 2017
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
+[~,baseFilenameRSPD] = fileparts(P2);
 
 [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
 
@@ -42,13 +43,56 @@ ef_all(:,:,:,3) = F(xi,yi,zi);
 ef_mag = sqrt(sum(ef_all.^2,4));
 
 disp('saving the final results...')
-save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag');
+save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag','-v7.3');
+
+if isempty(strfind(P2,'example/nyhead'))
+    template = load_untouch_nii(P2);
+else
+    template = load_untouch_nii([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii']);
+end % Load the original MRI to save the results as NIFTI format
+
+template.hdr.dime.datatype = 16;
+template.hdr.dime.bitpix = 32;
+template.hdr.dime.scl_slope = 1; % so that display of NIFTI will not alter the data
+template.hdr.dime.cal_max = 0;
+template.hdr.dime.cal_min = 0;
+
+template.img = single(vol_all);
+template.hdr.dime.glmax = max(vol_all(:));
+template.hdr.dime.glmin = min(vol_all(:));
+template.hdr.hist.descrip = 'voltage';
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_v'];
+save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_v.nii']);
+
+template.img = single(ef_mag);
+template.hdr.dime.glmax = max(ef_mag(:));
+template.hdr.dime.glmin = min(ef_mag(:));
+template.hdr.hist.descrip = 'EF mag';
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_emag'];
+save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_emag.nii']);
+
+template.hdr.dime.dim(1) = 4;
+template.hdr.dime.dim(5) = 3;
+template.img = single(ef_all);
+template.hdr.dime.glmax = max(ef_all(:));
+template.hdr.dime.glmin = min(ef_all(:));
+template.hdr.hist.descrip = 'EF';
+template.fileprefix = [dirname filesep baseFilename '_' uniTag '_e'];
+save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_e.nii']);
+
 disp('======================================================');
-disp(['Results saved as ' dirname filesep baseFilename '_' uniTag '_result.mat'])
-disp('You can also find the results in the two text files: ');
-disp([dirname filesep baseFilename '_' uniTag '_v.pos']);
-disp(['and ' dirname filesep baseFilename '_' uniTag '_e.pos']);
+disp('Results are saved as:');
+disp([dirname filesep baseFilename '_' uniTag '_result.mat']);
+disp('...and also saved as NIFTI files:');
+disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.nii']);
+disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.nii']);
+disp(['E-field magnitude: ' dirname filesep baseFilename '_' uniTag '_emag.nii']);
+disp('======================================================');
+disp('You can also find all the results in the following two text files: ');
+disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.pos']);
+disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.pos']);
+disp('======================================================');
 disp('Look up the detailed info for this simulation in the log file: ');
 disp([dirname filesep baseFilename '_log']);
-disp(['by using the simulation tag "' uniTag '".']);
+disp(['under the simulation tag "' uniTag '".']);
 disp('======================================================');

@@ -53,6 +53,9 @@ spm_jobman('initcfg');
 for i=1:size(P,1)
     
     ref = deblank(P(i,:));
+    if strcmp(ref(1),'~') && strcmp(computer('arch'),'glnxa64')
+        error('SPM does not recognize ''~'' symbol for Linux home directory. Please provide the full path.');
+    end
 %     [pth,nam,ext] = spm_fileparts(ref);
     [dirname,baseFilename,ext] = fileparts(ref);
     if isempty(dirname), dirname = pwd; end
@@ -68,6 +71,9 @@ for i=1:size(P,1)
     matlabbatch{1}.spm.tools.preproc8.channel.write = [0 0]; % do NOT save bias field or bias-field corrected image  % ANDY 2013-05-03
     if ~isempty(T2) %T2 specified
         ref2 = deblank(T2(i,:));
+        if strcmp(ref2(1),'~') && strcmp(computer('arch'),'glnxa64')
+            error('SPM does not recognize ''~'' symbol for Linux home directory. Please provide the full path.');
+        end
 %         [pth2,nam2,ext2] = spm_fileparts(ref2);
         [dirname2,baseFilename2,ext2] = fileparts(ref2);
         if isempty(dirname2), dirname2 = pwd; end

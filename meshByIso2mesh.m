@@ -17,26 +17,33 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
-maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
+data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+allMask = data.img;
+allMaskShow = data.img;
+numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
+% data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+% allMask(data.img==255) = 7;
+% data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+% allMask(data.img==255) = 8;
 
-for i=1:length(maskName)
-    
-    if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
-        data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
-    else
-        data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
-    end
-    img = data.img;
-    
-    if i==1, [dim1,dim2,dim3] = size(img); allMask = zeros(dim1,dim2,dim3); end
-    
-    allMask(img==255) = i;
+data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+numOfGel = max(data.img(:));
+for i=1:numOfGel
+    allMask(data.img==i) = numOfTissue + i;
 end
+allMaskShow(data.img>0) = numOfTissue + 1;
+data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+numOfElec = max(data.img(:));
+for i=1:numOfElec
+    allMask(data.img==i) = numOfTissue + numOfGel + i;
+end
+allMaskShow(data.img>0) = numOfTissue + 2;
 
-sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+% sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
 drawnow
 
-allMask = uint8(allMask);
+% allMask = uint8(allMask);
 
 % opt.radbound = 5; % default 6, maximum surface element size
 % opt.angbound = 30; % default 30, miminum angle of a surface triangle
@@ -61,6 +68,10 @@ node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 % end
 
 disp('saving mesh...')
-maskName = {'WHITE','GRAY','CSF','BONE','SKIN','AIR','GEL','ELEC'};
+% maskName = {'WHITE','GRAY','CSF','BONE','SKIN','AIR','GEL','ELEC'};
+maskName = cell(1,numOfTissue+numOfGel+numOfElec);
+maskName(1:numOfTissue) = {'WHITE','GRAY','CSF','BONE','SKIN','AIR'};
+for i=1:numOfGel, maskName{numOfTissue+i} = ['GEL' num2str(i)]; end
+for i=1:numOfElec, maskName{numOfTissue+numOfGel+i} = ['ELEC' num2str(i)]; end
 savemsh(node(:,1:3),elem,[dirname filesep baseFilename '_' uniTag '.msh'],maskName);
 save([dirname filesep baseFilename '_' uniTag '.mat'],'node','elem','face');

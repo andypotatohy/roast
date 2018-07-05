@@ -1,7 +1,9 @@
-function sliceshow(img,pos,color,clim,label,figName)
-% sliceshow(img,pos,color,clim,label,figName)
+function sliceshow(img,pos,color,clim,label,figName,vecImg)
+% sliceshow(img,pos,color,clim,label,figName,vecImg)
 %
-% sliceshow displays a 3D volume allowing the user to click on different slices.
+% sliceshow displays a 3D volume allowing the user to click on different
+% slices. If the last variable "vecImg" is specified, sliceshow will also
+% overlay a 3D vectorial field represented by arrows on the slices.
 %
 % If pos is given as input, then the function will start the display with
 % the slices intersecting this position. Defaults to the middle of the
@@ -12,12 +14,16 @@ function sliceshow(img,pos,color,clim,label,figName)
 % clim specifies the color limits and defaults to [min max].
 %
 % If label is given as input, then a colorbar with that label is added.
+% 
+% vecImg is the 3D vectorial field, e.g. an electric field.
 %
 % (c) Nov 02, 2017, Lucas C Parra
+% (c) June 29, 2018, Yu (Andy) Huang
 
 if nargin<1 || isempty(img)
     error('At least give us a volume to display')
 else
+    [Nx,Ny,Nz] = size(img);
     mydata.img = img;
 end
 
@@ -45,14 +51,26 @@ else
     mydata.clim = clim;
 end
 
-if nargin<5
+if nargin<5 || isempty(label)
     mydata.label=[];
 else
     mydata.label=label;
 end
 
-if nargin<6
+if nargin<6 || isempty(figName)
     figName = '';
+end
+
+if nargin<7 || isempty(vecImg)
+    mydata.vecImg = [];
+else
+    temp = size(vecImg);
+    if any(temp(1:3)~=[Nx,Ny,Nz]) || temp(4)~=3
+        error('Vector field does not have correct size.');
+    end
+    mydata.vecImg = vecImg;
+    [xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
+    mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
 end
 
 % link the calback function to new figure
@@ -96,15 +114,39 @@ function showimages
 mydata  = get(gcf,'UserData');
 
 % show the images and keep track of the axes that are generated
-h(1)=subplot(2,2,1); imagesc(squeeze(mydata.img(:,mydata.pos(2),:))'); d(1,:)=[1 3];
-h(2)=subplot(2,2,2); imagesc(squeeze(mydata.img(mydata.pos(1),:,:))'); d(2,:)=[2 3];
-h(3)=subplot(2,2,3); imagesc(squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1 2];
+h(1)=subplot(2,2,1);
+imagesc(squeeze(mydata.img(:,mydata.pos(2),:))'); d(1,:)=[1 3];
+if ~isempty(mydata.vecImg)
+    hold on;
+    rngx=1:5:size(mydata.xi,1); rngy=mydata.pos(2); rngz=1:5:size(mydata.xi,3);
+    quiver3(mydata.xi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,2),2,'color','k'); %,0.08,'nointerp');
+    hold off;
+end
+h(2)=subplot(2,2,2);
+imagesc(squeeze(mydata.img(mydata.pos(1),:,:))'); d(2,:)=[2 3];
+if ~isempty(mydata.vecImg)
+    hold on;
+    rngx=mydata.pos(1); rngy=1:5:size(mydata.xi,2); rngz=1:5:size(mydata.xi,3);
+    quiver3(mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.xi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,1),2,'color','k'); %,0.08,'nointerp');
+    hold off;
+end
+h(3)=subplot(2,2,3);
+imagesc(squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1 2];
+if ~isempty(mydata.vecImg)
+    hold on;
+    rngx=1:5:size(mydata.xi,1); rngy=1:5:size(mydata.xi,2); rngz=mydata.pos(3);
+    quiver3(mydata.xi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),2,'color','k'); %,0.08,'nointerp');
+    hold off;
+end
 
 % some aesthetics
 val = mydata.img(mydata.pos(1),mydata.pos(2),mydata.pos(3));
 for i=1:3
     subplot(2,2,i);
-    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[0 0 0],'linewidth',3); hold off;
+    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[1 1 1],'linewidth',3); hold off;
     axis xy; axis equal; axis tight; axis off; caxis(mydata.clim);
     title([num2str(mydata.pos(d(i,:))) ': ' num2str(val,'%.2f')])
 end

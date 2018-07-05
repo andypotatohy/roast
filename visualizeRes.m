@@ -1,5 +1,5 @@
-function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,hdrInfo,uniTag,showAll)
-% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,inCurrent,label_elec,hdrInfo,uniTag,showAll)
+function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
+% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -17,8 +17,7 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
-if showAll
-    
+if showAll    
     if ~strcmp(baseFilename,'nyhead')
         disp('showing MRI and segmentations...');
         data = load_untouch_nii(P2); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
@@ -29,27 +28,23 @@ if showAll
         end
     else
         disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
-    end
-    
-    maskName = {'white','gray','csf','bone','skin','air','gel','elec'};
-    
-    for i=1:length(maskName)
-        
-        if strcmp(maskName{i},'gel') || strcmp(maskName{i},'elec')
-            data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_' maskName{i} '.nii']);
-        else
-            data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_' maskName{i} '.nii']);
-        end
-        img = data.img;
-        
-        if i==1, [dim1,dim2,dim3] = size(img); allMask = zeros(dim1,dim2,dim3); end
-        
-        allMask(img==255) = i;
-    end
-    
-    sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+    end    
+end
+
+masks = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+allMask = masks.img;
+numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
+gel = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+numOfGel = max(gel.img(:));
+elec = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+% numOfElec = max(elec.img(:));
+
+if showAll
+    allMaskShow = masks.img;
+    allMaskShow(gel.img>0) = numOfTissue + 1;
+    allMaskShow(elec.img>0) = numOfTissue + 2;
+    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
     drawnow
-    
 end
 
 % node = node + 0.5; already done right after mesh
@@ -65,16 +60,14 @@ node(:,1:3) = worldCoord(:,1:3);
 
 indNode_grayFace = face(find(face(:,4) == 2),1:3);
 indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
-indNode_elecFace = face(find(face(:,4) == 8),1:3);
-indNode_elecElm = elem(find(elem(:,5) == 8),1:4);
+indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
+indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
 
 % node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
 % % smooth the surface that's to be displayed
 % % just for display, the output data is not smoothed
 % % very slow if mesh is big
 
-% totInCurMag = sum(abs(inCurrent))/2;
-totInCurMag = max(abs(inCurrent)); % maybe a user option?
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
@@ -97,8 +90,9 @@ plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
 dataShowRange = [min(dataShow(unique(indNode_grayElm(:)),4)) max(dataShow(unique(indNode_grayElm(:)),4))];
 dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
 for i=1:length(inCurrent)
-    indNodeTemp = indNode_elecElm(find(label_elec==i),:);
-    dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+%     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+%     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+      dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
 end % to show injected current intensities properly
 hold on;
 plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
@@ -135,11 +129,13 @@ figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
 set(gcf,'color','w');
 colormap(jet);
 plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
-dataShowRange = [0 0.3*totInCurMag];
+dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
+dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
 dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
 for i=1:length(inCurrent)
-    indNodeTemp = indNode_elecElm(find(label_elec==i),:);
-    dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+%     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+%     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+      dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
 end % to show injected current intensities properly
 hold on;
 plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
@@ -162,17 +158,16 @@ drawnow
 
 disp('generating slice views...');
 
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_gray.nii']); gray = data.img;
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_mask_white.nii']); white = data.img;
-brain = gray | white;
+brain = (allMask==1 | allMask==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
-cm = colormap(jet(512)); cm = [1 1 1;cm];
+cm = colormap(jet(1024)); cm = [1 1 1;cm];
 figName = ['Voltage in Simulation: ' uniTag];
 sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
 figName = ['Electric field in Simulation: ' uniTag];
-sliceshow(ef_mag.*nan_mask_brain,[],cm,[0 0.3*totInCurMag],'Electric field (V/m)',[figName '. Click anywhere to navigate.']); drawnow
+for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
+sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
 
 disp('=======================ALL DONE=======================');
