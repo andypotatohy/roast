@@ -18,6 +18,9 @@ function roast(subj,recipe,varargin)
 % of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 % they sum up to 0. You can also place electrodes at customized locations
 % on the scalp. See Example 5 for details.
+% 
+% Output of ROAST: figures, .mat file, NIFTI files and text files. See
+% detailed info by the end of this document (right after the Examples).
 %
 % Example 1: roast
 %
@@ -321,7 +324,9 @@ function roast(subj,recipe,varargin)
 % "subjName_simulationTag_result.mat", and as NIFTI files:
 % Voltage: "subjName_simulationTag_v.nii"
 % E-field: "subjName_simulationTag_e.nii"
-% E-field magnitude: "subjName_simulationTag_emag.nii"
+% E-field magnitude: "subjName_simulationTag_emag.nii", as well as text files:
+% Voltage: "subjName_simulationTag_v.pos"
+% E-field: "subjName_simulationTag_e.pos"
 % 
 % You can also use the other function reviewRes() to review/visualize the
 % simulations that you already run before. reviewRes() has a simpler
