@@ -1,17 +1,25 @@
-ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
+# ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
-To get started, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see example/, lib/, and all other files), and then start by using the main function:
+## Getting started
 
-roast(subj,recipe,varargin)
+After you download the zip file, unzip it, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see example/, lib/, and all other files), and then enter
 
-subj: file name (can be either relative or absolute path) of the MRI of
+`roast`
+
+This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
+
+## Synopsis
+
+`roast(subj,recipe,varargin)`
+
+`subj`: file name (can be either relative or absolute path) of the MRI of
 the subject that you want to run simulation on. The MRI can be either T1
 or T2. If you have both T1 and T2, then put T2 file in the option "T2"
 (see below options for details). If you do not have any MRI but just want
 to run ROAST for a general result, you can use the default subject the
 MNI152 averaged head (see Example 1) or the New York head (see Example 2).
 
-recipe: how you want to ROAST the subject you specified above. Default
+`recipe`: how you want to ROAST the subject you specified above. Default
 recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
 any recipe you want in the format of electrodeName-injectedCurrent pair
 (see Example 3). You can pick any electrode from the 10/20, 10/10, 10/05 or BioSemi-256
@@ -20,40 +28,10 @@ of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
 on the scalp. See Example 5 for details.
 
-Output of ROAST: figures, .mat file, NIFTI files and text files. See
-detailed info by the end of this document (right after the Examples).
-
-Example 1: roast
-
-Default call of ROAST, will demo a modeling process on the MNI152 head.
-Specifically, this will use the MRI of the MNI152 head to build a model
-of transcranial electric stimulation (TES) with anode on Fp1 (1 mA) and cathode
-on P4 (-1 mA). Electrodes are modeled by default as small disc electrodes.
-See options below for details.
-
-Example 2: roast('nyhead')
-
-ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
-and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-machine of 32GB memory and above is recommended for running New York
-head. Again electrodes are modeled by default as small disc electrodes.
-See options below for details.
-
-Example 3: roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
-
-Build the TES model on any subject with your own "recipe". Here we inject
-0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
-and 0.4 mA flowing out of O2. You can define any stimulation montage you want
-in the 2nd argument, with electrodeName-injectedCurrent pair. Electrodes are
-modeled by default as small disc electrodes. You can pick any electrode
-from the 10/20, 10/10, 10/05 or BioSemi-256 EEG system. You can find all
-the info on electrodes (names, locations, coordinates) in the Microsoft
-Excel file capInfo.xls under the root directory of ROAST. Note the unit of
-the injected current is milliampere (mA). Make sure they sum up to 0.
-
-
-Options for ROAST can be entered as Name-Value Pairs in the 3rd argument 
+`varargin`: Options for ROAST can be entered as Name-Value Pairs in the 3rd argument 
 (available from ROAST v2.0). The syntax follows the Matlab convention (see plot() for example).
+
+If you do not want to read the detailed info on the options below, you can go to Example 23 for quick reference.
 
 'capType': the EEG system that you want to pick any electrode from.
 '1020' | '1010' (default) | '1005' | 'BioSemi'
@@ -165,7 +143,35 @@ conducting medium under each electrode. You can even assign different conductivi
 values to different electrodes and their conducting media (e.g., 'gel'). See
 Examples 21-22 for details.
 
-More advanced examples with these options:
+## Examples
+
+Example 1: roast
+
+Default call of ROAST, will demo a modeling process on the MNI152 head.
+Specifically, this will use the MRI of the MNI152 head to build a model
+of transcranial electric stimulation (TES) with anode on Fp1 (1 mA) and cathode
+on P4 (-1 mA). Electrodes are modeled by default as small disc electrodes.
+See options below for details.
+
+Example 2: roast('nyhead')
+
+ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
+and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
+machine of 32GB memory and above is recommended for running New York
+head. Again electrodes are modeled by default as small disc electrodes.
+See options below for details.
+
+Example 3: roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
+
+Build the TES model on any subject with your own "recipe". Here we inject
+0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
+and 0.4 mA flowing out of O2. You can define any stimulation montage you want
+in the 2nd argument, with electrodeName-injectedCurrent pair. Electrodes are
+modeled by default as small disc electrodes. You can pick any electrode
+from the 10/20, 10/10, 10/05 or BioSemi-256 EEG system. You can find all
+the info on electrodes (names, locations, coordinates) in the Microsoft
+Excel file capInfo.xls under the root directory of ROAST. Note the unit of
+the injected current is milliampere (mA). Make sure they sum up to 0.
 
 Example 4: roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
 
@@ -307,9 +313,10 @@ in mind that the values you put in the vector in 'gel' and 'electrode'
 field in 'conductivities' option should follow the order of electrodes
 you put in the 'recipe' argument.
 
+Example 23:
 
-All the options above can be combined to meet your specific simulation
-needs. For example:
+All the options can be combined to meet your specific simulation needs.
+
 roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
         'electype',{'disc','ring','pad','ring','pad'},...
         'elecsize',{[],[7 9 3],[40 20 4],[],[]},...
@@ -318,7 +325,11 @@ roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custo
         'conductivities',struct('csf',0.6,'skin',1.0),...
         'resampling','on','zeropadding',30,...
         'simulationTag','awesomeSimulation')
+
 Now you should know what this will do.
+
+
+## Outputs of ROAST
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
 results. It also saves the results as
@@ -329,14 +340,15 @@ E-field magnitude: "subjName_simulationTag_emag.nii", as well as text files:
 Voltage: "subjName_simulationTag_v.pos"
 E-field: "subjName_simulationTag_e.pos"
 
+## Review of simulation data
+
 You can also use the other function reviewRes() to review/visualize the
 simulations that you already run before. reviewRes() has a simpler
 interface than roast() so that you do not have to enter all the
 simulation parameters again as you would have to do in roast(). Type
 'help reviewRes' for more info.
 
-Note ROAST was not designed to build models for pathological heads, but 
-there are plans to add this capability in the future versions.
+## Acknowledgements
 
 For a formal description of ROAST, one is referred to (please use this as reference):
 https://www.biorxiv.org/content/early/2017/11/10/217331
@@ -353,13 +365,20 @@ Huang, Y., Parra, L.C., Haufe, S.,2016. The New York Head - A precise
 standardized volume conductor model for EEG source localization and tES
 targeting. NeuroImage,140, 150-162
 
-(c) Yu (Andy) Huang, Parra Lab at CCNY
-yhuang16@citymail.cuny.edu
-June 2018
+## Notes
 
-License:
+Version 2.x is incompatible with simulation data generated by Version 1.x. V2.6 is incompatible with V2.1 and earlier versions.
+If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
+ROAST was not designed to build models for pathological heads, but there are plans to add this capability in the future versions.
+
+## License:
+
 General Public License version 3 or later.
 
 This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
 
-Note: ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
+ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
+
+(c) Yu (Andy) Huang, Parra Lab at CCNY
+yhuang16@citymail.cuny.edu
+June 2018
