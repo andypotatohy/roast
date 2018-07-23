@@ -355,7 +355,7 @@ of other tissues will use the literature values.
 
 ### Example 22
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))
 
 Run simulation on the MNI152 averaged head with specified recipe.
 Different conductivities are assigned to pad and disc electrodes. For pad
