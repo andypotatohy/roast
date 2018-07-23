@@ -17,7 +17,7 @@ the subject that you want to run simulation on. The MRI can be either T1
 or T2. If you have both T1 and T2, then put T2 file in the option `'T2'`
 (see below options for details). If you do not have any MRI but just want
 to run ROAST for a general result, you can use the default subject the
-[MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) (see [Example 1](### Example 1)) or the [New York head](https://www.parralab.org/nyhead/) (see Example 2).
+[MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) (see [Example 1](#example-1)) or the [New York head](https://www.parralab.org/nyhead/) (see Example 2).
 
 `recipe`: how you want to ROAST the subject you specified above. Default
 recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
@@ -145,7 +145,9 @@ Examples 21-22 for details.
 
 ## Examples
 
-### Example 1: `roast`
+### Example 1
+
+`roast`
 
 Default call of ROAST, will demo a modeling process on the MNI152 head.
 Specifically, this will use the MRI of the MNI152 head to build a model
