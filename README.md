@@ -156,7 +156,7 @@ Examples 21-22 for details.
 
 ### Example 1
 
-`roast`
+    roast
 
 Default call of ROAST, will demo a modeling process on the MNI152 head.
 Specifically, this will use the MRI of the MNI152 head to build a model
@@ -166,7 +166,7 @@ See options below for details.
 
 ### Example 2
 
-`roast('nyhead')`
+    roast('nyhead')
 
 ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
@@ -176,7 +176,7 @@ See options below for details.
 
 ### Example 3
 
-`roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})`
+    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
 
 Build the TES model on any subject with your own "recipe". Here we inject
 0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
@@ -190,7 +190,7 @@ the injected current is milliampere (mA). Make sure they sum up to 0.
 
 ### Example 4
 
-`roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')`
+    roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
 
 Run simulation on subject1 with anode on G12 (1 mA) and cathode on J7 (-1
 mA) from the extended BioSemi-256 system (see capInfo.xls under the root
@@ -198,7 +198,7 @@ directory of ROAST).
  
 ### Example 5
 
-`roast('example/subject1.nii',{'G12',0.25,'J7',-0.25,'Nk1',0.5,'Nk3',-0.5,'custom1',0.25,'custom3',-0.25},'captype','biosemi')`
+    roast('example/subject1.nii',{'G12',0.25,'J7',-0.25,'Nk1',0.5,'Nk3',-0.5,'custom1',0.25,'custom3',-0.25},'captype','biosemi')
 
 Run simulation on subject1 with recipe that includes: BioSemi electrodes
 G12 and J7; neck electrodes Nk1 and Nk3 (see capInfo.xls); and
@@ -216,7 +216,7 @@ named as custom1, custom2, etc. You can of course do
 
 ### Example 6
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'})`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'})
 
 Run simulation on the MNI152 averaged head with the specified recipe. A disc
 electrode will be placed at location Fp1, a pad electrode will be placed at FC4,
@@ -225,7 +225,7 @@ as default.
 
 ### Example 7
 
-`roast('nyhead',[],'electype','ring','elecsize',[7 10 3])`
+    roast('nyhead',[],'electype','ring','elecsize',[7 10 3])
 
 Run simulation on the New York head with default recipe. Ring electrodes
 will be placed at Fp1 and P4. The size of each ring is 7mm inner radius,
@@ -233,7 +233,7 @@ will be placed at Fp1 and P4. The size of each ring is 7mm inner radius,
 
 ### Example 8
 
-`roast('nyhead',{'Fp1',1,'FC4',1,'POz',-2},'electype','ring','elecsize',[7 10 3;6 8 3;4 6 2])`
+    roast('nyhead',{'Fp1',1,'FC4',1,'POz',-2},'electype','ring','elecsize',[7 10 3;6 8 3;4 6 2])
 
 Run simulation on the New York head with the specified recipe. Ring electrode
 placed at Fp1 will have size [7mm 10mm 3mm]; ring at FC4 will have size
@@ -241,7 +241,7 @@ placed at Fp1 will have size [7mm 10mm 3mm]; ring at FC4 will have size
 
 ### Example 9
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'},'elecsize',{[8 2],[45 25 4],[5 8 2]})`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'},'elecsize',{[8 2],[45 25 4],[5 8 2]})
 
 Run simulation on the MNI152 averaged head with the specified recipe. A disc
 electrode will be placed at location Fp1 with size [8mm 2mm], a pad electrode
@@ -250,7 +250,7 @@ placed at POz with size [5mm 8mm 2mm].
 
 ### Example 10
 
-`roast([],[],'electype','pad','elecori','ap')`
+    roast([],[],'electype','pad','elecori','ap')
 
 Run simulation on the MNI152 averaged head with default recipe. Pad
 electrodes will be placed at Fp1 and P4, with default size of [50mm 30mm
@@ -258,7 +258,7 @@ electrodes will be placed at Fp1 and P4, with default size of [50mm 30mm
 
 ### Example 11
 
-`roast([],[],'electype','pad','elecori',[0.71 0.71 0])`
+    roast([],[],'electype','pad','elecori',[0.71 0.71 0])
 
 Run simulation on the MNI152 averaged head with default recipe. Pad
 electrodes will be placed at Fp1 and P4, with default size of [50mm 30mm
@@ -267,7 +267,7 @@ vector [0.71 0.71 0].
 
 ### Example 12
 
-`roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',{'ap','lr','si'})`
+    roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',{'ap','lr','si'})
 
 Run simulation on subject1 with specified recipe. Pad electrodes will be 
 placed at Fp1, FC4 and POz, with default size of [50mm 30mm 3mm]. The long
@@ -276,7 +276,7 @@ left to right for the 2nd pad, and up to down for the 3rd pad.
 
 ### Example 13
 
-`roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',[0.71 0.71 0;-0.71 0.71 0;0 0.71 0.71])`
+    roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',[0.71 0.71 0;-0.71 0.71 0;0 0.71 0.71])
 
 Run simulation on subject1 with specified recipe. Pad electrodes will be 
 placed at Fp1, FC4 and POz, with default size of [50mm 30mm 3mm]. The long
@@ -285,7 +285,7 @@ axis will be oriented in the direction of [0.71 0.71 0] for the 1st pad,
 
 ### Example 14
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',[0.71 0.71 0;0 0.71 0.71])`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',[0.71 0.71 0;0 0.71 0.71])
 
 Run simulation on the MNI152 averaged head with specified recipe. A disc
 electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
@@ -294,7 +294,7 @@ and POz, with long axis oriented in the direction of [0.71 0.71 0] and
 
 ### Example 15
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',{'ap',[],[0 0.71 0.71]})`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',{'ap',[],[0 0.71 0.71]})
 
 Run simulation on the MNI152 averaged head with specified recipe. A disc
 electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
@@ -302,27 +302,27 @@ and POz, with long axis oriented in the direction of front-back and [0 0.71 0.71
 
 ### Example 16
 
-`roast('example/subject1.nii',[],'T2','example/subject1_T2.nii')`
+    roast('example/subject1.nii',[],'T2','example/subject1_T2.nii')
 
 Run simulation on subject1 with default recipe. The T2 image will be used
 for segmentation as well.
 
 ### Example 17
 
-`roast([],[],'meshoptions',struct('radbound',4,'maxvol',8))`
+    roast([],[],'meshoptions',struct('radbound',4,'maxvol',8))
 
 Run simulation on the MNI152 averaged head with default recipe. Two of
 the mesh options are customized.
 
 ### Example 18
 
-`roast([],[],'simulationTag','roastDemo')`
+    roast([],[],'simulationTag','roastDemo')
 
 Give the default run of ROAST a tag as 'roastDemo'.
 
 ### Example 19
 
-`roast('example/subject1.nii',[],'resampling','on')`
+    roast('example/subject1.nii',[],'resampling','on')
 
 Run simulaiton on subject1 with default recipe, but resample the MRI of
 subject1 to 1mm isotropic resolution first (the original MRI of subject1
@@ -330,7 +330,7 @@ has resolution of 1mm by 0.99mm by 0.99mm).
 
 ### Example 20
 
-`roast([],{'Exx19',1,'C4',-1},'zeropadding',30)`
+    roast([],{'Exx19',1,'C4',-1},'zeropadding',30)
 
 Run simulation on the MNI152 averaged head, but add 30 empty slices on
 each of the six directions to the MRI first, to allow placement of
@@ -347,7 +347,7 @@ the area where you want to place the electrodes.
 
 ### Example 21
 
-`roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))`
+    roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))
 
 Run simulation on the MNI152 averaged head with specified recipe. The
 conductivity values of CSF and electrodes are customized. Conductivities
@@ -370,14 +370,14 @@ you put in the 'recipe' argument.
 
 All the options can be combined to meet your specific simulation needs.
 
-`roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
+    roast('path/to/your/subject.nii',{'Fp1',0.3,'F8',0.2,'POz',-0.4,'Nk1',0.5,'custom1',-0.6},...
         'electype',{'disc','ring','pad','ring','pad'},...
         'elecsize',{[],[7 9 3],[40 20 4],[],[]},...
         'elecori','ap','T2','path/to/your/t2.nii',...
         'meshoptions',struct('radbound',4,'maxvol',8),...
         'conductivities',struct('csf',0.6,'skin',1.0),...
         'resampling','on','zeropadding',30,...
-        'simulationTag','awesomeSimulation')`
+        'simulationTag','awesomeSimulation')
 
 Now you should know what this will do.
 
