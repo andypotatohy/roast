@@ -2,7 +2,7 @@
 
 ## Getting started
 
-After you download the zip file, unzip it, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see example/, lib/, and all other files), and then enter
+After you download the zip file, unzip it, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see `example/`, `lib/`, and all other files), and then enter:
 
 `roast`
 
@@ -14,27 +14,28 @@ This will demo a modeling process on the MNI152 head. Specifically, it will use 
 
 `subj`: file name (can be either relative or absolute path) of the MRI of
 the subject that you want to run simulation on. The MRI can be either T1
-or T2. If you have both T1 and T2, then put T2 file in the option "T2"
+or T2. If you have both T1 and T2, then put T2 file in the option `'T2'`
 (see below options for details). If you do not have any MRI but just want
 to run ROAST for a general result, you can use the default subject the
-MNI152 averaged head (see Example 1) or the New York head (see Example 2).
+[MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) (see Example 1) or the [New York head](https://www.parralab.org/nyhead/) (see Example 2).
 
 `recipe`: how you want to ROAST the subject you specified above. Default
 recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
-any recipe you want in the format of electrodeName-injectedCurrent pair
+any recipe you want in the format of `electrodeName-injectedCurrent` pair
 (see Example 3). You can pick any electrode from the 10/20, 10/10, 10/05 or BioSemi-256
-EEG system (see the Microsoft Excel file capInfo.xls under the root directory
+EEG system (see the Microsoft Excel file `capInfo.xls` under the root directory
 of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
 on the scalp. See Example 5 for details.
 
-`varargin`: Options for ROAST can be entered as Name-Value Pairs in the 3rd argument 
-(available from ROAST v2.0). The syntax follows the Matlab convention (see plot() for example).
+`varargin`: Options for ROAST can be entered as `Name-Value` Pairs in the 3rd argument 
+(available from ROAST v2.0). The syntax follows the Matlab convention (see `plot()` for example).
 
 If you do not want to read the detailed info on the options below, you can go to Example 23 for quick reference.
 
-'capType': the EEG system that you want to pick any electrode from.
-'1020' | '1010' (default) | '1005' | 'BioSemi'
+`'capType'`: the EEG system that you want to pick any electrode from.
+
+`'1020' | '1010' (default) | '1005' | 'BioSemi'`
 You can also use customized electrode locations you defined. Just provide
 the text file that contains the electrode coordinates. See below Example 5 for details.
 
