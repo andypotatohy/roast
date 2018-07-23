@@ -47,18 +47,18 @@ on the scalp. See Example 5 for details.
 You can also use customized electrode locations you defined. Just provide
 the text file that contains the electrode coordinates. See below Example 5 for details.
 
-'elecType': the shape of electrode.
-'disc' (default) | 'pad' | 'ring'
+`'elecType'` -- the shape of electrode.  
+`'disc' (default) | 'pad' | 'ring'`  
 Note you can specify different shapes to different electrodes, i.e., you
 can place different types of electrodes at the same time. See below
 Example 6 for details.
 
-'elecSize': the size of electrode.
-For disc electrodes, sizes follow the format of [radius height], and
-default size is [6mm 2mm]; for pad electrodes, sizes follow the format of
-[length width height], and default size is [50mm 30mm 3mm]; for ring
-electrodes, sizes follow the format of [innerRadius outterRadius height],
-and default size is [4mm 6mm 2mm].
+`'elecSize'` -- the size of electrode.
+For disc electrodes, sizes follow the format of `[radius height]`, and
+default size is `[6mm 2mm]`; for pad electrodes, sizes follow the format of
+`[length width height]`, and default size is `[50mm 30mm 3mm]`; for ring
+electrodes, sizes follow the format of `[innerRadius outterRadius height]`,
+and default size is `[4mm 6mm 2mm]`.
 
 If you're placing only one type of electrode (e.g., either disc, or pad,
 or ring), you can use a one-row vector to customize the size, see Example
@@ -71,13 +71,14 @@ you need to put the size of each electrode in a 1-by-N cell (put [] for
 any electrode that you want to use the default size), where N is the number
 of electrodes to be placed, see Example 9.
 
-'elecOri': the orientation of pad electrode (ONLY applies to pad electrodes).
-'lr' (default) | 'ap' | 'si' | direction vector of the long axis
+`'elecOri'` -- the orientation of pad electrode (ONLY applies to pad electrodes).  
+`'lr' (default) | 'ap' | 'si' | direction vector of the long axis`  
 For pad electrodes, you can define their orientation by giving the
-direction of the long axis. You can simply use the three pre-defined keywords:
-lr--long axis going left (l) and right (r); ap--long axis pointing front (anterior) and back (posterior);
-si--long axis going up (superior) and down (inferior). For other orientations you can also specify
-the direction precisely by giving the direction vector of the long axis.
+direction of the long axis. You can simply use the three pre-defined keywords:  
+- `'lr'`--long axis going left (l) and right (r);
+- `'ap'`--long axis pointing front (anterior) and back (posterior);
+- `'si'`--long axis going up (superior) and down (inferior).
+For other orientations you can also specify the direction precisely by giving the direction vector of the long axis.
 
 If you're placing pad electrodes only, use the pre-defined keywords
 (Example 10) or the direction vector of the long axis (Example 11) to
@@ -93,7 +94,7 @@ single pre-defined keyword if same orientation for all the pads) where N
 is the number of pad electrodes, or into a 1-by-N cell (Example 15), where N
 is the number of all electrodes to be placed (put [] for non-pad electrodes).
 
-'T2': use a T2-weighted MRI to help segmentation.
+'T2' -- use a T2-weighted MRI to help segmentation.
 [] (default) | file path to the T2 MRI
 If you have a T2 MRI aside of T1, you can put the T2 file in this option,
 see Example 16, note you should put the T1 and T2 files in the same
@@ -101,7 +102,7 @@ directory.
 If you ONLY have a T2 MRI, put the T2 file in the first argument 'subj'
 when you call roast, just like what you would do when you only have a T1.
 
-'meshOptions': advanced options of ROAST, for controlling mesh parameters
+'meshOptions' -- advanced options of ROAST, for controlling mesh parameters
 (see Example 17).
 5 sub-options are available:
 meshOpt.radbound: maximal surface element size, default 5;
@@ -112,7 +113,7 @@ meshOpt.reratio: maximal radius-edge ratio, default 3;
 meshOpt.maxvol: target maximal tetrahedral element volume, default 10.
 See iso2mesh documentation for more details on these options.
 
-'simulationTag': a unique tag that identifies each simulation.
+'simulationTag' -- a unique tag that identifies each simulation.
 dateTime string (default) | user-provided string
 This tag is used by ROAST for managing simulation data. ROAST can
 identify if a certain simulation has been already run. If yes, it will
@@ -123,7 +124,7 @@ simulation (Example 18), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
 log file (named as "subjName_log"), parsed by the simulation tags.
 
-'resampling': re-sample the input MRI to 1mm isotropic resolution
+'resampling' -- re-sample the input MRI to 1mm isotropic resolution
 'on' | 'off' (default)
 Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
 While higher resolution can give more accurate models, the computation
@@ -134,7 +135,7 @@ this option if your input MRI has anisotropic resolution (e.g., 1 mm by
 1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
 is built from an MRI with anisotropic resolution.
 
-'zeroPadding': extend the input MRI by some amount, to avoid
+'zeroPadding' -- extend the input MRI by some amount, to avoid
 complications when electrodes are placed by the image boundaries. Default
 is not padding any slices to the MRI. You can ask ROAST to pad N empty
 slices in all the six directions of the input MRI (left, right, front,
@@ -142,7 +143,7 @@ back, up and down), where N is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
 (Example 20).
 
-'conductivities': advanced options of ROAST, the values are stored as a 
+'conductivities' -- advanced options of ROAST, the values are stored as a 
 structure, with the following field names: white (default 0.126 S/m),
 gray (default 0.276 S/m), csf (default 1.65 S/m), bone (default 0.01 S/m),
 skin (default 0.465 S/m), air (default 2.5e-14 S/m), gel (default 0.3 S/m)
