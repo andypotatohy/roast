@@ -155,7 +155,7 @@ structure, with the following field names:
 - `electrode` (default 5.9e7 S/m).  
 You can use this option to customize the electrical conductivity for each tissue, each electrode, as well as the
 conducting medium under each electrode. You can even assign different conductivity
-values to different electrodes and their conducting media (e.g., 'gel'). See
+values to different electrodes and their conducting media (e.g., `'gel'`). See
 [Example 21](#example-21) and [Example 22](#example-22) for details.
 
 ## Examples
@@ -242,41 +242,41 @@ will be placed at Fp1 and P4. The size of each ring is 7mm inner radius,
     roast('nyhead',{'Fp1',1,'FC4',1,'POz',-2},'electype','ring','elecsize',[7 10 3;6 8 3;4 6 2])
 
 Run simulation on the New York head with the specified recipe. Ring electrode
-placed at Fp1 will have size [7mm 10mm 3mm]; ring at FC4 will have size
-[6mm 8mm 3mm]; and ring at POz will have size [4mm 6mm 2mm].
+placed at Fp1 will have size `[7mm 10mm 3mm]`; ring at FC4 will have size
+`[6mm 8mm 3mm]`; and ring at POz will have size `[4mm 6mm 2mm]`.
 
 ### Example 9
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'},'elecsize',{[8 2],[45 25 4],[5 8 2]})
 
 Run simulation on the MNI152 averaged head with the specified recipe. A disc
-electrode will be placed at location Fp1 with size [8mm 2mm], a pad electrode
-will be placed at FC4 with size [45mm 25mm 4mm], and a ring electrode will be
-placed at POz with size [5mm 8mm 2mm].
+electrode will be placed at location Fp1 with size `[8mm 2mm]`, a pad electrode
+will be placed at FC4 with size `[45mm 25mm 4mm]`, and a ring electrode will be
+placed at POz with size `[5mm 8mm 2mm]`.
 
 ### Example 10
 
     roast([],[],'electype','pad','elecori','ap')
 
 Run simulation on the MNI152 averaged head with default recipe. Pad
-electrodes will be placed at Fp1 and P4, with default size of [50mm 30mm
-3mm] and the long axis will be oriented in the direction of front to back.
+electrodes will be placed at Fp1 and P4, with default size of `[50mm 30mm
+3mm]` and the long axis will be oriented in the direction of front to back.
 
 ### Example 11
 
     roast([],[],'electype','pad','elecori',[0.71 0.71 0])
 
 Run simulation on the MNI152 averaged head with default recipe. Pad
-electrodes will be placed at Fp1 and P4, with default size of [50mm 30mm
-3mm] and the long axis will be oriented in the direction specified by the
-vector [0.71 0.71 0].
+electrodes will be placed at Fp1 and P4, with default size of `[50mm 30mm
+3mm]` and the long axis will be oriented in the direction specified by the
+vector `[0.71 0.71 0]`.
 
 ### Example 12
 
     roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',{'ap','lr','si'})
 
 Run simulation on subject1 with specified recipe. Pad electrodes will be 
-placed at Fp1, FC4 and POz, with default size of [50mm 30mm 3mm]. The long
+placed at Fp1, FC4 and POz, with default size of `[50mm 30mm 3mm]`. The long
 axis will be oriented in the direction of front to back for the 1st pad,
 left to right for the 2nd pad, and up to down for the 3rd pad.
 
@@ -285,9 +285,9 @@ left to right for the 2nd pad, and up to down for the 3rd pad.
     roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',[0.71 0.71 0;-0.71 0.71 0;0 0.71 0.71])
 
 Run simulation on subject1 with specified recipe. Pad electrodes will be 
-placed at Fp1, FC4 and POz, with default size of [50mm 30mm 3mm]. The long
-axis will be oriented in the direction of [0.71 0.71 0] for the 1st pad,
-[-0.71 0.71 0] for the 2nd pad, and [0 0.71 0.71] for the 3rd pad.
+placed at Fp1, FC4 and POz, with default size of `[50mm 30mm 3mm]`. The long
+axis will be oriented in the direction of `[0.71 0.71 0]` for the 1st pad,
+`[-0.71 0.71 0]` for the 2nd pad, and `[0 0.71 0.71]` for the 3rd pad.
 
 ### Example 14
 
@@ -295,8 +295,8 @@ axis will be oriented in the direction of [0.71 0.71 0] for the 1st pad,
 
 Run simulation on the MNI152 averaged head with specified recipe. A disc
 electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
-and POz, with long axis oriented in the direction of [0.71 0.71 0] and 
-[0 0.71 0.71], respectively.
+and POz, with long axis oriented in the direction of `[0.71 0.71 0]` and 
+`[0 0.71 0.71]`, respectively.
 
 ### Example 15
 
@@ -304,7 +304,7 @@ and POz, with long axis oriented in the direction of [0.71 0.71 0] and
 
 Run simulation on the MNI152 averaged head with specified recipe. A disc
 electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
-and POz, with long axis oriented in the direction of front-back and [0 0.71 0.71], respectively.
+and POz, with long axis oriented in the direction of front-back and `[0 0.71 0.71]`, respectively.
 
 ### Example 16
 
@@ -346,7 +346,7 @@ padding first, you'll get strange results.
 Note it is always a good practice to add empty slices to the MRI if you 
 want to place electrodes close to, or even out of, the image boundary.
 ROAST can detect if part or all of your electrode goes out of image boundary,
-but sometimes it cannot tell (it's not that smart yet :-). So do a 'zeroPadding'
+but sometimes it cannot tell (it's not that smart yet :-). So do a `'zeroPadding'`
 of 10 to start with, and if you're not happy with the results, just increase
 the amount of zero padding. But the best solution is to get an MRI that covers
 the area where you want to place the electrodes.
@@ -365,12 +365,12 @@ of other tissues will use the literature values.
 
 Run simulation on the MNI152 averaged head with specified recipe.
 Different conductivities are assigned to pad and disc electrodes. For pad
-electrodes, 'gel' is given 1 S/m and 'electrode' is 0.1 S/m; for the disc
-electrode, 'gel' is given 0.3 S/m and 'electrode' is 59000000 S/m. When
+electrodes, `'gel'` is given 1 S/m and `'electrode'` is 0.1 S/m; for the disc
+electrode, `'gel'` is given 0.3 S/m and `'electrode'` is 59000000 S/m. When
 you control the conductivity values for each electrode individually, keep
-in mind that the values you put in the vector in 'gel' and 'electrode'
-field in 'conductivities' option should follow the order of electrodes
-you put in the 'recipe' argument.
+in mind that the values you put in the vector in `'gel'` and `'electrode'`
+field in `'conductivities'` option should follow the order of electrodes
+you put in the `'recipe'` argument.
 
 ### Example 23
 
@@ -392,10 +392,13 @@ Now you should know what this will do.
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
 results. It also saves the results as
+
 `"subjName_simulationTag_result.mat"`, and as NIFTI files:
+
 Voltage: `"subjName_simulationTag_v.nii"`
 E-field: `"subjName_simulationTag_e.nii"`
 E-field magnitude: `"subjName_simulationTag_emag.nii"`, as well as text files:
+
 Voltage: `"subjName_simulationTag_v.pos"`
 E-field: `"subjName_simulationTag_e.pos"`
 
@@ -435,8 +438,10 @@ General Public License version 3 or later.
 
 This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
 
-ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in [GPL FAQ](http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
+ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in [GPL FAQ](http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under `example/` folder in this package and excludes those programs stored in the `lib/` directory. The software under `lib/` follow their respective licenses. This software is only intended for non-commercial use.
 
-(c) Yu (Andy) Huang, Parra Lab at CCNY
+(c) [Yu (Andy) Huang](https://www.parralab.org/people/yu-andy-huang/), Parra Lab at CCNY
+
 yhuang16@citymail.cuny.edu
+
 June 2018
