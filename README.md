@@ -61,14 +61,14 @@ electrodes, sizes follow the format of `[innerRadius outterRadius height]`,
 and default size is `[4mm 6mm 2mm]`.
 
 If you're placing only one type of electrode (e.g., either disc, or pad,
-or ring), you can use a one-row vector to customize the size, see [Example
+or ring), you can use a *one-row* vector to customize the size, see [Example
 7](#example-7); if you want to control the size for each electrode separately
 (provided you're placing only one type of electrode), you need to specify
-the size for each electrode correspondingly in a N-row matrix, where N is
+the size for each electrode correspondingly in a *N-row* matrix, where *N* is
 the number of electrodes to be placed, see [Example 8](#example-8); if you're placing
 more than one type of electrodes and also want to customize the sizes,
-you need to put the size of each electrode in a 1-by-N cell (put `[]` for
-any electrode that you want to use the default size), where N is the number
+you need to put the size of each electrode in a *1-by-N* cell (put `[]` for
+any electrode that you want to use the default size), where *N* is the number
 of electrodes to be placed, see [Example 9](#example-9).
 
 `'elecOri'` -- the orientation of pad electrode (ONLY applies to pad electrodes).  
@@ -396,10 +396,13 @@ results. It also saves the results as
 `"subjName_simulationTag_result.mat"`, and as NIFTI files:
 
 Voltage: `"subjName_simulationTag_v.nii"`
+
 E-field: `"subjName_simulationTag_e.nii"`
+
 E-field magnitude: `"subjName_simulationTag_emag.nii"`, as well as text files:
 
 Voltage: `"subjName_simulationTag_v.pos"`
+
 E-field: `"subjName_simulationTag_e.pos"`
 
 ## Review of simulation data
