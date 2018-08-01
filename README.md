@@ -37,7 +37,7 @@ of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
 on the scalp. See Example 5 for details.
 
-`varargin`: Options for ROAST can be entered as `Name-Value` Pairs in the 3rd argument 
+`varargin`: Options for ROAST can be entered as `Name-Value` pairs in the 3rd argument 
 (available from ROAST v2.0). The syntax follows the Matlab convention (see `plot()` for example).
 
 *If you do not want to read the detailed info on the options below, you can go to Example 23 for quick reference.*
@@ -77,7 +77,7 @@ For pad electrodes, you can define their orientation by giving the
 direction of the long axis. You can simply use the three pre-defined keywords:  
 - `'lr'`--long axis going left (l) and right (r);
 - `'ap'`--long axis pointing front (anterior) and back (posterior);
-- `'si'`--long axis going up (superior) and down (inferior).
+- `'si'`--long axis going up (superior) and down (inferior).  
 For other orientations you can also specify the direction precisely by giving the direction vector of the long axis.
 
 If you're placing pad electrodes only, use the pre-defined keywords
@@ -94,27 +94,27 @@ single pre-defined keyword if same orientation for all the pads) where N
 is the number of pad electrodes, or into a 1-by-N cell (Example 15), where N
 is the number of all electrodes to be placed (put [] for non-pad electrodes).
 
-'T2' -- use a T2-weighted MRI to help segmentation.
-[] (default) | file path to the T2 MRI
+`'T2'` -- use a T2-weighted MRI to help segmentation.  
+`[] (default) | file path to the T2 MRI`  
 If you have a T2 MRI aside of T1, you can put the T2 file in this option,
 see Example 16, note you should put the T1 and T2 files in the same
 directory.
-If you ONLY have a T2 MRI, put the T2 file in the first argument 'subj'
+If you ONLY have a T2 MRI, put the T2 file in the first argument `'subj'`
 when you call roast, just like what you would do when you only have a T1.
 
-'meshOptions' -- advanced options of ROAST, for controlling mesh parameters
-(see Example 17).
+`'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
+(see Example 17).  
 5 sub-options are available:
-meshOpt.radbound: maximal surface element size, default 5;
-meshOpt.angbound: mimimal angle of a surface triangle, default 30;
-meshOpt.distbound: maximal distance between the center of the surface bounding circle
+- `meshOpt.radbound`: maximal surface element size, default 5;
+- `meshOpt.angbound`: mimimal angle of a surface triangle, default 30;
+- `meshOpt.distbound`: maximal distance between the center of the surface bounding circle
 and center of the element bounding sphere, default 0.4;
-meshOpt.reratio: maximal radius-edge ratio, default 3;
-meshOpt.maxvol: target maximal tetrahedral element volume, default 10.
+- `meshOpt.reratio`: maximal radius-edge ratio, default 3;
+- `meshOpt.maxvol`: target maximal tetrahedral element volume, default 10.  
 See iso2mesh documentation for more details on these options.
 
-'simulationTag' -- a unique tag that identifies each simulation.
-dateTime string (default) | user-provided string
+`'simulationTag'` -- a unique tag that identifies each simulation.  
+`dateTime string (default) | user-provided string`  
 This tag is used by ROAST for managing simulation data. ROAST can
 identify if a certain simulation has been already run. If yes, it will
 just load the results to save time. You can leave this option empty so 
@@ -124,8 +124,8 @@ simulation (Example 18), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
 log file (named as "subjName_log"), parsed by the simulation tags.
 
-'resampling' -- re-sample the input MRI to 1mm isotropic resolution
-'on' | 'off' (default)
+`'resampling'` -- re-sample the input MRI to 1mm isotropic resolution.  
+`'on' | 'off' (default)`  
 Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
 While higher resolution can give more accurate models, the computation
 will be more expensive and thus slower. If you want a faster simulation,
@@ -135,7 +135,7 @@ this option if your input MRI has anisotropic resolution (e.g., 1 mm by
 1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
 is built from an MRI with anisotropic resolution.
 
-'zeroPadding' -- extend the input MRI by some amount, to avoid
+`'zeroPadding'` -- extend the input MRI by some amount, to avoid
 complications when electrodes are placed by the image boundaries. Default
 is not padding any slices to the MRI. You can ask ROAST to pad N empty
 slices in all the six directions of the input MRI (left, right, front,
@@ -143,12 +143,17 @@ back, up and down), where N is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
 (Example 20).
 
-'conductivities' -- advanced options of ROAST, the values are stored as a 
-structure, with the following field names: white (default 0.126 S/m),
-gray (default 0.276 S/m), csf (default 1.65 S/m), bone (default 0.01 S/m),
-skin (default 0.465 S/m), air (default 2.5e-14 S/m), gel (default 0.3 S/m)
-and electrode (default 5.9e7 S/m). You can use this option to customize the
-electrical conductivity for each tissue, each electrode, as well as the
+`'conductivities'` -- advanced options of ROAST, the values are stored as a 
+structure, with the following field names:
+- `white` (default 0.126 S/m);
+- `gray` (default 0.276 S/m);
+- `csf` (default 1.65 S/m);
+- `bone` (default 0.01 S/m);
+- `skin` (default 0.465 S/m);
+- `air` (default 2.5e-14 S/m);
+- `gel` (default 0.3 S/m);
+- `electrode` (default 5.9e7 S/m).  
+You can use this option to customize the electrical conductivity for each tissue, each electrode, as well as the
 conducting medium under each electrode. You can even assign different conductivity
 values to different electrodes and their conducting media (e.g., 'gel'). See
 Examples 21-22 for details.
