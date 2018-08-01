@@ -26,32 +26,32 @@ the subject that you want to run simulation on. The MRI can be either T1
 or T2. If you have both T1 and T2, then put T2 file in the option `'T2'`
 (see below options for details). If you do not have any MRI but just want
 to run ROAST for a general result, you can use the default subject the
-[MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) (see [Example 1](#example-1)) or the [New York head](https://www.parralab.org/nyhead/) (see Example 2).
+[MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) (see [Example 1](#example-1)) or the [New York head](https://www.parralab.org/nyhead/) (see [Example 2](#example-2)).
 
 `recipe`: how you want to ROAST the subject you specified above. Default
 recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
 any recipe you want in the format of `electrodeName-injectedCurrent` pair
-(see Example 3). You can pick any electrode from the 10/20, 10/10, 10/05 or BioSemi-256
+(see [Example 3](#example-3)). You can pick any electrode from the 10/20, 10/10, 10/05 or BioSemi-256
 EEG system (see the Microsoft Excel file `capInfo.xls` under the root directory
 of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
-on the scalp. See Example 5 for details.
+on the scalp. See [Example 5](#example-5) for details.
 
 `varargin`: Options for ROAST can be entered as `Name-Value` pairs in the 3rd argument 
 (available from ROAST v2.0). The syntax follows the Matlab convention (see `plot()` for example).
 
-*If you do not want to read the detailed info on the options below, you can go to Example 23 for quick reference.*
+*If you do not want to read the detailed info on the options below, you can go to [Example 23](#example-23) for quick reference.*
 
 `'capType'` -- the EEG system that you want to pick any electrode from.  
 `'1020' | '1010' (default) | '1005' | 'BioSemi'`  
 You can also use customized electrode locations you defined. Just provide
-the text file that contains the electrode coordinates. See below Example 5 for details.
+the text file that contains the electrode coordinates. See below [Example 5](#example-5) for details.
 
 `'elecType'` -- the shape of electrode.  
 `'disc' (default) | 'pad' | 'ring'`  
 Note you can specify different shapes to different electrodes, i.e., you
 can place different types of electrodes at the same time. See below
-Example 6 for details.
+[Example 6](#example-6) for details.
 
 `'elecSize'` -- the size of electrode.
 For disc electrodes, sizes follow the format of `[radius height]`, and
@@ -61,15 +61,15 @@ electrodes, sizes follow the format of `[innerRadius outterRadius height]`,
 and default size is `[4mm 6mm 2mm]`.
 
 If you're placing only one type of electrode (e.g., either disc, or pad,
-or ring), you can use a one-row vector to customize the size, see Example
-7; if you want to control the size for each electrode separately
+or ring), you can use a one-row vector to customize the size, see [Example
+7](#example-7); if you want to control the size for each electrode separately
 (provided you're placing only one type of electrode), you need to specify
 the size for each electrode correspondingly in a N-row matrix, where N is
-the number of electrodes to be placed, see Example 8; if you're placing
+the number of electrodes to be placed, see [Example 8](#example-8); if you're placing
 more than one type of electrodes and also want to customize the sizes,
-you need to put the size of each electrode in a 1-by-N cell (put [] for
+you need to put the size of each electrode in a 1-by-N cell (put `[]` for
 any electrode that you want to use the default size), where N is the number
-of electrodes to be placed, see Example 9.
+of electrodes to be placed, see [Example 9](#example-9).
 
 `'elecOri'` -- the orientation of pad electrode (ONLY applies to pad electrodes).  
 `'lr' (default) | 'ap' | 'si' | direction vector of the long axis`  
@@ -81,29 +81,29 @@ direction of the long axis. You can simply use the three pre-defined keywords:
 For other orientations you can also specify the direction precisely by giving the direction vector of the long axis.
 
 If you're placing pad electrodes only, use the pre-defined keywords
-(Example 10) or the direction vector of the long axis (Example 11) to
+([Example 10](#example-10)) or the direction vector of the long axis ([Example 11](#example-11)) to
 customize the orientations; if you want to control the
 orientation for each pad electrode separately, you need to specify
 the orientation for each pad correspondingly using the pre-defined
-keywords in a 1-by-N cell (Example 12) or the direction vectors of the
-long axis in a N-by-3 matrix (Example 13), where N is the number of pad 
+keywords in a 1-by-N cell ([Example 12](#example-12)) or the direction vectors of the
+long axis in a N-by-3 matrix ([Example 13](#example-13)), where N is the number of pad 
 electrodes to be placed; if you're placing more than one type of electrodes
 and also want to customize the pad orientations, you need to put the
-orientations into a N-by-3 matrix (Example 14; or just a 1-by-3 vector or a
+orientations into a N-by-3 matrix ([Example 14](#example-14); or just a 1-by-3 vector or a
 single pre-defined keyword if same orientation for all the pads) where N
-is the number of pad electrodes, or into a 1-by-N cell (Example 15), where N
-is the number of all electrodes to be placed (put [] for non-pad electrodes).
+is the number of pad electrodes, or into a 1-by-N cell ([Example 15](#example-15)), where N
+is the number of all electrodes to be placed (put `[]` for non-pad electrodes).
 
 `'T2'` -- use a T2-weighted MRI to help segmentation.  
 `[] (default) | file path to the T2 MRI`  
 If you have a T2 MRI aside of T1, you can put the T2 file in this option,
-see Example 16, note you should put the T1 and T2 files in the same
+see [Example 16](#example-16), note you should put the T1 and T2 files in the same
 directory.
 If you ONLY have a T2 MRI, put the T2 file in the first argument `'subj'`
 when you call roast, just like what you would do when you only have a T1.
 
 `'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
-(see Example 17).  
+(see [Example 17](#example-17)).  
 5 sub-options are available:
 - `meshOpt.radbound`: maximal surface element size, default 5;
 - `meshOpt.angbound`: mimimal angle of a surface triangle, default 30;
@@ -120,9 +120,9 @@ identify if a certain simulation has been already run. If yes, it will
 just load the results to save time. You can leave this option empty so 
 that ROAST will just use the date and time as the unique tag for the
 simulation. Or you can provide your preferred tag for a specific
-simulation (Example 18), then you can find it more easily later. Also all the
+simulation ([Example 18](#example-18)), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
-log file (named as "subjName_log"), parsed by the simulation tags.
+log file (named as `"subjName_log"`), parsed by the simulation tags.
 
 `'resampling'` -- re-sample the input MRI to 1mm isotropic resolution.  
 `'on' | 'off' (default)`  
@@ -130,7 +130,7 @@ Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
 While higher resolution can give more accurate models, the computation
 will be more expensive and thus slower. If you want a faster simulation,
 you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
-turning on this option (Example 19). Also it is recommended to turn on
+turning on this option ([Example 19](#example-19)). Also it is recommended to turn on
 this option if your input MRI has anisotropic resolution (e.g., 1 mm by
 1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
 is built from an MRI with anisotropic resolution.
@@ -141,7 +141,7 @@ is not padding any slices to the MRI. You can ask ROAST to pad N empty
 slices in all the six directions of the input MRI (left, right, front,
 back, up and down), where N is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
-(Example 20).
+([Example 20](#example-20)).
 
 `'conductivities'` -- advanced options of ROAST, the values are stored as a 
 structure, with the following field names:
@@ -156,7 +156,7 @@ structure, with the following field names:
 You can use this option to customize the electrical conductivity for each tissue, each electrode, as well as the
 conducting medium under each electrode. You can even assign different conductivity
 values to different electrodes and their conducting media (e.g., 'gel'). See
-Examples 21-22 for details.
+[Example 21](#example-21) and [Example 22](#example-22) for details.
 
 ## Examples
 
@@ -187,11 +187,11 @@ See options below for details.
 Build the TES model on any subject with your own "recipe". Here we inject
 0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
 and 0.4 mA flowing out of O2. You can define any stimulation montage you want
-in the 2nd argument, with electrodeName-injectedCurrent pair. Electrodes are
+in the 2nd argument, with `electrodeName-injectedCurrent` pair. Electrodes are
 modeled by default as small disc electrodes. You can pick any electrode
 from the 10/20, 10/10, 10/05 or BioSemi-256 EEG system. You can find all
 the info on electrodes (names, locations, coordinates) in the Microsoft
-Excel file capInfo.xls under the root directory of ROAST. Note the unit of
+Excel file `capInfo.xls` under the root directory of ROAST. Note the unit of
 the injected current is milliampere (mA). Make sure they sum up to 0.
 
 ### Example 4
@@ -199,7 +199,7 @@ the injected current is milliampere (mA). Make sure they sum up to 0.
     roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
 
 Run simulation on subject1 with anode on G12 (1 mA) and cathode on J7 (-1
-mA) from the extended BioSemi-256 system (see capInfo.xls under the root
+mA) from the extended BioSemi-256 system (see `capInfo.xls` under the root
 directory of ROAST).
  
 ### Example 5
@@ -207,18 +207,18 @@ directory of ROAST).
     roast('example/subject1.nii',{'G12',0.25,'J7',-0.25,'Nk1',0.5,'Nk3',-0.5,'custom1',0.25,'custom3',-0.25},'captype','biosemi')
 
 Run simulation on subject1 with recipe that includes: BioSemi electrodes
-G12 and J7; neck electrodes Nk1 and Nk3 (see capInfo.xls); and
+G12 and J7; neck electrodes Nk1 and Nk3 (see `capInfo.xls`); and
 user-provided electrodes custom1 and custom3. You can use a free program
-called MRIcro (http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
+called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
 the MRI first and click the locations on the scalp surface where you want
 to place the electrodes, record the voxel coordinates returned by MRIcro
 into a text file, and save the text file to the MRI data directory with name
-"subjName_customLocations" (e.g., here for subject1 it's saved as
-"subject1_customLocations"). ROAST will load the text file and place the
+`"subjName_customLocations"` (e.g., here for subject1 it's saved as
+`"subject1_customLocations"`). ROAST will load the text file and place the
 electrodes you specified. You need to name each customized electrode in
-the text file starting with "custom" (e.g., for this example they're
-named as custom1, custom2, etc. You can of course do
-"custom_MyPreferredElectrodeName").
+the text file starting with `"custom"` (e.g., for this example they're
+named as `custom1`, `custom2`, etc. You can of course do
+`"custom_MyPreferredElectrodeName"`).
 
 ### Example 6
 
@@ -324,7 +324,7 @@ the mesh options are customized.
 
     roast([],[],'simulationTag','roastDemo')
 
-Give the default run of ROAST a tag as 'roastDemo'.
+Give the default run of ROAST a tag as `'roastDemo'`.
 
 ### Example 19
 
@@ -392,37 +392,36 @@ Now you should know what this will do.
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
 results. It also saves the results as
-"subjName_simulationTag_result.mat", and as NIFTI files:
-Voltage: "subjName_simulationTag_v.nii"
-E-field: "subjName_simulationTag_e.nii"
-E-field magnitude: "subjName_simulationTag_emag.nii", as well as text files:
-Voltage: "subjName_simulationTag_v.pos"
-E-field: "subjName_simulationTag_e.pos"
+`"subjName_simulationTag_result.mat"`, and as NIFTI files:
+Voltage: `"subjName_simulationTag_v.nii"`
+E-field: `"subjName_simulationTag_e.nii"`
+E-field magnitude: `"subjName_simulationTag_emag.nii"`, as well as text files:
+Voltage: `"subjName_simulationTag_v.pos"`
+E-field: `"subjName_simulationTag_e.pos"`
 
 ## Review of simulation data
 
-You can also use the other function reviewRes() to review/visualize the
-simulations that you already run before. reviewRes() has a simpler
-interface than roast() so that you do not have to enter all the
-simulation parameters again as you would have to do in roast(). Type
-'help reviewRes' for more info.
+You can also use the other function `reviewRes()` to review/visualize the
+simulations that you already run before. `reviewRes()` has a simpler
+interface than `roast()` so that you do not have to enter all the
+simulation parameters again as you would have to do in `roast()`. Type
+`'help reviewRes'` for more info.
 
 ## Acknowledgements
 
-For a formal description of ROAST, one is referred to (please use this as reference):
-https://www.biorxiv.org/content/early/2017/11/10/217331
+For a formal description of ROAST, one is referred to [this article.](https://www.biorxiv.org/content/early/2017/11/10/217331) (please use this as reference):
 
 For a published version of the manuscript above, use this as reference:
-Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
-fully-automated, Realistic vOlumetric-Approach-based Simulator for TES.
+Huang, Y., Datta, A., Bikson, M., Parra, L.C., [ROAST: an open-source,
+fully-automated, Realistic vOlumetric-Approach-based Simulator for TES.](https://www.parralab.org/publications/ROAST_EMBC_forFinalSubmission.pdf)
 Proceedings of the 40th Annual International Conference of the IEEE 
 Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
 
 If you use New York head to run simulation, please also cite the
 following:
-Huang, Y., Parra, L.C., Haufe, S.,2016. The New York Head - A precise
+Huang, Y., Parra, L.C., Haufe, S.,2016. [The New York Head - A precise
 standardized volume conductor model for EEG source localization and tES
-targeting. NeuroImage,140, 150-162
+targeting.](https://www.sciencedirect.com/science/article/pii/S1053811915011325) NeuroImage,140, 150-162
 
 ## Notes
 
@@ -436,7 +435,7 @@ General Public License version 3 or later.
 
 This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
 
-ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in GPL FAQ (http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
+ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in [GPL FAQ](http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentation and the individual MRI data under example/ folder in this package and excludes those programs stored in the lib/ directory. The software under lib/ follow their respective licenses. This software is only intended for non-commercial use.
 
 (c) Yu (Andy) Huang, Parra Lab at CCNY
 yhuang16@citymail.cuny.edu
