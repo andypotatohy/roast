@@ -85,13 +85,13 @@ If you're placing pad electrodes only, use the pre-defined keywords
 customize the orientations; if you want to control the
 orientation for each pad electrode separately, you need to specify
 the orientation for each pad correspondingly using the pre-defined
-keywords in a 1-by-N cell ([Example 12](#example-12)) or the direction vectors of the
-long axis in a N-by-3 matrix ([Example 13](#example-13)), where N is the number of pad 
+keywords in a *1-by-N* cell ([Example 12](#example-12)) or the direction vectors of the
+long axis in a *N-by-3* matrix ([Example 13](#example-13)), where *N* is the number of pad 
 electrodes to be placed; if you're placing more than one type of electrodes
 and also want to customize the pad orientations, you need to put the
-orientations into a N-by-3 matrix ([Example 14](#example-14); or just a 1-by-3 vector or a
-single pre-defined keyword if same orientation for all the pads) where N
-is the number of pad electrodes, or into a 1-by-N cell ([Example 15](#example-15)), where N
+orientations into a *N-by-3* matrix ([Example 14](#example-14); or just a *1-by-3* vector or a
+single pre-defined keyword if same orientation for all the pads) where *N*
+is the number of pad electrodes, or into a *1-by-N* cell ([Example 15](#example-15)), where *N*
 is the number of all electrodes to be placed (put `[]` for non-pad electrodes).
 
 `'T2'` -- use a T2-weighted MRI to help segmentation.  
@@ -137,9 +137,9 @@ is built from an MRI with anisotropic resolution.
 
 `'zeroPadding'` -- extend the input MRI by some amount, to avoid
 complications when electrodes are placed by the image boundaries. Default
-is not padding any slices to the MRI. You can ask ROAST to pad N empty
+is not padding any slices to the MRI. You can ask ROAST to pad *N* empty
 slices in all the six directions of the input MRI (left, right, front,
-back, up and down), where N is a positive integer. This is very useful
+back, up and down), where *N* is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
 ([Example 20](#example-20)).
 
@@ -341,14 +341,14 @@ has resolution of 1mm by 0.99mm by 0.99mm).
 Run simulation on the MNI152 averaged head, but add 30 empty slices on
 each of the six directions to the MRI first, to allow placement of
 electrode Exx19, which is outside of the MRI (i.e., several centimeters
-below the most bottom slice of the MRI). If you run this without zero
-padding first, you'll get strange results.
+below the most bottom slice of the MRI). If you run this without zero-padding first,
+you'll get strange results.
 Note it is always a good practice to add empty slices to the MRI if you 
 want to place electrodes close to, or even out of, the image boundary.
 ROAST can detect if part or all of your electrode goes out of image boundary,
 but sometimes it cannot tell (it's not that smart yet :-). So do a `'zeroPadding'`
 of 10 to start with, and if you're not happy with the results, just increase
-the amount of zero padding. But the best solution is to get an MRI that covers
+the amount of zero-padding. But the best solution is to get an MRI that covers
 the area where you want to place the electrodes.
 
 ### Example 21
