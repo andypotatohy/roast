@@ -410,8 +410,14 @@ E-field: `"subjName_simulationTag_e.pos"`
 You can also use the other function `reviewRes()` to review/visualize the
 simulations that you already run before. `reviewRes()` has a simpler
 interface than `roast()` so that you do not have to enter all the
-simulation parameters again as you would have to do in `roast()`. Type
-`'help reviewRes'` for more info.
+simulation parameters again as you would have to do in `roast()`. For example, 
+to review the results generated from running [Example 23](#example-23), you can
+simply type
+
+    reviewRes('path/to/your/subject.nii','awesomeSimulation')
+
+where `'awesomeSimulation'` is the corresponding `'simulationTag'`. For more info 
+on how to use this function, type `help reviewRes`.
 
 ## Acknowledgements
 
