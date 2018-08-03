@@ -417,7 +417,7 @@ simply type
     reviewRes('path/to/your/subject.nii','awesomeSimulation')
 
 where `'awesomeSimulation'` is the corresponding `'simulationTag'`. For more info 
-on how to use this function, type `'help reviewRes'`.
+on how to use this function, type `help reviewRes`.
 
 ## Acknowledgements
 
