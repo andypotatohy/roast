@@ -166,10 +166,11 @@ volume_gel_C = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
 disp('final clean-up...')
 volume_elec = volume_elec_C>0;
 volume_gel = volume_gel_C>0;
-volume_gel = xor(volume_gel,volume_gel & scalp_original); % remove the gel that goes into the scalp
-volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlap with the electrode
-volume_bone = template.img==4;
-volume_gel = xor(volume_gel,volume_gel & volume_bone); % remove the gel that gets into the bone
+volume_gel = xor(volume_gel,volume_gel & volume_elec); % remove the gel that overlaps with the electrode
+for i=1:6
+    volume_tissue = template.img==i;
+    volume_gel = xor(volume_gel,volume_gel & volume_tissue);
+end % remove the gel that goes into other tissue masks
 
 % disp('saving the results...')
 template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_elec'];

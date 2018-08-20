@@ -508,8 +508,8 @@ else
             error('You want different sizes for each electrode. Please tell ROAST the size for each electrode respectively, in a N-row matrix, where N is the number of electrodes to be placed.');
         end
         if strcmpi(elecType,'disc') && size(elecSize,2)==3
-            warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
-            elecSize = elecSize(:,1:2);
+            error('Redundant size info for Disc electrodes. Please enter as [radius height]');
+%             elecSize = elecSize(:,1:2);
         end
         if any(strcmpi(elecType,{'pad','ring'})) && size(elecSize,2)==2
             error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
@@ -524,7 +524,7 @@ else
             warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
         end
         if strcmpi(elecType,'ring') && any(elecSize(:,1) >= elecSize(:,2))
-            error('For Ring electrodes, the inner radius should be smaller than outter radius.');
+            error('For Ring electrodes, the inner radius should be smaller than outter radius. Please enter as [innerRadius outterRadius height]');
         end
     else
         if ~iscell(elecSize)
@@ -554,8 +554,8 @@ else
                     error('You''re placing more than 1 type of electrodes. Please put size info for each electrode as a 1-row vector in a cell array for option ''elecSize''.');
                 end
                 if strcmpi(elecType{i},'disc') && size(elecSize{i},2)==3
-                    warning('Redundant size info for Disc electrodes; the 3rd dimension will be ignored.');
-                    elecSize{i} = elecSize{i}(:,1:2);
+                    error('Redundant size info for Disc electrodes. Please enter as [radius height]');
+%                     elecSize{i} = elecSize{i}(:,1:2);
                 end
                 if any(strcmpi(elecType{i},{'pad','ring'})) && size(elecSize{i},2)==2
                     error('Insufficient size info for Pad or Ring electrodes. Please specify as [length width height] for pad, and [innerRadius outterRadius height] for ring electrode.');
@@ -570,7 +570,7 @@ else
                     warning('You''re placing large pad electrodes (one of its dimensions is bigger than 8 cm). For large pads, the size will not be exact in the model because they will be bent to fit the scalp surface.');
                 end
                 if strcmpi(elecType{i},'ring') && any(elecSize{i}(:,1) >= elecSize{i}(:,2))
-                    error('For Ring electrodes, the inner radius should be smaller than outter radius.');
+                    error('For Ring electrodes, the inner radius should be smaller than outter radius. Please enter as [innerRadius outterRadius height]');
                 end
             end
         end
