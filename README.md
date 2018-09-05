@@ -1,3 +1,5 @@
+# PLEASE PLEASE READ THE FOLLOWING FIRST BEFORE SHOOTING ME EMAILS WITH QUESTIONS. YOU'LL FIND ALL THE INFO YOU NEED IF YOU READ IT. IT'LL ONLY COST YOU 10 MINUTES. IN A HURRY? JUST READ THE FIRST TWO SECTIONS. TAKE A LOOK AT THE FANCY `capInfo.xls` FILE. THANKS.
+
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
 - [Getting started](#getting-started)
@@ -53,12 +55,12 @@ Note you can specify different shapes to different electrodes, i.e., you
 can place different types of electrodes at the same time. See below
 [Example 6](#example-6) for details.
 
-`'elecSize'` -- the size of electrode.
-For disc electrodes, sizes follow the format of `[radius height]`, and
-default size is `[6mm 2mm]`; for pad electrodes, sizes follow the format of
-`[length width height]`, and default size is `[50mm 30mm 3mm]`; for ring
-electrodes, sizes follow the format of `[innerRadius outterRadius height]`,
-and default size is `[4mm 6mm 2mm]`.
+`'elecSize'` -- the size of electrode.  
+All sizes are in the unit of millimeter (mm). For disc electrodes, sizes
+follow the format of `[radius height]`, and default size is `[6mm 2mm]`; 
+for pad electrodes, sizes follow the format of `[length width height]`, and
+ default size is `[50mm 30mm 3mm]`; for ring electrodes, sizes follow the 
+format of `[innerRadius outterRadius height]`, and default size is `[4mm 6mm 2mm]`.
 
 If you're placing only one type of electrode (e.g., either disc, or pad,
 or ring), you can use a *one-row* vector to customize the size, see [Example
