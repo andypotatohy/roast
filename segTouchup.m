@@ -2,8 +2,8 @@ function segTouchup(P,T2,isSmooth,conn)
 % segTouchup(P,T2,isSmooth,conn)
 %
 % This function combines mysegment() and autoPatching() in ROAST version
-% 2.1 and earlier. It performs automated clean up on the output of SPM8
-% New Segmentation and applies auto patch on the remaining holes.
+% 2.1 and earlier. It performs automated clean up on the output of SPM12 
+% Segmentation and applies auto patch on the remaining holes.
 %
 % See Huang et al 2013 (DOI: 10.1088/1741-2560/10/6/066004), and Huang et
 % al 2017 (DOI: https://doi.org/10.1101/217331) for details.

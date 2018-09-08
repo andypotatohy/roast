@@ -382,7 +382,7 @@ end
 if ~strcmpi(subj,'example/nyhead.nii')
     t1Data = load_untouch_nii(subj);
     if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
-        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM Display function to fix the header.');
     end
     % check if bad MRI header
 end
@@ -712,7 +712,7 @@ else
     
     t2Data = load_untouch_nii(T2);
     if t2Data.hdr.hist.qoffset_x == 0 && t2Data.hdr.hist.srow_x(4)==0
-        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM8 Display function to fix the header.');
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM Display function to fix the header.');
     end
     % check if bad MRI header    
 end

@@ -3,7 +3,7 @@ function [empt,mask1,mask2,mask3,mask4,mask5,mask6] = binaryMaskGenerate(data1,d
 % [empt,mask1,mask2,mask3,mask4,mask5,mask6] = binaryMaskGenerate(data1,data2,data3,data4,data5,data6)
 %
 % Use max operation to generate binary mask for each tissue type from the
-% results generated from SPM8. It can also be used to update each mask
+% results generated from SPM. It can also be used to update each mask
 % after one mask is processed.
 % Input: data1~data6: 6 tissue types, at least need 1 tissue type;
 % Output: empt: empty mask represents those empty voxels which do not
