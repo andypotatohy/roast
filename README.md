@@ -212,7 +212,8 @@ Run simulation on subject1 with recipe that includes: BioSemi electrodes
 G12 and J7; neck electrodes Nk1 and Nk3 (see `capInfo.xls`); and
 user-provided electrodes custom1 and custom3. You can use a free program
 called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
-the MRI first and click the locations on the scalp surface where you want
+the MRI first (note do NOT use MRIcron for this as MRIcron will not give you
+the true voxel coordinates) and click the locations on the scalp surface where you want
 to place the electrodes, record the voxel coordinates returned by MRIcro
 into a text file, and save the text file to the MRI data directory with name
 `"subjName_customLocations"` (e.g., here for subject1 it's saved as
