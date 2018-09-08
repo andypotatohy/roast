@@ -65,7 +65,7 @@ for i=1:size(P,1)
     sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
         
     matlabbatch{1}.spm.spatial.preproc.channel.vols = {ref};  % image to be segmented
-    matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.0001; % P(beta) % 0.001;
+    matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.001; % P(beta) % 0.0001;
     matlabbatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;
     matlabbatch{1}.spm.spatial.preproc.channel.write = [0 0]; % do NOT save bias field or bias-field corrected image  % ANDY 2013-05-03
     if ~isempty(T2) %T2 specified
@@ -84,7 +84,7 @@ for i=1:size(P,1)
         sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
         
         matlabbatch{1}.spm.spatial.preproc.channel(2).vols = {ref2}; % the 2nd image aiding segmentation
-        matlabbatch{1}.spm.spatial.preproc.channel(2).biasreg = 0.0001; % 0.001;
+        matlabbatch{1}.spm.spatial.preproc.channel(2).biasreg = 0.001; % 0.0001;
         matlabbatch{1}.spm.spatial.preproc.channel(2).biasfwhm = 60;
         matlabbatch{1}.spm.spatial.preproc.channel(2).write = [0 0]; % do NOT save bias field or bias-field corrected image  % ANDY 2013-05-03
     else
@@ -92,11 +92,11 @@ for i=1:size(P,1)
     end
     
     matlabbatch{1}.spm.spatial.preproc.tissue(1).tpm = {[Tem,',1']}; % TPM tissue #1
-    matlabbatch{1}.spm.spatial.preproc.tissue(1).ngaus = 2; %1 % number of Gaussians to model this tissue
+    matlabbatch{1}.spm.spatial.preproc.tissue(1).ngaus = 1; %2 % number of Gaussians to model this tissue
     matlabbatch{1}.spm.spatial.preproc.tissue(1).native = n; % save the segmented images in native space only ([1 0]) or native+normalized space([1 1])
     matlabbatch{1}.spm.spatial.preproc.tissue(1).warped = w; % save the spatially normalised versions of the segmented images with modulation ([0 1]) or without modulation ([1 0]). We do NOT save anything for this option ([0 0]) at this stage.
     matlabbatch{1}.spm.spatial.preproc.tissue(2).tpm = {[Tem,',2']}; % TPM tissue #2
-    matlabbatch{1}.spm.spatial.preproc.tissue(2).ngaus = 2; %1
+    matlabbatch{1}.spm.spatial.preproc.tissue(2).ngaus = 1; %2
     matlabbatch{1}.spm.spatial.preproc.tissue(2).native = n;
     matlabbatch{1}.spm.spatial.preproc.tissue(2).warped = w;
     matlabbatch{1}.spm.spatial.preproc.tissue(3).tpm = {[Tem,',3']}; % TPM tissue #3
@@ -116,7 +116,7 @@ for i=1:size(P,1)
     matlabbatch{1}.spm.spatial.preproc.tissue(6).native = n;
     matlabbatch{1}.spm.spatial.preproc.tissue(6).warped = w;
     
-    matlabbatch{1}.spm.spatial.preproc.warp.reg = 4; % P(alpha) % [0 0.001 0.5 0.05 0.2];
+    matlabbatch{1}.spm.spatial.preproc.warp.reg = [0 0.001 0.5 0.05 0.2]; % P(alpha) % 4;
     matlabbatch{1}.spm.spatial.preproc.warp.affreg = 'mni'; % template type for initial affine registration. Important!
     matlabbatch{1}.spm.spatial.preproc.warp.samp = 3; % downsample distance for segmentation
     matlabbatch{1}.spm.spatial.preproc.warp.write = [0 0]; % save the deformation/warping fields: forward deform ([0 1]), inverse deform ([1 0]), or both ([1 1]). We do NOT save anything for this option ([0 0]) at this stage. % ANDY 2013-05-03
