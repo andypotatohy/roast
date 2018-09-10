@@ -66,11 +66,11 @@ function roast(subj,recipe,varargin)
 % Example 6 for details.
 % 
 % 'elecSize': the size of electrode.
-% For disc electrodes, sizes follow the format of [radius height], and
-% default size is [6mm 2mm]; for pad electrodes, sizes follow the format of
-% [length width height], and default size is [50mm 30mm 3mm]; for ring
-% electrodes, sizes follow the format of [innerRadius outterRadius height],
-% and default size is [4mm 6mm 2mm].
+% All sizes are in the unit of millimeter (mm). For disc electrodes, sizes
+% follow the format of [radius height], and default size is [6mm 2mm];
+% for pad electrodes, sizes follow the format of [length width height],
+% and default size is [50mm 30mm 3mm]; for ring electrodes, sizes follow
+% the format of [innerRadius outterRadius height], and default size is [4mm 6mm 2mm].
 % 
 % If you're placing only one type of electrode (e.g., either disc, or pad,
 % or ring), you can use a one-row vector to customize the size, see Example
@@ -178,7 +178,8 @@ function roast(subj,recipe,varargin)
 % G12 and J7; neck electrodes Nk1 and Nk3 (see capInfo.xls); and
 % user-provided electrodes custom1 and custom3. You can use a free program
 % called MRIcro (http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
-% the MRI first and click the locations on the scalp surface where you want
+% the MRI first (note do NOT use MRIcron for this as MRIcron will not give you
+% the true voxel coordinates) and click the locations on the scalp surface where you want
 % to place the electrodes, record the voxel coordinates returned by MRIcro
 % into a text file, and save the text file to the MRI data directory with name
 % "subjName_customLocations" (e.g., here for subject1 it's saved as
