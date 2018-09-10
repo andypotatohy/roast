@@ -49,3 +49,6 @@ Added display of flow of electric field by small arrows in the slice show.
 Opened conductivities as user options.
 
 Can output a 3D rendering of electrode placement result, before building the FEM model.
+
+ROAST V2.7:
+Upgraded SPM8 to SPM12, with all customized code in SPM8 transferred into SPM12. Now Mac users will not have any problems when running ROAST under Matlab version 2017 and later.
