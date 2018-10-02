@@ -67,11 +67,15 @@ if ~isempty(indP)
    if strcmpi(elecPara(1).capType,'biosemi')
        isBiosemi = 1;
        load('./capBioSemiFullWithExtra.mat','capInfo');
+   elseif strcmpi(elecPara(1).capType,'egi')
+       isEGI = 1;
+       isBiosemi = 0;
+       load('./capEGIFullWithExtra.mat','capInfo');
    else
        isBiosemi = 0;
        load('./cap1005FullWithExtra.mat','capInfo');
    end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi);
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi,isEGI);
 else
     electrode_coord_P = []; center_P = [];
 end

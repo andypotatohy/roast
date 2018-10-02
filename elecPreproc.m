@@ -19,6 +19,9 @@ switch lower(para(1).capType)
     case 'biosemi'
         load('./capBioSemiFullWithExtra.mat','capInfo');
         elecPool_P = capInfo{1};
+    case 'egi'
+        load('./capEGIFullWithExtra.mat','capInfo');
+        elecPool_P = capInfo{1};        
 end
 
 elecPool_N = {'nk1';'nk2';'nk3';'nk4'};

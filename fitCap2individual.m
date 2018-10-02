@@ -1,4 +1,4 @@
-function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indNeed,isBiosemi)
+function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indNeed,isBiosemi,isEGI)
 % [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indNeed,isBiosemi)
 %
 % Place the electrodes with pre-defined coordinates in the standard EEG
@@ -70,8 +70,11 @@ distance_all = sum(sqrt(diff(yi).^2+diff(zi).^2));
 
 disp('wearing the cap...')
 elec = capInfo{1};
-if ~isBiosemi
+if ~(isBiosemi || isEGI)
     centralElec = {'Oz';'POz';'Pz';'CPz';'Cz';'FCz';'Fz';'AFz';'Fpz'};
+elseif isEGI==1
+    %centralElec = {'E126';'E119';'E101';'E81';'Cz';'E15';'E21';'E20';'E26'};
+    centralElec = {'E126';'E119';'E101';'E81';'E257';'E15';'E21';'AFz';'E26'};
 else
     centralElec = {'A19';'POz';'A6';'CPz';'A1';'FCz';'E17';'AFz';'E12'};
 end
