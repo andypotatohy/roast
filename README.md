@@ -143,7 +143,9 @@ is not padding any slices to the MRI. You can ask ROAST to pad *N* empty
 slices in all the six directions of the input MRI (left, right, front,
 back, up and down), where *N* is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
-([Example 20](#example-20)).
+([Example 20](#example-20)). This is also useful for MRIs that are cut off at the nose. 
+If you specify a zeropadding of, say, 60 slices, ROAST can automatically get the segmentation 
+of the lower part of the head, see ([Example 20](#example-20)).
 
 `'conductivities'` -- advanced options of ROAST, the values are stored as a 
 structure, with the following field names:
@@ -339,13 +341,18 @@ has resolution of 1mm by 0.99mm by 0.99mm).
 
 ### Example 20
 
-    roast([],{'Exx19',1,'C4',-1},'zeropadding',30)
+    roast([],{'Exx19',1,'C4',-1},'zeropadding',60,'simulationTag','paddingExample')
 
-Run simulation on the MNI152 averaged head, but add 30 empty slices on
+Run simulation on the MNI152 averaged head, but add 60 empty slices on
 each of the six directions to the MRI first, to allow placement of
 electrode Exx19, which is outside of the MRI (i.e., several centimeters
-below the most bottom slice of the MRI). If you run this without zero-padding first,
-you'll get strange results.
+below the most bottom slice of the MRI). This zeropadding also will generate the 
+segmentation of the lower part of the head, thanks to the extended TPM coming along 
+with ROAST. You can visually check this by 
+
+    reviewRes([],'paddingExample','all')
+
+If you run this without zero-padding first, you'll get strange results.
 Note it is always a good practice to add empty slices to the MRI if you 
 want to place electrodes close to, or even out of, the image boundary.
 ROAST can detect if part or all of your electrode goes out of image boundary,
@@ -393,20 +400,29 @@ Now you should know what this will do.
 
 ## Outputs of ROAST
 
+### Figure outputs
+
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. It also saves the results as
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the MRI voxel space, and the 3D rendering displays the data in the world space.
 
-`"subjName_simulationTag_result.mat"`, and as NIFTI files:
+### Outputs in Matlab format
 
-Voltage: `"subjName_simulationTag_v.nii"`
+ROAST saves the results as `"subjName_simulationTag_result.mat"`, where 3 variables are available:
+`vol_all`: the voltage at each pixel in the MRI voxel space, unit in mV.
+`ef_all`: the electric field vector at each pixel in the MRI voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
+`ef_mag`: the magnitude of the electric field at each pixel in the MRI voxel space, unit in V/m.
 
-E-field: `"subjName_simulationTag_e.nii"`
+### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
 
-E-field magnitude: `"subjName_simulationTag_emag.nii"`, as well as text files:
+Voltage: `"subjName_simulationTag_v.nii"`, unit in mV.
+E-field: `"subjName_simulationTag_e.nii"`, unit in V/m.
+E-field magnitude: `"subjName_simulationTag_emag.nii"`, unit in V/m.
 
-Voltage: `"subjName_simulationTag_v.pos"`
+### Outputs in text files
 
-E-field: `"subjName_simulationTag_e.pos"`
+Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.
+E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
+Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`.
 
 ## Review of simulation data
 
