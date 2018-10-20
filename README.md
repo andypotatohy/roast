@@ -408,20 +408,27 @@ results. These figures include the slice view of the MRI (T1 and/or T2) and the 
 ### Outputs in Matlab format
 
 ROAST saves the results as `"subjName_simulationTag_result.mat"`, where 3 variables are available:
+
 `vol_all`: the voltage at each pixel in the MRI voxel space, unit in mV.
+
 `ef_all`: the electric field vector at each pixel in the MRI voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
+
 `ef_mag`: the magnitude of the electric field at each pixel in the MRI voxel space, unit in V/m.
 
 ### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
 
 Voltage: `"subjName_simulationTag_v.nii"`, unit in mV.
+
 E-field: `"subjName_simulationTag_e.nii"`, unit in V/m.
+
 E-field magnitude: `"subjName_simulationTag_emag.nii"`, unit in V/m.
 
 ### Outputs in text files
 
 Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.
+
 E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
+
 Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`.
 
 ## Review of simulation data
