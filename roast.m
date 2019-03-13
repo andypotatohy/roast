@@ -344,7 +344,12 @@ function roast(subj,recipe,varargin)
 % 
 % Also outputs are available in text files: Voltage: "subjName_simulationTag_v.pos", unit in mV.
 % E-field: "subjName_simulationTag_e.pos", unit in V/m. 
-% Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file "subjName_simulationTag.msh" or "subjName_simulationTag.mat".
+% Note in these text files, voltage and electric field are defined at each
+% mesh node, whose location can be found in the mesh file
+% "subjName_simulationTag.msh" or "subjName_simulationTag.mat". Also note
+% that in these two mesh files the node coordinates are in the voxel space
+% but with the scaling factors in the MRI header applied, i.e., the unit of
+% the mesh coordinates is millimeter (mm).
 % 
 % You can also use the other function reviewRes() to review/visualize the
 % simulations that you already run before. reviewRes() has a simpler
@@ -356,7 +361,7 @@ function roast(subj,recipe,varargin)
 % there are plans to add this capability in the future versions.
 % 
 % For a formal description of ROAST, one is referred to (please use this as reference):
-% https://www.biorxiv.org/content/early/2017/11/10/217331
+% https://www.biorxiv.org/content/10.1101/217331v2
 %
 % For a published version of the manuscript above, use this as reference:
 % Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
@@ -372,7 +377,7 @@ function roast(subj,recipe,varargin)
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% June 2018
+% March 2019
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
@@ -1076,7 +1081,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRSPD,T2,meshOpt,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRSPD,T2,meshOpt,hdrInfo,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')

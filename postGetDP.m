@@ -16,6 +16,10 @@ if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
 
+% convert pseudo-world coordinates back to voxel coordinates for
+% interpolation into regular grid in the voxel space
+for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+
 disp('converting the results into Matlab format...');
 fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
 fgetl(fid);

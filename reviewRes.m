@@ -209,6 +209,9 @@ else
     load(hdrFile,'hdrInfo');
 end
 
+for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+% convert pseudo-world coordinates back to voxel coordinates so that the
+% following conversion to pure-world space is meaningful
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
 worldCoord = (hdrInfo.v2w*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
