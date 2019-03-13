@@ -44,9 +44,10 @@ numOfElec = length(elecNeeded);
 element_elecNeeded = cell(numOfElec,1);
 area_elecNeeded = zeros(numOfElec,1);
 
-resolution = mean(hdrInfo.pixdim);
-% mean() here to handle anisotropic resolution; ugly. Maybe just
-% resample MRI to isotropic in the very beginning?
+% resolution = mean(hdrInfo.pixdim);
+% % mean() here to handle anisotropic rmesolution; ugly. Maybe just
+% % resample MRI to isotropic in the very beginning?
+% Not needed now when mesh coordinates are in pseudo-world space % ANDY 2019-03-13
 
 warning('off','MATLAB:TriRep:PtsNotInTriWarnId');
 for i=1:numOfElec
@@ -79,8 +80,8 @@ for i=1:numOfElec
     [~,Loc] = ismember(verts_elec,node(:,1:3),'rows');
     element_elecNeeded{i} = Loc(faces_elecOuter);
     % calculate the surface area
-    a = (verts_elec(faces_elecOuter(:, 2),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
-    b = (verts_elec(faces_elecOuter(:, 3),:) - verts_elec(faces_elecOuter(:, 1),:))*resolution;
+    a = (verts_elec(faces_elecOuter(:, 2),:) - verts_elec(faces_elecOuter(:, 1),:)); %*resolution;
+    b = (verts_elec(faces_elecOuter(:, 3),:) - verts_elec(faces_elecOuter(:, 1),:)); %*resolution;
     c = cross(a, b, 2);
     area_elecNeeded(i) = sum(0.5*sqrt(sum(c.^2, 2)));
     

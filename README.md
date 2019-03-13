@@ -429,7 +429,7 @@ Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.
 
 E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
 
-Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`.
+Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
 
 ## Review of simulation data
 
@@ -447,7 +447,7 @@ on how to use this function, type `help reviewRes`.
 
 ## Acknowledgements
 
-For a formal description of ROAST, one is referred to [this article.](https://www.biorxiv.org/content/early/2017/11/10/217331) (please use this as reference):
+For a formal description of ROAST, one is referred to [this article.](https://www.biorxiv.org/content/10.1101/217331v2) (please use this as reference):
 
 For a published version of the manuscript above, use this as reference:
 Huang, Y., Datta, A., Bikson, M., Parra, L.C., [ROAST: an open-source,
@@ -479,4 +479,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-June 2018
+March 2019

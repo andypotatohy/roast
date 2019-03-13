@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,uniTag)
-% [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,uniTag)
+function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
+% [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -54,6 +54,14 @@ drawnow
 
 [node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
+
+for i=1:3, node(:,i) = node(:,i)*hdrInfo.pixdim(i); end
+% Put mesh coordinates into pseudo-world space (voxel space but scaled properly
+% using the scaling factors in the header) to avoid mistakes in
+% solving. Putting coordinates into pure-world coordinates causes other
+% complications. Units of coordinates are mm here. No need to convert into
+% meter as voltage output from solver is mV.
+% ANDY 2019-03-13
 
 % figure;
 % % plotmesh(node(:,1:3),face,elem)
