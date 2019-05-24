@@ -66,10 +66,10 @@ scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 if ~isempty(indP)
    if strcmpi(elecPara(1).capType,'biosemi')
        isBiosemi = 1;
-       load('./capBioSemiFullWithExtra.mat','capInfo');
+       load(fullfile(fileparts(mfilename('fullpath')),'capBioSemiFullWithExtra.mat'),'capInfo');
    else
        isBiosemi = 0;
-       load('./cap1005FullWithExtra.mat','capInfo');
+       load(fullfile(fileparts(mfilename('fullpath')),'cap1005FullWithExtra.mat'),'capInfo');
    end
    [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi);
 else
