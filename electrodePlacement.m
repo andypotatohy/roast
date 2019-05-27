@@ -28,7 +28,7 @@ landmarks_original = getLandmarks(P2,T2);
 
 [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-template = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+template = load_untouch_nii(fullfile(dirname,[baseFilenameRSPD '_masks.nii']));
 % Load the scalp mask; template is used for saving the results with the same header info as the input
 pixdim = template.hdr.dime.pixdim(2:4);
 dim = size(template.img);
@@ -44,7 +44,7 @@ if ~isempty(indP) || ~isempty(indN)
 end
 
 if ~isempty(indC)
-    fid = fopen([dirname filesep baseFilename '_customLocations']);
+    fid = fopen(fullfile(dirname,[baseFilename '_customLocations']));
     capInfo_C = textscan(fid,'%s %f %f %f');
     fclose(fid);
     elecLoc_C = cell2mat(capInfo_C(2:4));
@@ -173,19 +173,20 @@ for i=1:6
 end % remove the gel that goes into other tissue masks
 
 % disp('saving the results...')
-template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_elec'];
+template.fileprefix = fullfile(dirname ,[baseFilename '_' uniTag '_mask_elec']);
 template.hdr.hist.descrip = 'electrode mask';
 % template.img = uint8(volume_elec)*255;
 template.img = uint8(volume_elec_C.*volume_elec);
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
-template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_gel'];
+save_untouch_nii(template,fullfile(dirname,[baseFilename '_' uniTag '_mask_elec.nii']));
+template.fileprefix = fullfile(dirname ,[baseFilename '_' uniTag '_mask_gel']);
 template.hdr.hist.descrip = 'gel mask';
 % template.img = uint8(volume_gel)*255;
 template.img = uint8(volume_gel_C.*volume_gel);
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+save_untouch_nii(template,fullfile(dirname,[baseFilename '_' uniTag '_mask_gel.nii']));
 
-% save([dirname filesep baseFilename '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
+% save(fullfile(dirname ,[baseFilename '_' uniTag '_labelVol.mat']),'volume_elecLabel','volume_gelLabel');
 [~,baseFilenameRSPD] = fileparts(P2);
-if ~exist([dirname filesep baseFilenameRSPD '_header.mat'],'file')
-    save([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
+ff = fullfile(dirname ,[baseFilenameRSPD '_header.mat']);
+if ~exist(ff,'file')
+    save(ff,'hdrInfo');
 end

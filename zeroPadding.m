@@ -18,7 +18,7 @@ end
 if ~isempty(strfind(mri,'example/nyhead_'))
     mriPD = ['example/nyhead_padded' num2str(padNum) baseFilename(7:end) ext];
 else
-    mriPD = [dirname filesep baseFilename '_padded' num2str(padNum) ext];
+    mriPD = fullfile(dirname,[baseFilename '_padded' num2str(padNum) ext]);
 end
 
 if exist(mriPD,'file')

@@ -20,7 +20,7 @@ if all(pixdim==1)
 else
     
     [dirname,baseFilename,ext] = fileparts(mri);
-    mriRS = [dirname filesep baseFilename '_1mm' ext];
+    mriRS = fullfile(dirname,[baseFilename '_1mm' ext]);
     
     if exist(mriRS,'file')
         

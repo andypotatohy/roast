@@ -86,12 +86,12 @@ for i=1:numOfElec
     area_elecNeeded(i) = sum(0.5*sqrt(sum(c.^2, 2)));
     
 end
-save([dirname filesep baseFilename '_' uniTag '_usedElecArea.mat'],'area_elecNeeded');
+save(fullfile(dirname ,[baseFilename '_' uniTag '_usedElecArea.mat']),'area_elecNeeded');
 
 disp('setting up boundary conditions...');
 
-fid_in = fopen([dirname filesep baseFilename '_' uniTag '.msh']);
-fid_out = fopen([dirname filesep baseFilename '_' uniTag '_ready.msh'],'w');
+fid_in = fopen(fullfile(dirname ,[baseFilename '_' uniTag '.msh']));
+fid_out = fopen(fullfile(dirname ,[baseFilename '_' uniTag '_ready.msh']),'w');
 
 numOfPart = length(unique(elem(:,5)));
 while ~feof(fid_in)

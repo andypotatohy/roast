@@ -11,7 +11,7 @@ if any(refData.hdr.dime.dim(1:5)~=srcData.hdr.dime.dim(1:5)) || ...
     [~,nam] = fileparts(ref);
     [pth,~,ext] = fileparts(src);
         
-    srcR = [pth filesep nam '_T2_aligned' ext];
+    srcR = fullfile(pth ,[nam '_T2_aligned' ext]);
 
     if exist(srcR,'file')
         srcData = load_untouch_nii(srcR);
@@ -29,7 +29,7 @@ if any(refData.hdr.dime.dim(1:5)~=srcData.hdr.dime.dim(1:5)) || ...
     disp('Aligning T2 to T1...');
     
     % make a copy as SPM will overwrite the header in source image
-    srcForRealign = [pth filesep nam '_T2' ext];
+    srcForRealign = fullfile(pth ,[nam '_T2' ext]);
     copyfile(src,srcForRealign);
     
     if exist('matlabbatch','var')

@@ -43,7 +43,7 @@ function reviewRes(subj,simTag,tissue,fastRender)
 % yhuang16@citymail.cuny.edu
 % June 2018
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+addpath(genpath(fullfile(fileparts(which(mfilename)),'lib/')));
 
 % check subject name
 if nargin<1 || isempty(subj)
@@ -99,21 +99,22 @@ if nargin<4 || isempty(fastRender)
 end
 
 [dirname,baseFilename,ext] = fileparts(subj);
-if ~exist([dirname filesep baseFilename '_' simTag '_options.mat'],'file')
+ff =fullfile(dirname ,[baseFilename '_' simTag '_options.mat']);
+if ~exist(ff,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
-    load([dirname filesep baseFilename '_' simTag '_options.mat'],'opt');
+    load(ff,'opt');
 end
 
 if opt.resamp
-    subjRS = [dirname filesep baseFilename '_1mm' ext];
+    subjRS = fullfile(dirname ,[baseFilename '_1mm' ext]);
 else
     subjRS = subj;
 end
 
 if opt.zeroPad>0
     [dirname2,baseFilename2,ext2] = fileparts(subjRS);
-    subjRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(opt.zeroPad) ext2];
+    subjRSPD = fullfile(dirname2 ,[baseFilename2 '_padded' num2str(opt.zeroPad) ext2]);
     %     subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
     subjRSPD = subjRS;
@@ -150,9 +151,9 @@ end
 
 [~,baseFilenameRSPD] = fileparts(subjRSPD);
 if isempty(opt.T2)
-    masksFile = [dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'];
+    masksFile = fullfile(dirname,[baseFilenameRSPD '_T1orT2_masks.nii']);
 else
-    masksFile = [dirname filesep baseFilenameRSPD '_T1andT2_masks.nii'];
+    masksFile = fullfile(dirname ,[baseFilenameRSPD '_T1andT2_masks.nii']);
 end
 if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
@@ -160,14 +161,14 @@ else
     masks = load_untouch_nii(masksFile);
 end
 
-gelMask = [dirname filesep baseFilename '_' simTag '_mask_gel.nii'];
+gelMask = fullfile(dirname,[baseFilename '_' simTag '_mask_gel.nii']);
 if ~exist(gelMask,'file')
     error(['Gel mask ' gelMask ' not found. Check if you run through electrode placement.']);
 else
     gel = load_untouch_nii(gelMask);
     numOfGel = max(gel.img(:));
 end
-elecMask = [dirname filesep baseFilename '_' simTag '_mask_elec.nii'];
+elecMask = fullfile(dirname,[ baseFilename '_' simTag '_mask_elec.nii']);
 if ~exist(elecMask,'file')
     error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
 else
@@ -186,7 +187,7 @@ drawnow
 
 disp('generating 3D renderings...')
 
-meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
+meshFile = fullfile(dirname ,[baseFilename '_' simTag '.mat']);
 if ~exist(meshFile,'file')
     error(['Mesh file ' meshFile ' not found. Check if you run through meshing.']);
 else
@@ -202,7 +203,7 @@ if ~fastRender
     % very slow if mesh is big
 end
 
-hdrFile = [dirname filesep baseFilenameRSPD '_header.mat'];
+hdrFile = fullfile(dirname,[baseFilenameRSPD '_header.mat']);
 if ~exist(hdrFile,'file')
     error(['Header file ' hdrFile ' not found. Check if you run through electrode placement.']);
 else
@@ -223,7 +224,7 @@ indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
 
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
-volFile = [dirname filesep baseFilename '_' simTag '_v.pos'];
+volFile = fullfile(dirname ,[baseFilename '_' simTag '_v.pos']);
 if ~exist(volFile,'file')
     error(['Solution file ' volFile ' not found. Check if you run through solving.']);
 else
@@ -271,7 +272,7 @@ caxis(inCurrentRange);
 axes(a1);
 drawnow
 
-efFile = [dirname filesep baseFilename '_' simTag '_e.pos'];
+efFile = fullfile(dirname,[baseFilename '_' simTag '_e.pos']);
 if ~exist(efFile,'file')
     error(['Solution file ' efFile ' not found. Check if you run through solving.']);
 else
@@ -329,7 +330,7 @@ end
 nan_mask = nan(size(mask));
 nan_mask(find(mask)) = 1;
 
-resFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
+resFile = fullfile(dirname,[baseFilename '_' simTag '_result.mat']);
 if ~exist(resFile,'file')
     error(['Result file ' resFile ' not found. Check if you run through post processing after solving.']);
 else

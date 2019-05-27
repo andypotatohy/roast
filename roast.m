@@ -379,7 +379,7 @@ function roast(subj,recipe,varargin)
 % yhuang16@citymail.cuny.edu
 % March 2019
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+addpath(genpath(fullfile(fileparts(which(mfilename)),'lib/')));
 
 fprintf('\n\n');
 disp('======================================================')
@@ -993,7 +993,7 @@ options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',mes
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-Sopt = dir([dirname filesep baseFilename '_*_options.mat']);
+Sopt = dir(fullfile(dirname,[baseFilename '_*_options.mat']));
 if isempty(Sopt)
     options = writeRoastLog(subj,options);
 else

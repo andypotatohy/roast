@@ -26,12 +26,12 @@ p=getvarfrom({'caller','base'},'ISO2MESH_BIN');
 binname=[];
 if(isempty(p))
 	% the bin folder under iso2mesh is searched first
-	tempname=[fileparts(which(mfilename)) filesep 'bin' filesep fname];
-	if(exist([fileparts(which(mfilename)) filesep 'bin'])==7)
+	tempname=fullfile(fileparts(which(mfilename)) ,['bin' filesep fname]);
+	if exist(fullfile(fileparts(which(mfilename)),'bin'),'dir')
 		binname=tempname;
 	else
 		binname=fname;
 	end
 else
-	binname=[p filesep fname];
+	binname=fullfile(p,fname);
 end

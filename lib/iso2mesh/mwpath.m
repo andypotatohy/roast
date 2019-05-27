@@ -37,7 +37,7 @@ end
 
 tempname=[];
 if(isempty(p))
-      if(isoctavemesh & tempdir=='\')
+      if(isoctavemesh && tempdir=='\')
 		tempname=['.'  filesep session fname];
 	else
 		tdir=tempdir;

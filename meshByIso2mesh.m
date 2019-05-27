@@ -17,7 +17,7 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+data = load_untouch_nii(fullfile(dirname, [baseFilenameRSPD '_masks.nii']));
 allMask = data.img;
 allMaskShow = data.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
@@ -26,13 +26,13 @@ numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 % data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
 % allMask(data.img==255) = 8;
 
-data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+data = load_untouch_nii(fullfile(dirname ,[baseFilename '_' uniTag '_mask_gel.nii']));
 numOfGel = max(data.img(:));
 for i=1:numOfGel
     allMask(data.img==i) = numOfTissue + i;
 end
 allMaskShow(data.img>0) = numOfTissue + 1;
-data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+data = load_untouch_nii(fullfile(dirname ,[baseFilename '_' uniTag '_mask_elec.nii']));
 numOfElec = max(data.img(:));
 for i=1:numOfElec
     allMask(data.img==i) = numOfTissue + numOfGel + i;
@@ -81,5 +81,5 @@ maskName = cell(1,numOfTissue+numOfGel+numOfElec);
 maskName(1:numOfTissue) = {'WHITE','GRAY','CSF','BONE','SKIN','AIR'};
 for i=1:numOfGel, maskName{numOfTissue+i} = ['GEL' num2str(i)]; end
 for i=1:numOfElec, maskName{numOfTissue+numOfGel+i} = ['ELEC' num2str(i)]; end
-savemsh(node(:,1:3),elem,[dirname filesep baseFilename '_' uniTag '.msh'],maskName);
-save([dirname filesep baseFilename '_' uniTag '.mat'],'node','elem','face');
+savemsh(node(:,1:3),elem,fullfile(dirname ,[baseFilename '_' uniTag '.msh']),maskName);
+save(fullfile(dirname ,[baseFilename '_' uniTag '.mat']),'node','elem','face');

@@ -21,7 +21,7 @@ if isempty(dirname), dirname = pwd; end
 for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
 
 disp('converting the results into Matlab format...');
-fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
+fid = fopen(fullfile(dirname,[baseFilename '_' uniTag '_v.pos']));
 fgetl(fid);
 C = textscan(fid,'%d %f');
 fclose(fid);
@@ -31,7 +31,7 @@ C{2} = C{2} - min(C{2}); % re-reference the voltage
 F = TriScatteredInterp(node(C{1},1:3), C{2});
 vol_all = F(xi,yi,zi);
 
-fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
+fid = fopen(fullfile(dirname ,[baseFilename '_' uniTag '_e.pos']));
 fgetl(fid);
 C = textscan(fid,'%d %f %f %f');
 fclose(fid);
@@ -47,12 +47,12 @@ ef_all(:,:,:,3) = F(xi,yi,zi);
 ef_mag = sqrt(sum(ef_all.^2,4));
 
 disp('saving the final results...')
-save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag','-v7.3');
+save(fullfile(dirname ,[baseFilename '_' uniTag '_result.mat']),'vol_all','ef_all','ef_mag','-v7.3');
 
 if isempty(strfind(P2,'example/nyhead'))
     template = load_untouch_nii(P2);
 else
-    template = load_untouch_nii([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii']);
+    template = load_untouch_nii(fullfile(dirname ,[baseFilenameRSPD '_T1orT2_masks.nii']));
 end % Load the original MRI to save the results as NIFTI format
 
 template.hdr.dime.datatype = 16;
@@ -65,15 +65,15 @@ template.img = single(vol_all);
 template.hdr.dime.glmax = max(vol_all(:));
 template.hdr.dime.glmin = min(vol_all(:));
 template.hdr.hist.descrip = 'voltage';
-template.fileprefix = [dirname filesep baseFilename '_' uniTag '_v'];
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_v.nii']);
+template.fileprefix = fullfile(dirname ,[baseFilename '_' uniTag '_v']);
+save_untouch_nii(template,fullfile(dirname ,[baseFilename '_' uniTag '_v.nii']));
 
 template.img = single(ef_mag);
 template.hdr.dime.glmax = max(ef_mag(:));
 template.hdr.dime.glmin = min(ef_mag(:));
 template.hdr.hist.descrip = 'EF mag';
-template.fileprefix = [dirname filesep baseFilename '_' uniTag '_emag'];
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_emag.nii']);
+template.fileprefix = fullfile(dirname ,[baseFilename '_' uniTag '_emag']);
+save_untouch_nii(template,fullfile(dirname ,[baseFilename '_' uniTag '_emag.nii']));
 
 template.hdr.dime.dim(1) = 4;
 template.hdr.dime.dim(5) = 3;
@@ -81,12 +81,12 @@ template.img = single(ef_all);
 template.hdr.dime.glmax = max(ef_all(:));
 template.hdr.dime.glmin = min(ef_all(:));
 template.hdr.hist.descrip = 'EF';
-template.fileprefix = [dirname filesep baseFilename '_' uniTag '_e'];
-save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_e.nii']);
+template.fileprefix = fullfile(dirname ,[baseFilename '_' uniTag '_e']);
+save_untouch_nii(template,fullfile(dirname ,[baseFilename '_' uniTag '_e.nii']));
 
 disp('======================================================');
 disp('Results are saved as:');
-disp([dirname filesep baseFilename '_' uniTag '_result.mat']);
+disp(fullfile(dirname ,[baseFilename '_' uniTag '_result.mat']));
 disp('...and also saved as NIFTI files:');
 disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.nii']);
 disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.nii']);
