@@ -1,5 +1,3 @@
-# PLEASE PLEASE READ THE FOLLOWING FIRST BEFORE SHOOTING ME EMAILS WITH QUESTIONS. YOU'LL FIND ALL THE INFO YOU NEED IF YOU READ IT. IT'LL ONLY COST YOU 10 MINUTES. IN A HURRY? JUST READ THE FIRST TWO SECTIONS. TAKE A LOOK AT THE FANCY `capInfo.xls` FILE. THANKS.
-
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
 - [Getting started](#getting-started)
@@ -7,6 +5,7 @@
 - [Examples](#examples)
 - [Outputs of ROAST](#outputs-of-roast)
 - [Review of simulation data](#review-of-simulation-data)
+- [How to ask questions](#how-to-ask-questions)
 - [Acknowledgements](#acknowledgements)
 - [Notes](#notes)
 - [License](#license)
@@ -444,6 +443,12 @@ simply type
 
 where `'awesomeSimulation'` is the corresponding `'simulationTag'`. For more info 
 on how to use this function, type `help reviewRes`.
+
+## How to ask questions
+
+Please read the [Getting started](#getting-started) and the [Synopsis](#synopsis) sections first. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) for quick reference. Do not forget to check out the fancy `capInfo.xls` file.
+
+If you still get stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe).
 
 ## Acknowledgements
 
