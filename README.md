@@ -3,7 +3,7 @@
 - [Getting started](#getting-started)
 - [Synopsis](#synopsis)
 - [Examples](#examples)
-- [More notes on the `capInfo.xls` file](#more-notes-on-the-`capInfo.xls`-file)
+- [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfo.xls-file)
 - [Outputs of ROAST](#outputs-of-roast)
 - [Review of simulation data](#review-of-simulation-data)
 - [How to ask questions](#how-to-ask-questions)
