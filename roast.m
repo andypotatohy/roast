@@ -360,13 +360,15 @@ function roast(subj,recipe,varargin)
 % Note ROAST was not designed to build models for pathological heads, but
 % there are plans to add this capability in the future versions.
 % 
-% For a formal description of ROAST, one is referred to (please use this as reference):
-% https://www.biorxiv.org/content/10.1101/217331v2
-%
-% For a published version of the manuscript above, use this as reference:
+% If you use ROAST in your research, please cite these:
+% 
+% Huang, Y., Datta, A., Bikson, M., Parra, L.C., Realistic vOlumetric-Approach
+% to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated
+% open-source pipeline, Journal of Neural Engineering, 2019
+% 
 % Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
-% fully-automated, Realistic vOlumetric-Approach-based Simulator for TES.
-% Proceedings of the 40th Annual International Conference of the IEEE 
+% fully-automated, Realistic vOlumetric-Approach-based Simulator for TES
+% Proceedings of the 40th Annual International Conference of the IEEE
 % Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
 % 
 % If you use New York head to run simulation, please also cite the
@@ -377,7 +379,7 @@ function roast(subj,recipe,varargin)
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% March 2019
+% July 2019
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
