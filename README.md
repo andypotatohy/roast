@@ -3,6 +3,7 @@
 - [Getting started](#getting-started)
 - [Synopsis](#synopsis)
 - [Examples](#examples)
+- [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
 - [Outputs of ROAST](#outputs-of-roast)
 - [Review of simulation data](#review-of-simulation-data)
 - [How to ask questions](#how-to-ask-questions)
@@ -397,6 +398,11 @@ All the options can be combined to meet your specific simulation needs.
 Now you should know what this will do.
 
 
+## More notes on the `capInfo.xls` file
+
+A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of both [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6) and [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
+
+
 ## Outputs of ROAST
 
 ### Figure outputs
@@ -452,16 +458,14 @@ If you still get stuck, please subscribe to the ROAST user mailing list by click
 
 ## Acknowledgements
 
-For a formal description of ROAST, one is referred to [this article.](https://www.biorxiv.org/content/10.1101/217331v2) (please use this as reference):
+If you use ROAST in your research, please cite these:
 
-For a published version of the manuscript above, use this as reference:
+Huang, Y., Datta, A., Bikson, M., Parra, L.C., [Realistic vOlumetric-Approach to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated open-source pipeline](https://iopscience.iop.org/article/10.1088/1741-2552/ab208d), Journal of Neural Engineering, 2019
+
 Huang, Y., Datta, A., Bikson, M., Parra, L.C., [ROAST: an open-source,
-fully-automated, Realistic vOlumetric-Approach-based Simulator for TES.](https://www.parralab.org/publications/ROAST_EMBC_forFinalSubmission.pdf)
-Proceedings of the 40th Annual International Conference of the IEEE 
-Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
+fully-automated, Realistic vOlumetric-Approach-based Simulator for TES](https://www.parralab.org/publications/ROAST_EMBC_forFinalSubmission.pdf), Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
 
-If you use New York head to run simulation, please also cite the
-following:
+If you use New York head to run simulation, please also cite the following:
 Huang, Y., Parra, L.C., Haufe, S.,2016. [The New York Head - A precise
 standardized volume conductor model for EEG source localization and tES
 targeting.](https://www.sciencedirect.com/science/article/pii/S1053811915011325) NeuroImage,140, 150-162
@@ -484,4 +488,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-March 2019
+July 2019
