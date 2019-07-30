@@ -364,7 +364,7 @@ function roast(subj,recipe,varargin)
 % 
 % Huang, Y., Datta, A., Bikson, M., Parra, L.C., Realistic vOlumetric-Approach
 % to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated
-% open-source pipeline, Journal of Neural Engineering, 2019
+% open-source pipeline, Journal of Neural Engineering, Vol. 16, No. 5, 2019 (prefered reference)
 % 
 % Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
 % fully-automated, Realistic vOlumetric-Approach-based Simulator for TES

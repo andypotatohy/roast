@@ -460,7 +460,7 @@ If you still get stuck, please subscribe to the ROAST user mailing list by click
 
 If you use ROAST in your research, please cite these:
 
-Huang, Y., Datta, A., Bikson, M., Parra, L.C., [Realistic vOlumetric-Approach to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated open-source pipeline](https://iopscience.iop.org/article/10.1088/1741-2552/ab208d), Journal of Neural Engineering, 2019
+Huang, Y., Datta, A., Bikson, M., Parra, L.C., [Realistic vOlumetric-Approach to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated open-source pipeline](https://iopscience.iop.org/article/10.1088/1741-2552/ab208d), Journal of Neural Engineering, Vol. 16, No. 5, 2019. (prefered reference)
 
 Huang, Y., Datta, A., Bikson, M., Parra, L.C., [ROAST: an open-source,
 fully-automated, Realistic vOlumetric-Approach-based Simulator for TES](https://www.parralab.org/publications/ROAST_EMBC_forFinalSubmission.pdf), Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
