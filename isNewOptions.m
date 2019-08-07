@@ -154,14 +154,24 @@ if optNew.conductivities.air~=optOld.conductivities.air
     return
 end
 
-if any(optNew.conductivities.gel~=optOld.conductivities.gel)
+if length(optNew.conductivities.gel)~=length(optOld.conductivities.gel)
     isNewOpt = 1;
     return
+else
+    if any(optNew.conductivities.gel~=optOld.conductivities.gel)
+        isNewOpt = 1;
+        return
+    end
 end
 
-if any(optNew.conductivities.electrode~=optOld.conductivities.electrode)
+if length(optNew.conductivities.electrode)~=length(optOld.conductivities.electrode)
     isNewOpt = 1;
     return
+else
+    if any(optNew.conductivities.electrode~=optOld.conductivities.electrode)
+        isNewOpt = 1;
+        return
+    end
 end
 
 if optNew.resamp ~= optOld.resamp

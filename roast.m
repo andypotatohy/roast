@@ -738,10 +738,10 @@ if ~strcmpi(recipe,'leadfield')
     
 else
     
-    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes will be overwritten by the defaults. Also this will usually take a long time (>1 day) to generate the lead field for all the 93 electrodes. Refer to the readme file for more details.');
-    fid = fopen('./elec93.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
+    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes will be overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the 93 electrodes. Continue?');
+    fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
-    
+    injectCurrent = [1 -1];
     capType = '1010';
     elecType = 'disc';
     elecSize = [6 2];
@@ -764,50 +764,58 @@ else
     % check if bad MRI header    
 end
 
-if ~exist('meshOpt','var')
-    meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+if ~strcmpi(recipe,'leadfield')
+    
+    if ~exist('meshOpt','var')
+        meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+    else
+        if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
+        meshOptNam = fieldnames(meshOpt);
+        if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
+            error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
+        end
+        if ~isfield(meshOpt,'radbound')
+            meshOpt.radbound = 5;
+        else
+            if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
+                error('Please enter a positive number for the mesh option ''radbound''.');
+            end
+        end
+        if ~isfield(meshOpt,'angbound')
+            meshOpt.angbound = 30;
+        else
+            if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
+                error('Please enter a positive number for the mesh option ''angbound''.');
+            end
+        end
+        if ~isfield(meshOpt,'distbound')
+            meshOpt.distbound = 0.4;
+        else
+            if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
+                error('Please enter a positive number for the mesh option ''distbound''.');
+            end
+        end
+        if ~isfield(meshOpt,'reratio')
+            meshOpt.reratio = 3;
+        else
+            if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
+                error('Please enter a positive number for the mesh option ''reratio''.');
+            end
+        end
+        if ~isfield(meshOpt,'maxvol')
+            meshOpt.maxvol = 10;
+        else
+            if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
+                error('Please enter a positive number for the mesh option ''maxvol''.');
+            end
+        end
+        warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
+    end
+    
 else
-    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
-    meshOptNam = fieldnames(meshOpt);
-    if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
-        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
-    end
-    if ~isfield(meshOpt,'radbound')
-        meshOpt.radbound = 5;
-    else
-        if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
-            error('Please enter a positive number for the mesh option ''radbound''.');
-        end
-    end
-    if ~isfield(meshOpt,'angbound')
-        meshOpt.angbound = 30;
-    else
-        if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
-            error('Please enter a positive number for the mesh option ''angbound''.');
-        end
-    end
-    if ~isfield(meshOpt,'distbound')
-        meshOpt.distbound = 0.4;
-    else
-        if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
-            error('Please enter a positive number for the mesh option ''distbound''.');
-        end
-    end
-    if ~isfield(meshOpt,'reratio')
-        meshOpt.reratio = 3;
-    else
-        if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
-            error('Please enter a positive number for the mesh option ''reratio''.');
-        end
-    end
-    if ~isfield(meshOpt,'maxvol')
-        meshOpt.maxvol = 10;
-    else
-        if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
-            error('Please enter a positive number for the mesh option ''maxvol''.');
-        end
-    end
-    warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
+    
+    meshOpt = struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10);
+    
 end
 
 if ~exist('simTag','var'), simTag = []; end
@@ -984,12 +992,6 @@ end
 % preprocess electrodes
 [elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
 
-
-elecName = elecName(ind2usrInput);
-injectCurrent = injectCurrent(ind2usrInput);
-conductivities.gel = conductivities.gel(ind2usrInput);
-conductivities.electrode = conductivities.electrode(ind2usrInput);
-
 % sort elec options
 if length(elecPara)==1
     if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2usrInput,:); end
@@ -1002,11 +1004,26 @@ else
     error('Something is wrong!');
 end
 
-configTxt = [];
-for i=1:length(elecName)
-    configTxt = [configTxt elecName{i} ' (' num2str(injectCurrent(i)) ' mA), '];
+if ~strcmpi(recipe,'leadfield')
+    
+    injectCurrent = injectCurrent(ind2usrInput);
+    
+    configTxt = [];
+    for i=1:length(elecName)
+        configTxt = [configTxt elecName{i} ' (' num2str(injectCurrent(i)) ' mA), '];
+    end
+    configTxt = configTxt(1:end-2);
+    
+else
+    
+    elecNameOri = elecName; % back up for re-ordering solutions back to .loc file order
+    configTxt = 'leadFieldGeneration';
+    
 end
-configTxt = configTxt(1:end-2);
+
+elecName = elecName(ind2usrInput);
+conductivities.gel = conductivities.gel(ind2usrInput);
+conductivities.electrode = conductivities.electrode(ind2usrInput);
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
@@ -1115,7 +1132,18 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
     disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
     disp('======================================================')
     prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
-    solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
+    if ~strcmpi(recipe,'leadfield')
+        indElecSolve = 1:length(elecName);
+        solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
+    else
+        [~,indRef] = ismember('Iz',elecName);
+        indStimElec = setdiff(1:length(elecName),indRef);
+        for i=1:length(indStimElec)
+            indElecSolve = [indStimElec(i) indRef];
+            solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
+        end
+    end
+    
 else
     disp('======================================================')
     disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
