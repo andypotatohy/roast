@@ -1,5 +1,5 @@
-function solveByGetDP(P,current,sigma,uniTag)
-% solveByGetDP(P,current,sigma,uniTag)
+function solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
+% solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
 % 
 % Solve in getDP, a free FEM solver available at 
 % http://getdp.info/
@@ -27,20 +27,20 @@ fprintf(fid,'%s\n','skin = Region[5];');
 fprintf(fid,'%s\n','air = Region[6];');
 % fprintf(fid,'%s\n','gel = Region[7];');
 % fprintf(fid,'%s\n','elec = Region[8];');
-for i=1:numOfElec
-    fprintf(fid,'%s\n',['gel' num2str(i) ' = Region[' num2str(numOfTissue+i) '];']);
+for i=1:length(indUse)
+    fprintf(fid,'%s\n',['gel' num2str(i) ' = Region[' num2str(numOfTissue+indUse(i)) '];']);
 end
-for i=1:numOfElec
-    fprintf(fid,'%s\n',['elec' num2str(i) ' = Region[' num2str(numOfTissue+numOfElec+i) '];']);
+for i=1:length(indUse)
+    fprintf(fid,'%s\n',['elec' num2str(i) ' = Region[' num2str(numOfTissue+numOfElec+indUse(i)) '];']);
 end
 
 gelStr = [];
 elecStr = [];
 usedElecStr = [];
-for i=1:numOfElec
+for i=1:length(indUse)
 %     fprintf(fid,'%s\n',['usedElec' num2str(i) ' = Region[' num2str(8+i) '];']);
     usedElecStr = [usedElecStr 'usedElec' num2str(i) ', '];
-    fprintf(fid,'%s\n',['usedElec' num2str(i) ' = Region[' num2str(numOfTissue+2*numOfElec+i) '];']);
+    fprintf(fid,'%s\n',['usedElec' num2str(i) ' = Region[' num2str(numOfTissue+2*numOfElec+indUse(i)) '];']);
     gelStr = [gelStr 'gel' num2str(i) ', '];
     elecStr = [elecStr 'elec' num2str(i) ', '];
 end
@@ -60,15 +60,15 @@ fprintf(fid,'%s\n',['sigma[skin] = ' num2str(sigma.skin) ';']);
 fprintf(fid,'%s\n',['sigma[air] = ' num2str(sigma.air) ';']);
 % fprintf(fid,'%s\n','sigma[gel] = 0.3;');
 % fprintf(fid,'%s\n','sigma[elec] = 5.9e7;');
-for i=1:numOfElec
-    fprintf(fid,'%s\n',['sigma[gel' num2str(i) '] = ' num2str(sigma.gel(i)) ';']);
+for i=1:length(indUse)
+    fprintf(fid,'%s\n',['sigma[gel' num2str(i) '] = ' num2str(sigma.gel(indUse(i))) ';']);
 end
-for i=1:numOfElec
-    fprintf(fid,'%s\n',['sigma[elec' num2str(i) '] = ' num2str(sigma.electrode(i)) ';']);
+for i=1:length(indUse)
+    fprintf(fid,'%s\n',['sigma[elec' num2str(i) '] = ' num2str(sigma.electrode(indUse(i))) ';']);
 end
 
-for i=1:numOfElec
-    fprintf(fid,'%s\n',['du_dn' num2str(i) '[] = ' num2str(1000*current(i)/area_elecNeeded(i)) ';']);
+for i=1:length(indUse)
+    fprintf(fid,'%s\n',['du_dn' num2str(i) '[] = ' num2str(1000*current(indUse(i))/area_elecNeeded(indUse(i))) ';']);
 end
 
 fprintf(fid,'%s\n\n','}');
@@ -131,7 +131,7 @@ fprintf(fid,'%s\n','    Equation {');
 fprintf(fid,'%s\n','      Galerkin { [ sigma[] * Dof{d v} , {d v} ]; In DomainC; ');
 fprintf(fid,'%s\n\n','                 Jacobian Vol; Integration GradGrad; }');
 
-for i=1:numOfElec
+for i=1:length(indUse)
     
     fprintf(fid,'%s\n',['      Galerkin{ [ -du_dn' num2str(i) '[], {v} ]; In usedElec' num2str(i) ';']);
     fprintf(fid,'%s\n','                 Jacobian Sur; Integration GradGrad;}');
@@ -173,8 +173,10 @@ fprintf(fid,'%s\n','}');
 fprintf(fid,'%s\n\n','PostOperation {');
 fprintf(fid,'%s\n','{ Name Map; NameOfPostProcessing EleSta_v;');
 fprintf(fid,'%s\n','   Operation {');
-fprintf(fid,'%s\n',['     Print [ v, OnElementsOf DomainC, File "' baseFilename '_' uniTag '_v.pos", Format NodeTable ];']);
-fprintf(fid,'%s\n',['     Print [ e, OnElementsOf DomainC, Smoothing, File "' baseFilename '_' uniTag '_e.pos", Format NodeTable ];']);
+if isempty(LFtag)
+    fprintf(fid,'%s\n',['     Print [ v, OnElementsOf DomainC, File "' baseFilename '_' uniTag '_v.pos", Format NodeTable ];']);
+end
+fprintf(fid,'%s\n',['     Print [ e, OnElementsOf DomainC, Smoothing, File "' baseFilename '_' uniTag '_e' LFtag '.pos", Format NodeTable ];']);
 fprintf(fid,'%s\n','   }');
 fprintf(fid,'%s\n\n','}');
 fprintf(fid,'%s\n','}');
@@ -202,4 +204,9 @@ try
 catch
 end
 
-if status, error('getDP solver cannot work properly on your system. Please check any error message you got.'); end
+if status
+    error('getDP solver cannot work properly on your system. Please check any error message you got.');
+else % after solving, delete intermediate files
+    delete([dirname filesep baseFilename '_' uniTag '.pre']);
+    delete([dirname filesep baseFilename '_' uniTag '.res']);
+end

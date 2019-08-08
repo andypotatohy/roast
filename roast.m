@@ -741,7 +741,6 @@ else
     warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes will be overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the 93 electrodes. Continue?');
     fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
-    injectCurrent = [1 -1];
     capType = '1010';
     elecType = 'disc';
     elecSize = [6 2];
@@ -1127,40 +1126,72 @@ else
     load([dirname filesep baseFilename '_' uniqueTag '.mat'],'node','elem','face');
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
-    disp('======================================================')
-    disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
-    disp('======================================================')
-    prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
-    if ~strcmpi(recipe,'leadfield')
+if ~strcmpi(recipe,'leadfield')
+    
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
+        disp('======================================================')
+        disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
+        disp('======================================================')
+        prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
         indElecSolve = 1:length(elecName);
-        solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
+        solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,'');
     else
-        [~,indRef] = ismember('Iz',elecName);
-        indStimElec = setdiff(1:length(elecName),indRef);
-        for i=1:length(indStimElec)
-            indElecSolve = [indStimElec(i) indRef];
-            solveByGetDP(subj,injectCurrent,conductivities,uniqueTag);
-        end
+        disp('======================================================')
+        disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
+        disp('======================================================')
+        %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+    end
+    
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+        disp('======================================================')
+        disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
+        disp('======================================================')
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
+        visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
+    else
+        disp('======================================================')
+        disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
+        disp('======================================================')
+        load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
+        visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
     end
     
 else
-    disp('======================================================')
-    disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
-    disp('======================================================')
-%     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
-end
-
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
-    disp('======================================================')
-    disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
-    disp('======================================================')
-    [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
-else
-    disp('======================================================')
-    disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
-    disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
-    visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
+    
+    [~,indRef] = ismember('Iz',elecName);
+    indStimElec = setdiff(1:length(elecName),indRef);
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(1)) '.pos'],'file')
+        disp('======================================================')
+        disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
+        disp('           NOTE THIS WILL TAKE SOME TIME...           ')
+        disp('======================================================')
+        prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
+        injectCurrent = ones(length(elecName),1);
+        injectCurrent(indRef) = -1;
+        for i=1:length(indStimElec)
+            disp(['Solving for electrode ' num2str(i) ' out of ' num2str(length(indStimElec)) ' ...']);
+            indElecSolve = [indStimElec(i) indRef];
+            solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
+        end
+    else
+        disp('======================================================')
+        disp('       LEAD FIELD ALREADY GENERATED, SKIP STEP 5      ')
+        disp('======================================================')
+        %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+    end
+    
+%     if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+%         disp('======================================================')
+%         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
+%         disp('======================================================')
+%         [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
+%         visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
+%     else
+%         disp('======================================================')
+%         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
+%         disp('======================================================')
+%         load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
+%         visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
+%     end
+    
 end
