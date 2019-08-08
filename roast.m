@@ -377,9 +377,32 @@ function roast(subj,recipe,varargin)
 % standardized volume conductor model for EEG source localization and tES
 % targeting. NeuroImage,140, 150-162
 % 
+% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
+% 
+% General Public License version 3 or later.
+% 
+% This software uses free packages from the Internet, except Matlab, which
+% is a proprietary software by the MathWorks. You need a valid Matlab license
+% to run this software.
+% 
+% ROAST is considered as an "aggregate" rather than "derived work", based on
+% the definitions in GPL FAQ. The ROAST license only applies to the scripts,
+% documentation and the individual MRI data under example/ folder in this 
+% package and excludes those programs stored in the lib/ directory. The software 
+% under lib/ follow their respective licenses. This software is only intended
+% for non-commercial use.
+% 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% July 2019
+% August 2019
+
+fprintf('\n\n');
+disp('=============================================================')
+disp('ROAST is an aggregated work by Yu (Andy) Huang licensed under')
+disp('General Public License version 3 or later. It''s supported by')
+disp('both NIH grants and Soterix Medical Inc.')
+disp('=============================================================')
 
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
@@ -989,23 +1012,12 @@ else
 end
 
 % preprocess electrodes
-[elecPara,ind2usrInput] = elecPreproc(subj,elecName,elecPara);
-
-% sort elec options
-if length(elecPara)==1
-    if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(ind2usrInput,:); end
-    if ~ischar(elecOri) && size(elecOri,1)>1
-        elecPara.elecOri = elecPara.elecOri(ind2usrInput,:);
-    end
-elseif length(elecPara)==length(elecName)
-    elecPara = elecPara(ind2usrInput);
-else
-    error('Something is wrong!');
-end
+[elecPara,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
 if ~strcmpi(recipe,'leadfield')
     
-    injectCurrent = injectCurrent(ind2usrInput);
+    elecName = elecName(indInUsrInput);
+    injectCurrent = injectCurrent(indInUsrInput);
     
     configTxt = [];
     for i=1:length(elecName)
@@ -1016,13 +1028,25 @@ if ~strcmpi(recipe,'leadfield')
 else
     
     elecNameOri = elecName; % back up for re-ordering solutions back to .loc file order
+    elecName = elecName(indInUsrInput);
     configTxt = 'leadFieldGeneration';
     
 end
 
-elecName = elecName(ind2usrInput);
-conductivities.gel = conductivities.gel(ind2usrInput);
-conductivities.electrode = conductivities.electrode(ind2usrInput);
+conductivities.gel = conductivities.gel(indInUsrInput);
+conductivities.electrode = conductivities.electrode(indInUsrInput);
+
+% sort elec options
+if length(elecPara)==1
+    if size(elecSize,1)>1, elecPara.elecSize = elecPara.elecSize(indInUsrInput,:); end
+    if ~ischar(elecOri) && size(elecOri,1)>1
+        elecPara.elecOri = elecPara.elecOri(indInUsrInput,:);
+    end
+elseif length(elecPara)==length(elecName)
+    elecPara = elecPara(indInUsrInput);
+else
+    error('Something is wrong!');
+end
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
 
@@ -1160,6 +1184,7 @@ else
     
     [~,indRef] = ismember('Iz',elecName);
     indStimElec = setdiff(1:length(elecName),indRef);
+    [~,indInRoastCore]=ismember(elecNameOri,elecName);
     if ~exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(1)) '.pos'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
@@ -1169,7 +1194,7 @@ else
         injectCurrent = ones(length(elecName),1);
         injectCurrent(indRef) = -1;
         for i=1:length(indStimElec)
-            disp(['Solving for electrode ' num2str(i) ' out of ' num2str(length(indStimElec)) ' ...']);
+            disp(['SOLVING FOR ELECTRODE ' num2str(i) ' OUT OF ' num2str(length(indStimElec)) ' ...']);
             indElecSolve = [indStimElec(i) indRef];
             solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
         end
@@ -1180,18 +1205,19 @@ else
         %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
     
-%     if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
-%         disp('======================================================')
-%         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
-%         disp('======================================================')
-%         [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
-%         visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
-%     else
-%         disp('======================================================')
-%         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
-%         disp('======================================================')
-%         load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
-%         visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
-%     end
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+        disp('========================================================')
+        disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
+        disp('========================================================')
+        postGetDPforLF(subj,node,elem,hdrInfo,indStimElec,indInRoastCore,uniqueTag)
+    else
+        disp('======================================================')
+        disp('         ALL STEPS DONE, READY TO DO TARGETING        ')
+        disp(['        FOR SUBJECT ' subj])
+        disp(['        USING TAG ' uniqueTag])
+        disp('======================================================')
+    end
     
 end
+
+disp('=======================ALL DONE=======================');

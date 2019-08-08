@@ -172,5 +172,3 @@ sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anyw
 figName = ['Electric field in Simulation: ' uniTag];
 for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
 sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
-
-disp('=======================ALL DONE=======================');

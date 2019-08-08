@@ -105,6 +105,10 @@ else
     load([dirname filesep baseFilename '_' simTag '_options.mat'],'opt');
 end
 
+if strcmp(opt.configTxt,'leadFieldGeneration')
+    error(['Simulation ' simTag ' was run for generating the lead field. reviewRes() cannot visualize lead field. You should use the lead field to do targeting using roast_target().']);
+end
+        
 if opt.resamp
     subjRS = [dirname filesep baseFilename '_1mm' ext];
 else
