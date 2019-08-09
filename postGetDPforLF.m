@@ -22,12 +22,13 @@ indBrain = elem((elem(:,5)==1 | elem(:,5)==2),1:4);
 indBrain = unique(indBrain(:));
 
 Atemp = nan(size(node,1),3);
-A = nan(length(indBrain),3,length(elec));
+A = nan(length(indBrain),3,length(indSolved));
 
 disp('assembling the lead field...');
 for i=1:length(indSolved)
     
-    fid = fopen([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos ']);
+    disp(['packing electrode ' num2str(i) ' out of ' num2str(length(indSolved)) ' ...']);
+    fid = fopen([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
     fgetl(fid);
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);
@@ -37,13 +38,13 @@ for i=1:length(indSolved)
     A(:,:,i) = Atemp(indBrain,:);
 end
 
-indAdata = find(~isnan(sum(sum(A,3),2))); %???
-A = A(indAdata,:,:); %???
+indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A
+A = A(indAdata,:,:);
 
-A = reshape(A,length(indBrain)*3,length(elec));
+A = reshape(A,length(indBrain)*3,length(indSolved));
 
 locs = node(indBrain,1:3);
-locs = locs(indAdata,:); %???
+locs = locs(indAdata,:); % ...also applies to mesh coordinates
 
 % re-ordering to match the electrode order in .loc file
 A = A(:,indInCore);

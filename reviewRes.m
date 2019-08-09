@@ -39,6 +39,9 @@ function reviewRes(subj,simTag,tissue,fastRender)
 % Note the 3D rendering is displayed in the world space, while the slice view
 % is done in the voxel space.
 %
+% Note this function cannot visualize the lead field. If you ran roast with
+% lead field as your recipe, please go to roast_target() to run targeting.
+% 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % June 2018

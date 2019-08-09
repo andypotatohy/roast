@@ -435,7 +435,6 @@ if ~strcmpi(subj,'example/nyhead.nii')
     % check if bad MRI header
 end
 
-% check recipe syntax
 if nargin<2 || isempty(recipe)
     recipe = {'Fp1',1,'P4',-1};
 end
@@ -483,8 +482,9 @@ while indArg <= length(varargin)
     end
 end
 
-if ~strcmpi(recipe,'leadfield')
+if any(~strcmpi(recipe,'leadfield'))
     
+    % check recipe syntax
     if mod(length(recipe),2)~=0
         error('Unrecognized format of your recipe. Please enter as electrodeName-injectedCurrent pair.');
     end
@@ -761,7 +761,6 @@ if ~strcmpi(recipe,'leadfield')
     
 else
     
-    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes will be overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the 93 electrodes. Continue?');
     fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
     capType = '1010';
@@ -786,7 +785,7 @@ else
     % check if bad MRI header    
 end
 
-if ~strcmpi(recipe,'leadfield')
+if any(~strcmpi(recipe,'leadfield'))
     
     if ~exist('meshOpt','var')
         meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
@@ -1014,7 +1013,7 @@ end
 % preprocess electrodes
 [elecPara,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-if ~strcmpi(recipe,'leadfield')
+if any(~strcmpi(recipe,'leadfield'))
     
     elecName = elecName(indInUsrInput);
     injectCurrent = injectCurrent(indInUsrInput);
@@ -1072,7 +1071,7 @@ else
 end
 uniqueTag = options.uniqueTag;
 
-fprintf('\n\n');
+fprintf('\n');
 disp('======================================================')
 if ~strcmp(baseFilename,'nyhead')
     disp(['ROAST ' subj])
@@ -1086,6 +1085,12 @@ disp([dirname filesep baseFilename '_log,'])
 disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
+
+if all(strcmpi(recipe,'leadfield')) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
+    doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
+    if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
+end
 
 if ~strcmp(baseFilename,'nyhead')
     
@@ -1150,7 +1155,7 @@ else
     load([dirname filesep baseFilename '_' uniqueTag '.mat'],'node','elem','face');
 end
 
-if ~strcmpi(recipe,'leadfield')
+if any(~strcmpi(recipe,'leadfield'))
     
     if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
         disp('======================================================')
@@ -1184,7 +1189,7 @@ else
     
     [~,indRef] = ismember('Iz',elecName);
     indStimElec = setdiff(1:length(elecName),indRef);
-    [~,indInRoastCore]=ismember(elecNameOri,elecName);
+    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
     if ~exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(1)) '.pos'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
@@ -1194,7 +1199,11 @@ else
         injectCurrent = ones(length(elecName),1);
         injectCurrent(indRef) = -1;
         for i=1:length(indStimElec)
+            fprintf('\n');
+            disp('======================================================')
             disp(['SOLVING FOR ELECTRODE ' num2str(i) ' OUT OF ' num2str(length(indStimElec)) ' ...']);
+            disp('======================================================')
+            fprintf('\n');
             indElecSolve = [indStimElec(i) indRef];
             solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
         end
@@ -1209,12 +1218,12 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDPforLF(subj,node,elem,hdrInfo,indStimElec,indInRoastCore,uniqueTag)
+        postGetDPforLF(subj,node,elem,hdrInfo,indStimElec,indInRoastCore(isInRoastCore),uniqueTag)
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')
-        disp(['        FOR SUBJECT ' subj])
-        disp(['        USING TAG ' uniqueTag])
+        disp(['         FOR SUBJECT ' subj])
+        disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
     end
     
