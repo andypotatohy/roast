@@ -1,24 +1,16 @@
-ROAST V2.0:
+ROAST V3.0:
 
-Major feature added: costumized electrode placement. Users can specify any electrode from EEG 10/20, 10/10, 10/05 and BioSemi-256 system, and even electrodes at customized locations. They can customize the shape, size and orientation (only for pad electrode) of each electrode individually.
+Added a feature in roast() main function so that users can generate the data (lead field) for running targeting.
 
-Can use T2 to help segmentation.
+Introduced a new main function roast_target() for doing targeted TES. Users can also use the MNI coordinates for targeting.
 
-Can control mesh options of iso2mesh.
+Added a new option that allows users to generate the data that can be loaded in Soterix software HD-Explore and HD-Targets (purchased separately).
 
-Can give each simulation a customized tag.
+mni in sliceshow?
 
-The New York head is added.
+ROAST V2.7:
+Upgraded SPM8 to SPM12, with all customized code in SPM8 transferred into SPM12. Now Mac users will not have any problems when running ROAST under Matlab version 2017 and later.
 
-Can handle non-1mm resolution MRI and non-RAS MRI.
-
-Improved the visualization function.
-
-
-ROAST V2.1:
-Fixed a bug on placing electrodes on non-1mm data
-Added resampling and zero-padding options
-Can align T2 automatically if it's not aligned with T1
 
 ROAST V2.6:
 
@@ -50,5 +42,25 @@ Opened conductivities as user options.
 
 Can output a 3D rendering of electrode placement result, before building the FEM model.
 
-ROAST V2.7:
-Upgraded SPM8 to SPM12, with all customized code in SPM8 transferred into SPM12. Now Mac users will not have any problems when running ROAST under Matlab version 2017 and later.
+
+ROAST V2.1:
+Fixed a bug on placing electrodes on non-1mm data
+Added resampling and zero-padding options
+Can align T2 automatically if it's not aligned with T1
+
+
+ROAST V2.0:
+
+Major feature added: costumized electrode placement. Users can specify any electrode from EEG 10/20, 10/10, 10/05 and BioSemi-256 system, and even electrodes at customized locations. They can customize the shape, size and orientation (only for pad electrode) of each electrode individually.
+
+Can use T2 to help segmentation.
+
+Can control mesh options of iso2mesh.
+
+Can give each simulation a customized tag.
+
+The New York head is added.
+
+Can handle non-1mm resolution MRI and non-RAS MRI.
+
+Improved the visualization function.

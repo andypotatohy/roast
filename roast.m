@@ -1196,7 +1196,7 @@ else
         disp('           NOTE THIS WILL TAKE SOME TIME...           ')
         disp('======================================================')
         prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
-        injectCurrent = ones(length(elecName),1);
+        injectCurrent = ones(length(elecName),1); % 1 mA at each candidate electrode
         injectCurrent(indRef) = -1;
         for i=1:length(indStimElec)
             fprintf('\n');

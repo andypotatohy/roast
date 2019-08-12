@@ -109,7 +109,7 @@ else
 end
 
 if strcmp(opt.configTxt,'leadFieldGeneration')
-    error(['Simulation ' simTag ' was run for generating the lead field. reviewRes() cannot visualize lead field. You should use the lead field to do targeting using roast_target().']);
+    error(['Simulation ' simTag ' was run for generating the lead field for subject ' subj '. reviewRes() cannot visualize lead field. You should use the lead field to do targeting using roast_target().']);
 end
         
 if opt.resamp
