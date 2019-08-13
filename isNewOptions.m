@@ -21,6 +21,9 @@ if any(capNew~=capOld)
     return
 end
 
+% below complicated logics for checking if new options for electrode sizes
+% and orientations (for pad), because 'elecSize' and 'elecOri' can be very
+% flexible
 if length(optNew.elecPara) > length(optOld.elecPara)
     temp = repmat(optOld.elecPara,length(optNew.elecPara),1);
     if size(optOld.elecPara.elecSize,1)>1

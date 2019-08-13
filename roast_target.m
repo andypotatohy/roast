@@ -16,6 +16,7 @@ disp('======================================================')
 fprintf('\n');
 
 % warning('on');
+warning('off','MATLAB:nargchk:deprecated');
 
 % check subject name
 if nargin<1 || isempty(subj)
@@ -137,19 +138,62 @@ else
 end
 
 if ~exist('orient','var')
-    orient = 'radial-in';
+    orient = cell(numOfTargets,1);
+    for i=1:numOfTargets, orient{i} = 'radial-in'; end
 else
-    if ~all(ismember(lower(orient),{'radial-in','radial-out','right','left','anterior','posterior','right-anterior','right-posterior','left-anterior','left-posterior','optimal'}))
-        error('Supported orientations of electric field at the target are: ''radial-in'',''radial-out'',''right'',''left'',''anterior'',''posterior'',''right-anterior'',''right-posterior'',''left-anterior'',''left-posterior'',''optimal''.');
+    if ~iscell(orient)
+        if ischar(orient)
+            if ~ismember(lower(orient),{'radial-in','radial-out','right','left','anterior','posterior','right-anterior','right-posterior','left-anterior','left-posterior','optimal'})
+                error('Supported orientations of electric field at the target are: ''radial-in'',''radial-out'',''right'',''left'',''anterior'',''posterior'',''right-anterior'',''right-posterior'',''left-anterior'',''left-posterior'',''optimal''.');
+            end
+            orient0 = orient;
+            orient = cell(numOfTargets,1);
+            for i=1:numOfTargets, orient{i} = orient0; end
+        else
+            if size(orient,2)~=3
+                error('Unrecognized customized orientation. Please enter the customized orientation vector for each target as a 1-by-3 vector.');
+            end
+            if size(orient,1)>1 && size(orient,1)~=numOfTargets
+                error('You want different customized orientations at each target. Please tell roast_target() the customized orientation for each target respectively, in a N-by-3 matrix, where N is the number of targets.');
+            end
+            if size(orient,1)==1 && numOfTargets>1
+                orient = repmat(orient,numOfTargets,1);
+            end
+        end
+    else
+        if length(orient)~=numOfTargets
+            error('You want different orientations at each target. Please tell roast_target() the orientation for each target respectively, in a N-by-1 cell, where N is the number of targets.');
+        end
+        nOptimal = 0;
+        for i=1:numOfTargets
+            if ischar(orient{i})
+                if ~ismember(lower(orient{i}),{'radial-in','radial-out','right','left','anterior','posterior','right-anterior','right-posterior','left-anterior','left-posterior','optimal'})
+                    error('Supported orientations of electric field at the target are: ''radial-in'',''radial-out'',''right'',''left'',''anterior'',''posterior'',''right-anterior'',''right-posterior'',''left-anterior'',''left-posterior'',''optimal''.');
+                end
+                if strcmpi(orient{i},'optimal'), nOptimal = nOptimal + 1; end
+            else
+                if size(orient{i},2)~=3
+                    error('Unrecognized customized orientation. Please enter the customized orientation vector for each target as a 1-by-3 vector.');
+                end
+                if size(orient{i},1)>1
+                    error('You want different customized orientations at each target. Please tell roast_target() the customized orientation in a 1-by-3 vector.');
+                end
+            end
+        end
+        if nOptimal>0 && nOptimal~=numOfTargets
+            error('roast_target() cannot perform targeting for mixed optimal and unoptimal orientations. Please specify either all-optimal or all-unoptimal orientations for all the targets.');
+        end
     end
 end
 
-if iscellstr(orient) && length(orient)~=numOfTargets
-    error('Looks like you want to do multiple targets, but did not specify the E-field orientation for each target properly.');
-end
-
-if iscellstr(orient) && sum(ismember(lower(orient),'optimal'))~=numOfTargets
-    error('roast_target() cannot perform targeting for mixed optimal and unoptimal orientations. Please specify either all-optimal or all-unoptimal orientations for all the targets.');
+needOrigin = 0;
+if iscell(orient)
+    for i=1:numOfTargets
+        if ischar(orient{i}) && ismember(lower(orient{i}),{'radial-in','radial-out','optimal'})
+            needOrigin = 1;
+        end
+        break;
+    end
 end
 
 if ~exist('elecNum','var')
@@ -160,8 +204,8 @@ if ~exist('elecNum','var')
     end
 else
     if strcmpi(optType,'max-l1per')
-        if elecNum<4 || mod(elecNum,1)~=0
-            error('Unrecognized option value. Please enter positive integer value of at least 4 for option ''elecNum''.');
+        if elecNum<4 || mod(elecNum,2)~=0
+            error('Unrecognized option value. Please enter positive even number of at least 4 for option ''elecNum''.');
         end
     else
         warning('Option ''elecNum'' will be ignored for optimization type other than ''max-l1per''.');
@@ -222,7 +266,7 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
-if strcmpi(coordType,'mni') || any(ismember(lower(orient),{'radial-in','radial-out','optimal'}))
+if strcmpi(coordType,'mni') || needOrigin
     mappingFile = [dirname filesep baseFilenameRSPD '_seg8.mat'];
     if ~exist(mappingFile,'file')
         error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
@@ -244,7 +288,7 @@ if any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
     error('Unrecognized target coordinates. Please check if you entered voxel coordinates but specified MNI coordinates, or the other way around.');
 end
 
-if any(ismember(lower(orient),{'radial-in','radial-out','optimal'}))
+if needOrigin
     temp = mni2mri*[0 0 0 1]';
     origin = round(temp(1:3)');
 end
@@ -259,35 +303,45 @@ p.targetRadius = targetRadius;
 p.k = k;
 p.a = a;
 
-if ~iscellstr(orient), orient = {orient}; end
-u0 = zeros(numOfTargets,3);
-for i=1:numOfTargets
-    switch lower(orient{i})
-        case {'radial-in','optimal'}
-            u0(i,:) = (origin-targetCoord(i,:))/norm(origin-targetCoord(i,:));
-        case 'radial-out'
-            u0(i,:) = (targetCoord(i,:)-origin)/norm(origin-targetCoord(i,:));
-        case 'right'
-            u0(i,:) = [1 0 0];
-        case 'left'
-            u0(i,:) = [-1 0 0];
-        case 'anterior'
-            u0(i,:) = [0 1 0];
-        case 'posterior'
-            u0(i,:) = [0 -1 0];
-        case 'right-anterior'
-            u0(i,:) = [1 1 0]/norm([1 1 0]);
-        case 'right-posterior'
-            u0(i,:) = [1 -1 0]/norm([1 -1 0]);
-        case 'left-anterior'
-            u0(i,:) = [-1 1 0]/norm([-1 1 0]);
-        case 'left-posterior'
-            u0(i,:) = [-1 -1 0]/norm([-1 -1 0]);
+if ~iscell(orient)
+    u0 = orient;
+else
+    u0 = zeros(numOfTargets,3);
+    for i=1:numOfTargets
+        if ischar(orient{i})
+            switch lower(orient{i})
+                case {'radial-in','optimal'}
+                    u0(i,:) = origin-targetCoord(i,:);
+                case 'radial-out'
+                    u0(i,:) = targetCoord(i,:)-origin;
+                case 'right'
+                    u0(i,:) = [1 0 0];
+                case 'left'
+                    u0(i,:) = [-1 0 0];
+                case 'anterior'
+                    u0(i,:) = [0 1 0];
+                case 'posterior'
+                    u0(i,:) = [0 -1 0];
+                case 'right-anterior'
+                    u0(i,:) = [1 1 0];
+                case 'right-posterior'
+                    u0(i,:) = [1 -1 0];
+                case 'left-anterior'
+                    u0(i,:) = [-1 1 0];
+                case 'left-posterior'
+                    u0(i,:) = [-1 -1 0];
+            end
+        else
+            u0(i,:) = orient{i};
+        end
     end
 end
 
-if any(isnan(u0(:)))
-    error('The target you picked is too close to the brain center.');
+for i=1:size(u0,1)
+    u0(i,:) = u0(i,:)/norm(u0(i,:)); % unit vector
+    if any(isnan(u0(i,:)))
+        error(['Orientation vector at target ' num2str(i) ' has a length close to 0. It could be that you picked a target too close to the brain center.']);
+    end
 end
 p.u = u0;
 
@@ -316,6 +370,7 @@ if ismember('optimal',lower(orient))
     fprintf('============================\nSearching for the optimal orientation...\n')
     % fprintf('with optimization performed inside...\n')
     % fprintf('Below only outputs outer optimization info:\n============================\n')
+    warning('off','MATLAB:optim:fminunc:SwitchingMethod');
     t_opt = fminunc(fun,t0,options);
     for i=1:numOfTargets
         u(i,:) = [cos(t_opt(i,1))*sin(t_opt(i,2)) sin(t_opt(i,1))*sin(t_opt(i,2)) cos(t_opt(i,2))];
@@ -339,6 +394,11 @@ if ~exist(masksFile,'file')
 else
     masks = load_untouch_nii(masksFile);
 end
-E = getEF(A,locs,r.sopt,masks);
-
-visualize_overlay
+nan_mask_brain = nan(size(masks.img)); nan_mask_brain(masks.img==1 | masks.img==2) = 1;
+E = getEF(A,locs,r.sopt,masks.img);
+for i=1:size(E,4), E(:,:,:,i) = E(:,:,:,i).*nan_mask_brain; end
+Emag = sqrt(sum(E.^2,4));
+cm_ef = colormap(jet(2048)); cm_ef = [1 1 1;cm_ef];
+for i=1:numOfTargets
+    sliceshow(Emag,targetCoord(i,:),cm_ef,[0 0.5],'Electric field (V/m)',[],E);
+end
