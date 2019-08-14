@@ -1175,7 +1175,7 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,[],hdrInfo,uniqueTag);
         visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
     else
         disp('======================================================')
@@ -1218,7 +1218,7 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDPforLF(subj,node,elem,hdrInfo,indStimElec,indInRoastCore(isInRoastCore),uniqueTag)
+        postGetDP(subj,[],node,elem,hdrInfo,uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')

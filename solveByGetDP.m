@@ -7,6 +7,7 @@ function solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % October 2017
+% August 2019 adding lead field
 
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
