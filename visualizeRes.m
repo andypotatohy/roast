@@ -1,4 +1,7 @@
-function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
+function visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
+% visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,[r.sopt; -sum(r.sopt);],hdrInfo,simTag,0,r.xopt,ef_mag,ef_all);
+% visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,r.sopt,hdrInfo,uniqueTag,0,A,locs,optType);
+% visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
 % visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
 %
 % Display the simulation results. The 3D rendering is displayed in the
@@ -7,6 +10,8 @@ function visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hd
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % April 2018
+
+if ndims(varargin{1})==3, isRoast = 1; else, isRoast = 0; end
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
@@ -34,10 +39,15 @@ end
 masks = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
 allMask = masks.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
-gel = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
-numOfGel = max(gel.img(:));
-elec = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
-% numOfElec = max(elec.img(:));
+if isRoast
+    gel = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+    numOfGel = max(gel.img(:));
+    elec = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+    % numOfElec = max(elec.img(:));
+else
+    numOfGel = length(inCurrent);
+    indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
+end
 
 if showAll
     allMaskShow = masks.img;
@@ -63,8 +73,14 @@ node(:,1:3) = worldCoord(:,1:3);
 
 indNode_grayFace = face(find(face(:,4) == 2),1:3);
 indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
-indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
-indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
+
+if isRoast
+    indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
+    indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
+else
+    indNode_elecFace = face(find(face(:,4) == numOfTissue+numOfGel+indMonElec),1:3);
+    indNode_elecElm = elem(find(elem(:,5) == numOfTissue+numOfGel+indMonElec),1:4);
+end
 
 % node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
 % % smooth the surface that's to be displayed
@@ -73,91 +89,135 @@ indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
 
 inCurrentRange = [min(inCurrent) max(inCurrent)];
 
-fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
-fgetl(fid);
-C = textscan(fid,'%d %f');
-fclose(fid);
-
-C{2} = C{2} - min(C{2}); % re-reference the voltage
-
-% dataShow = [node(C{1},1:3) C{2}];
-color = nan(size(node,1),1);
-color(C{1}) = C{2};
-dataShow = [node(:,1:3) color];
-
-figName = ['Voltage in Simulation: ' uniTag];
-figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-set(gcf,'color','w');
-colormap(jet);
-plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
-dataShowRange = [min(dataShow(unique(indNode_grayElm(:)),4)) max(dataShow(unique(indNode_grayElm(:)),4))];
-dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
-for i=1:length(inCurrent)
-%     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
-%     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
-      dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
-end % to show injected current intensities properly
-hold on;
-plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
-axis off; rotate3d on;
-% set(hp1,'SpecularColorReflectance',0,'SpecularExponent',50);
-caxis(dataShowRange);
-lightangle(-90,45)
-lightangle(90,45)
-lightangle(-90,-45)
-hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
-title(hc1,'Voltage (mV)','FontSize',18);
-a1 = gca;
-a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
-axis off;
-hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
-title(hc2,'Injected current (mA)','FontSize',18);
-caxis(inCurrentRange);
-axes(a1);
-drawnow
-
-fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
-fgetl(fid);
-C = textscan(fid,'%d %f %f %f');
-fclose(fid);
-
-C_ef_mag = sqrt(C{2}.^2+C{3}.^2+C{4}.^2);
-% dataShow = [node(C{1},1:3), C_ef_mag];
-color = nan(size(node,1),1);
-color(C{1}) = C_ef_mag;
-dataShow = [node(:,1:3) color];
-
-figName = ['Electric field in Simulation: ' uniTag];
-figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-set(gcf,'color','w');
-colormap(jet);
-plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
-dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
-dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
-dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
-for i=1:length(inCurrent)
-%     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
-%     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
-      dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
-end % to show injected current intensities properly
-hold on;
-plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
-axis off; rotate3d on;
-% set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
-caxis(dataShowRange);
-lightangle(-90,45)
-lightangle(90,45)
-lightangle(-90,-45)
-hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
-title(hc1,'Electric field (V/m)','FontSize',18);
-a1 = gca;
-a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
-axis off;
-hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
-title(hc2,'Injected current (mA)','FontSize',18);
-caxis(inCurrentRange);
-axes(a1);
-drawnow
+if isRoast
+    
+    fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
+    fgetl(fid);
+    C = textscan(fid,'%d %f');
+    fclose(fid);
+    
+    C{2} = C{2} - min(C{2}); % re-reference the voltage
+    
+    % dataShow = [node(C{1},1:3) C{2}];
+    color = nan(size(node,1),1);
+    color(C{1}) = C{2};
+    dataShow = [node(:,1:3) color];
+    
+    figName = ['Voltage in Simulation: ' uniTag];
+    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+    set(gcf,'color','w');
+    colormap(jet);
+    plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
+    dataShowRange = [min(dataShow(unique(indNode_grayElm(:)),4)) max(dataShow(unique(indNode_grayElm(:)),4))];
+    dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
+    for i=1:length(inCurrent)
+        %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+        %     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+        dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
+    end % to show injected current intensities properly
+    hold on;
+    plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
+    axis off; rotate3d on;
+    % set(hp1,'SpecularColorReflectance',0,'SpecularExponent',50);
+    caxis(dataShowRange);
+    lightangle(-90,45)
+    lightangle(90,45)
+    lightangle(-90,-45)
+    hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
+    title(hc1,'Voltage (mV)','FontSize',18);
+    a1 = gca;
+    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    axis off;
+    hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
+    title(hc2,'Injected current (mA)','FontSize',18);
+    caxis(inCurrentRange);
+    axes(a1);
+    drawnow
+    
+    fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
+    fgetl(fid);
+    C = textscan(fid,'%d %f %f %f');
+    fclose(fid);
+    
+    C_ef_mag = sqrt(C{2}.^2+C{3}.^2+C{4}.^2);
+    % dataShow = [node(C{1},1:3), C_ef_mag];
+    color = nan(size(node,1),1);
+    color(C{1}) = C_ef_mag;
+    dataShow = [node(:,1:3) color];
+    
+    figName = ['Electric field in Simulation: ' uniTag];
+    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+    set(gcf,'color','w');
+    colormap(jet);
+    plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
+    dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
+    dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
+    dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
+    for i=1:length(inCurrent)
+        %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+        %     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+        dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
+    end % to show injected current intensities properly
+    hold on;
+    plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
+    axis off; rotate3d on;
+    % set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
+    caxis(dataShowRange);
+    lightangle(-90,45)
+    lightangle(90,45)
+    lightangle(-90,-45)
+    hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
+    title(hc1,'Electric field (V/m)','FontSize',18);
+    a1 = gca;
+    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    axis off;
+    hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
+    title(hc2,'Injected current (mA)','FontSize',18);
+    caxis(inCurrentRange);
+    axes(a1);
+    drawnow
+    
+else
+    
+    C = varargin{1};
+    C_ef_mag = sqrt(sum(C.^2,4));
+    color = nan(size(node,1),1);
+    color(C{1}) = C_ef_mag;
+    dataShow = [node(:,1:3) color];
+    
+    figName = ['Electric field in Simulation: ' uniTag];
+    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+    set(gcf,'color','w');
+    colormap(jet);
+    plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
+    dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
+    dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
+    dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
+    for i=1:length(inCurrent)
+        %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
+        %     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
+        dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
+    end % to show injected current intensities properly
+    hold on;
+    plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
+    axis off; rotate3d on;
+    % set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
+    caxis(dataShowRange);
+    lightangle(-90,45)
+    lightangle(90,45)
+    lightangle(-90,-45)
+    hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
+    title(hc1,'Electric field (V/m)','FontSize',18);
+    a1 = gca;
+    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    axis off;
+    hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
+    title(hc2,'Injected current (mA)','FontSize',18);
+    caxis(inCurrentRange);
+    axes(a1);
+    drawnow
+    
+end
 
 disp('generating slice views...');
 

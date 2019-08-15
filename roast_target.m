@@ -380,25 +380,39 @@ end
 
 r = optimize(p,A);
 
+% compute the optimized E-field
+[ef_all,r.xopt] = getEF(A,locs,r.sopt,hdrInfo.dim);
+ef_mag = sqrt(sum(ef_all.^2,4));
+
 % visualize the results
 cm_mon = colormap(jet(64));
 if strcmpi(optType,'max-l1') || strcmpi(optType,'max-l1per')
     cm_mon(3:62,:) = ones(60,3);
 end
 figure; mytopoplot([r.sopt; -sum(r.sopt);],'./elec72.loc','numcontour',0,'plotrad',0.9,'shading','flat','gridscale',1000,'whitebk','off','colormap',cm_mon);
+                            % Ref electrode Iz is in the last one in .loc file
 caxis([-2 2]); colorbar;
 
-masksFile = [dirname filesep baseFilenameRSPD '_masks.nii'];
-if ~exist(masksFile,'file')
-    error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
+meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
+if ~exist(meshFile,'file')
+    error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
 else
-    masks = load_untouch_nii(masksFile);
+    load(meshFile,'node','elem','face');
 end
-nan_mask_brain = nan(size(masks.img)); nan_mask_brain(masks.img==1 | masks.img==2) = 1;
-E = getEF(A,locs,r.sopt,masks.img);
-for i=1:size(E,4), E(:,:,:,i) = E(:,:,:,i).*nan_mask_brain; end
-Emag = sqrt(sum(E.^2,4));
-cm_ef = colormap(jet(2048)); cm_ef = [1 1 1;cm_ef];
-for i=1:numOfTargets
-    sliceshow(Emag,targetCoord(i,:),cm_ef,[0 0.5],'Electric field (V/m)',[],E);
-end
+visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,[r.sopt; -sum(r.sopt);],hdrInfo,simTag,0,r.xopt,ef_mag,ef_all);
+% visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,r.sopt,hdrInfo,simTag,0,A,locs,optType);
+visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,simTag,0,vol_all,ef_mag,ef_all);
+% masksFile = [dirname filesep baseFilenameRSPD '_masks.nii'];
+% if ~exist(masksFile,'file')
+%     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
+% else
+%     masks = load_untouch_nii(masksFile);
+% end
+% nan_mask_brain = nan(size(masks.img)); nan_mask_brain(masks.img==1 | masks.img==2) = 1;
+% E = getEF(A,locs,r.sopt,masks.img);
+% for i=1:size(E,4), E(:,:,:,i) = E(:,:,:,i).*nan_mask_brain; end
+% Emag = sqrt(sum(E.^2,4));
+% cm_ef = colormap(jet(2048)); cm_ef = [1 1 1;cm_ef];
+% for i=1:numOfTargets
+%     sliceshow(Emag,targetCoord(i,:),cm_ef,[0 0.5],'Electric field (V/m)',[],E);
+% end
