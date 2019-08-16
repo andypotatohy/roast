@@ -15,13 +15,12 @@ if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
 
-% convert pseudo-world coordinates back to voxel coordinates for:
-% results for roast() will be interpolated into regular grid in the voxel space;
-% targeting in roast_target() works in the voxel space.
-for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
-
 if ~isempty(P2) % for roast()
     
+    % convert pseudo-world coordinates back to voxel coordinates for
+    % interpolation into regular grid in the voxel space
+    for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+
     [~,baseFilenameRSPD] = fileparts(P2);
     
     [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
@@ -109,11 +108,13 @@ if ~isempty(P2) % for roast()
     
 else % for roast_target()
     
-    indBrain = elem((elem(:,5)==1 | elem(:,5)==2),1:4);
-    indBrain = unique(indBrain(:));
-    
-    Atemp = nan(size(node,1),3);
-    A = nan(length(indBrain),3,length(indSolved));
+%     indBrain = elem((elem(:,5)==1 | elem(:,5)==2),1:4);
+%     indBrain = unique(indBrain(:));
+%     
+%     Atemp = nan(size(node,1),3);
+%     A = nan(length(indBrain),3,length(indSolved));
+
+    A_all = nan(size(node,1),3,length(indSolved));
     
     disp('assembling the lead field...');
     for i=1:length(indSolved)
@@ -124,24 +125,31 @@ else % for roast_target()
         C = textscan(fid,'%d %f %f %f');
         fclose(fid);
         
-        Atemp(C{1},:) = cell2mat(C(2:4));
+%         Atemp(C{1},:) = cell2mat(C(2:4));
+%         
+%         A(:,:,i) = Atemp(indBrain,:);
         
-        A(:,:,i) = Atemp(indBrain,:);
+        A_all(C{1},:,i) = cell2mat(C(2:4));
+        
+% %        user option to be added: keep all .pos files or not (for saving disk space)
+%         delete([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
     end
     
-    indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A
-    A = A(indAdata,:,:);
-    
-    A = reshape(A,length(indBrain)*3,length(indSolved));
-    
-    locs = node(indBrain,1:3);
-    locs = locs(indAdata,:); % ...also applies to mesh coordinates
+%     indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A
+%     A = A(indAdata,:,:);
+%     
+%     A = reshape(A,length(indBrain)*3,length(indSolved)); % this is bug
+%     
+%     locs = node(indBrain,1:3);
+%     locs = locs(indAdata,:); % ...also applies to mesh coordinates
     
     % re-ordering to match the electrode order in .loc file
-    A = A(:,indInCore);
+%     A = A(:,indInCore);
+    A_all = A_all(:,:,indInCore);
     
     disp('saving the final results...')
-    save([dirname filesep baseFilename '_' uniTag '_result.mat'],'A','locs','-v7.3');
+%     save([dirname filesep baseFilename '_' uniTag '_result.mat'],'A','locs','-v7.3');
+    save([dirname filesep baseFilename '_' uniTag '_result.mat'],'A_all','-v7.3');
     
     disp('======================================================');
     disp('The lead field matrix is saved as:');
@@ -158,7 +166,7 @@ else % for roast_target()
     disp('======================================================');
     disp('Now you can do targeting by calling: ');
     disp('roast_target(subj,simTag,targetCoord,varargin)');
-    disp('Please refer to the README and roast_target documentation for details.');
+    disp('Please refer to the README and roast_target() documentation for details.');
     disp('======================================================');
     
 end

@@ -102,10 +102,11 @@ if nargin<4 || isempty(fastRender)
 end
 
 [dirname,baseFilename,ext] = fileparts(subj);
-if ~exist([dirname filesep baseFilename '_' simTag '_options.mat'],'file')
+optionFile = [dirname filesep baseFilename '_' simTag '_options.mat'];
+if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
-    load([dirname filesep baseFilename '_' simTag '_options.mat'],'opt');
+    load(optionFile,'opt');
 end
 
 if strcmp(opt.configTxt,'leadFieldGeneration')

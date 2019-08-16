@@ -1,8 +1,5 @@
 function visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
-% visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,[r.sopt; -sum(r.sopt);],hdrInfo,simTag,0,r.xopt,ef_mag,ef_all);
-% visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,r.sopt,hdrInfo,uniqueTag,0,A,locs,optType);
-% visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
-% visualizeRes(P1,P2,T2,node,elem,face,vol_all,ef_mag,ef_all,inCurrent,hdrInfo,uniTag,showAll)
+% visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -10,8 +7,15 @@ function visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,v
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % April 2018
+% August 2019 callable by roast_target()
 
-if ndims(varargin{1})==3, isRoast = 1; else, isRoast = 0; end
+if ndims(varargin{1})==3
+    isRoast = 1;
+    vol_all = varargin{1}; ef_mag = varargin{2}; ef_all = varargin{3};
+else
+    isRoast = 0;
+    C = varargin{1}; ef_mag = varargin{2}; ef_all = varargin{3}; targetCoord = varargin{4};
+end
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
@@ -62,9 +66,11 @@ end
 % scrsz = get(groot,'ScreenSize');
 
 disp('generating 3D renderings...')
+
 for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
 % convert pseudo-world coordinates back to voxel coordinates so that the
 % following conversion to pure-world space is meaningful
+
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
 worldCoord = (hdrInfo.v2w*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
@@ -74,22 +80,16 @@ node(:,1:3) = worldCoord(:,1:3);
 indNode_grayFace = face(find(face(:,4) == 2),1:3);
 indNode_grayElm = elem(find(elem(:,5) == 2),1:4);
 
-if isRoast
-    indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
-    indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
-else
-    indNode_elecFace = face(find(face(:,4) == numOfTissue+numOfGel+indMonElec),1:3);
-    indNode_elecElm = elem(find(elem(:,5) == numOfTissue+numOfGel+indMonElec),1:4);
-end
-
 % node(:,1:3) = sms(node(:,1:3),indNode_grayFace);
 % % smooth the surface that's to be displayed
 % % just for display, the output data is not smoothed
 % % very slow if mesh is big
 
-inCurrentRange = [min(inCurrent) max(inCurrent)];
-
 if isRoast
+    
+    indNode_elecFace = face(find(face(:,4) > numOfTissue+numOfGel),1:3);
+    indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
+    inCurrentRange = [min(inCurrent) max(inCurrent)];
     
     fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
     fgetl(fid);
@@ -139,10 +139,9 @@ if isRoast
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);
     
-    C_ef_mag = sqrt(C{2}.^2+C{3}.^2+C{4}.^2);
     % dataShow = [node(C{1},1:3), C_ef_mag];
     color = nan(size(node,1),1);
-    color(C{1}) = C_ef_mag;
+    color(C{1}) = sqrt(C{2}.^2+C{3}.^2+C{4}.^2);
     dataShow = [node(:,1:3) color];
     
     figName = ['Electric field in Simulation: ' uniTag];
@@ -179,10 +178,12 @@ if isRoast
     
 else
     
-    C = varargin{1};
-    C_ef_mag = sqrt(sum(C.^2,4));
+    indNode_elecFace = face(ismember(face(:,4),numOfTissue+numOfGel+indMonElec),1:3);
+    indNode_elecElm = elem(ismember(elem(:,5),numOfTissue+numOfGel+indMonElec),1:4);
+    inCurrentRange = [min(inCurrent(indMonElec)) max(inCurrent(indMonElec))];
+    
     color = nan(size(node,1),1);
-    color(C{1}) = C_ef_mag;
+    color(C(:,1)) = sqrt(sum(C(:,2:4).^2,2));
     dataShow = [node(:,1:3) color];
     
     figName = ['Electric field in Simulation: ' uniTag];
@@ -192,11 +193,11 @@ else
     plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
     dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
     dataShowRange = [prctile(dataShowVal,5) prctile(dataShowVal,95)];
-    dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
-    for i=1:length(inCurrent)
+    dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent(indMonElec));
+    for i=1:length(indMonElec)
         %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
         %     dataShow(unique(indNodeTemp(:)),4) = dataShowForElec(i);
-        dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+i),1:4)),4) = dataShowForElec(i);
+        dataShow(unique(elem(find(elem(:,5) == numOfTissue+numOfGel+indMonElec(i)),1:4)),4) = dataShowForElec(i);
     end % to show injected current intensities properly
     hold on;
     plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
@@ -226,9 +227,21 @@ nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(1024)); cm = [1 1 1;cm];
-figName = ['Voltage in Simulation: ' uniTag];
-sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
 
-figName = ['Electric field in Simulation: ' uniTag];
+if isRoast
+    figName = ['Voltage in Simulation: ' uniTag];
+    sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
+end
+
 for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
-sliceshow(ef_mag.*nan_mask_brain,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
+ef_mag = ef_mag.*nan_mask_brain;
+if isRoast
+    figName = ['Electric field in Simulation: ' uniTag];
+    sliceshow(ef_mag,[],cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
+else
+    
+    for i=1:size(targetCoord,1)
+        figName = ['Electric field in Simulation: ' uniTag];
+        sliceshow(ef_mag,targetCoord(i,:),cm,[prctile(dataShowVal,5) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
+    end
+end

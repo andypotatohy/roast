@@ -28,14 +28,14 @@ function p = optimize_prepare(p,A,locs)
 
 % A = p.A;
 % locs = p.locs;
-Nnodes = p.Nnodes;
+Nlocs = p.Nlocs;
 
 targetCoord = p.targetCoord;
 numOfTargets = p.numOfTargets;
 
-% node_distances = zeros(Nnodes,numOfTargets);
-% sorted_nodes = zeros(Nnodes,numOfTargets);
-distances_to_target = zeros(Nnodes,numOfTargets);
+% node_distances = zeros(Nlocs,numOfTargets);
+% sorted_nodes = zeros(Nlocs,numOfTargets);
+distances_to_target = zeros(Nlocs,numOfTargets);
 for n = 1:numOfTargets
     tmp = locs - repmat(targetCoord(n,:),size(locs,1),1);
     distances_to_target(:,n) = sqrt(sum(tmp.*tmp,2));
@@ -53,7 +53,7 @@ end
 
 p.target_nodes = target_nodes;
 target_nodes = cell2mat(target_nodes);
-nontarget_nodes = setdiff(1:Nnodes,target_nodes);
+nontarget_nodes = setdiff(1:Nlocs,target_nodes);
 
 optType = p.optType;
 
@@ -62,15 +62,15 @@ fprintf('Preparing to optimize...this may take a moment...\n');
 if ~isempty(strfind(optType,'wls'))
     k = p.k;
     Ntarget = length(target_nodes);
-    Nnontarget = Nnodes-Ntarget;
-    wp = Nnodes/Ntarget*(k/(k+1));
+    Nnontarget = Nlocs-Ntarget;
+    wp = Nlocs/Ntarget*(k/(k+1));
     wn = Ntarget/Nnontarget*(wp/k);
 else
     wp = 1;
     wn = 0;
 end
 
-w = zeros(Nnodes,1);
+w = zeros(Nlocs,1);
 w(target_nodes) = wp;
 w(nontarget_nodes) = wn;
 w = repmat(w,3,1);

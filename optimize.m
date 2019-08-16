@@ -16,7 +16,7 @@ function r = optimize(p,A)
 
 % A = p.A;
 numOfTargets = p.numOfTargets;
-Nnodes = p.Nnodes;
+Nlocs = p.Nlocs;
 % node_distances = p.node_distances;
 % sorted_nodes = p.sorted_nodes;
 target_nodes = p.target_nodes;
@@ -30,11 +30,11 @@ U = p.U; S = p.S; V = p.V;
 
 Ed = p.u;
 a = p.a;
-xd = zeros(3*Nnodes,1);
+xd = zeros(3*Nlocs,1);
 for n = 1:numOfTargets
     xd(target_nodes{n}) = a*Ed(n,1);
-    xd(target_nodes{n}+Nnodes) = a*Ed(n,2);
-    xd(target_nodes{n}+2*Nnodes) = a*Ed(n,3);
+    xd(target_nodes{n}+Nlocs) = a*Ed(n,2);
+    xd(target_nodes{n}+2*Nlocs) = a*Ed(n,3);
 end
 
 % CORE ALGORITHM
@@ -48,9 +48,9 @@ if strcmp(status,'Failed')
 end
 
 % OUTPUT RESULTS
-% xoptmag = sqrt(xopt(1:Nnodes).^2+xopt(Nnodes+1:2*Nnodes).^2+xopt(2*Nnodes+1:3*Nnodes).^2);
+% xoptmag = sqrt(xopt(1:Nlocs).^2+xopt(Nlocs+1:2*Nlocs).^2+xopt(2*Nlocs+1:3*Nlocs).^2);
 
-% directivity = zeros(Nnodes,numOfTargets);
+% directivity = zeros(Nlocs,numOfTargets);
 % crad = zeros(numOfTargets,1);
 % for n = 1:numOfTargets
 %     directivity(:,n) = cumsum( xoptmag(sorted_nodes(:,n)) ) / sum(xoptmag);
@@ -70,14 +70,14 @@ r.sopt = sopt;
 % r.crad = crad;
 
 % r.targetintraw = xoptmag(sorted_nodes(1,:));
-% r.targetint = dot(Ed,reshape([xopt(sorted_nodes(1,:)); xopt(sorted_nodes(1,:)+Nnodes);xopt(sorted_nodes(1,:)+2*Nnodes)],numOfTargets,3),2); % intensity in specified direction
+% r.targetint = dot(Ed,reshape([xopt(sorted_nodes(1,:)); xopt(sorted_nodes(1,:)+Nlocs);xopt(sorted_nodes(1,:)+2*Nlocs)],numOfTargets,3),2); % intensity in specified direction
 
 % if exist('target_nodes','var')
 targetintraw = zeros(numOfTargets,1);
 targetint = zeros(numOfTargets,1);
 for n=1:numOfTargets
-    targetintraw(n) =  norm ( mean( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nnodes) , xopt(target_nodes{n}+2*Nnodes) ], 1 ) );
-    targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nnodes) , xopt(target_nodes{n}+2*Nnodes) ], 1 ) );
+    targetintraw(n) =  norm ( mean( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
+    targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
 end
 r.targetintraw = targetintraw;
 r.targetint = targetint;

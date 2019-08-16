@@ -33,7 +33,7 @@ end
 
 % A = p.A;
 numOfTargets = p.numOfTargets;
-Nnodes = p.Nnodes;
+Nlocs = p.Nlocs;
 % node_distances = p.node_distances;
 % sorted_nodes = p.sorted_nodes;
 target_nodes = p.target_nodes;
@@ -51,11 +51,11 @@ for n = 1:numOfTargets
 end
 
 a = p.a;
-xd = zeros(3*Nnodes,1);
+xd = zeros(3*Nlocs,1);
 for n = 1:numOfTargets
     xd(target_nodes{n}) = a*Ed(n,1);
-    xd(target_nodes{n}+Nnodes) = a*Ed(n,2);
-    xd(target_nodes{n}+2*Nnodes) = a*Ed(n,3);
+    xd(target_nodes{n}+Nlocs) = a*Ed(n,2);
+    xd(target_nodes{n}+2*Nlocs) = a*Ed(n,3);
 end
 
 % CORE ALGORITHM
@@ -72,7 +72,7 @@ if ~isempty(strfind(optType,'wls'))
     res = norm(sqrt(w).*(xd - xopt));
 % targetint = zeros(numOfTargets,1);
 %     for n=1:numOfTargets
-%         targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nnodes) , xopt(target_nodes{n}+2*Nnodes) ], 1 ) );
+%         targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
 %     end
 %     res = -sum(targetint);
 elseif ~isempty(strfind(optType,'lcmv'))
@@ -80,7 +80,7 @@ elseif ~isempty(strfind(optType,'lcmv'))
 elseif ~isempty(strfind(optType,'max-l1'))
     targetint = zeros(numOfTargets,1);
     for n=1:numOfTargets
-        targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nnodes) , xopt(target_nodes{n}+2*Nnodes) ], 1 ) );
+        targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
     end
     res = -sum(targetint);
 end

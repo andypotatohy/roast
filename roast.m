@@ -1026,7 +1026,10 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
-    elecNameOri = elecName; % back up for re-ordering solutions back to .loc file order
+    elecNameOri = elecName; % back up for re-ordering solutions back to .loc file order;
+                            % this is ugly, as .loc file has a different order of electrodes
+                            % for historical reasons;
+                            % HDE follows .loc file; ROAST follows capInfo.xls
     elecName = elecName(indInUsrInput);
     configTxt = 'leadFieldGeneration';
     
@@ -1176,13 +1179,13 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
         [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,[],hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,0);
+        visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRSPD,T2,node,elem,face,vol_all,ef_mag,ef_all,injectCurrent,hdrInfo,uniqueTag,1);
+        visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
     
 else
@@ -1229,4 +1232,4 @@ else
     
 end
 
-disp('=======================ALL DONE=======================');
+disp('==================ALL DONE ROAST=======================');

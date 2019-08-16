@@ -47,7 +47,7 @@ if nargin < 11
 end
 
 M = size(A,2);
-Nnodes = size(A,1)/3;
+Nlocs = size(A,1)/3;
 numOfROI = length(tar_nodes);
 
 
@@ -75,8 +75,8 @@ elseif strcmp(method,'unconstrained-lcmv') % unconstrained LCMV
     C = zeros(3*numOfROI,M);
     f = zeros(3*numOfROI,1);
     for n = 1:numOfROI
-        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nnodes,:),1);mean(A(tar_nodes{n}+2*Nnodes,:),1);];
-        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nnodes));mean(d(tar_nodes{n}+2*Nnodes));];
+        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nlocs,:),1);mean(A(tar_nodes{n}+2*Nlocs,:),1);];
+        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nlocs));mean(d(tar_nodes{n}+2*Nlocs));];
     end
     ATAi = inv(A'*A);
     s_opt = ATAi*C'*inv(C*ATAi*C')*f;
@@ -86,8 +86,8 @@ elseif strcmp(method,'lcmv-l1') % LCMV with L1 constraint
     C = zeros(3*numOfROI,M);
     f = zeros(3*numOfROI,1);
     for n = 1:numOfROI
-        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nnodes,:),1);mean(A(tar_nodes{n}+2*Nnodes,:),1);];
-        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nnodes));mean(d(tar_nodes{n}+2*Nnodes));];
+        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nlocs,:),1);mean(A(tar_nodes{n}+2*Nlocs,:),1);];
+        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nlocs));mean(d(tar_nodes{n}+2*Nlocs));];
     end
     status = '';
     while strcmp(status,'Solved')~=1
@@ -104,8 +104,8 @@ elseif strcmp(method,'lcmv-l1per') % LCMV with L1 constraint on individual elect
     C = zeros(3*numOfROI,M);
     f = zeros(3*numOfROI,1);
     for n = 1:numOfROI
-        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nnodes,:),1);mean(A(tar_nodes{n}+2*Nnodes,:),1);];
-        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nnodes));mean(d(tar_nodes{n}+2*Nnodes));];
+        C(((n-1)*3+1):n*3,:) = [mean(A(tar_nodes{n},:),1);mean(A(tar_nodes{n}+Nlocs,:),1);mean(A(tar_nodes{n}+2*Nlocs,:),1);];
+        f(((n-1)*3+1):n*3) = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nlocs));mean(d(tar_nodes{n}+2*Nlocs));];
     end
     status = '';
     while strcmp(status,'Solved')~=1
@@ -135,12 +135,12 @@ elseif strcmp(method,'max-l1') % maximum intensity in desired direction with L1 
         %     Cy = A(indx2,:);
         %     Cz = A(indx3,:);
         Cx = mean(A(tar_nodes{n},:),1);
-        Cy = mean(A(tar_nodes{n}+Nnodes,:),1);
-        Cz = mean(A(tar_nodes{n}+2*Nnodes,:),1);
+        Cy = mean(A(tar_nodes{n}+Nlocs,:),1);
+        Cz = mean(A(tar_nodes{n}+2*Nlocs,:),1);
         C = [Cx;Cy;Cz];
         %     C(((n-1)*3+1):n*3,:) = [Cx;Cy;Cz];
         %     f = [d(indx1);d(indx2);d(indx3)];
-        f = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nnodes));mean(d(tar_nodes{n}+2*Nnodes))];
+        f = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nlocs));mean(d(tar_nodes{n}+2*Nlocs))];
         Cf(:,n) = C'*f;
     end
     
@@ -157,10 +157,10 @@ elseif strcmp(method,'max-l1per') % maximum intensity in desired direction with 
     Cf = zeros(M,numOfROI);
     for n = 1:numOfROI
         Cx = mean(A(tar_nodes{n},:),1);
-        Cy = mean(A(tar_nodes{n}+Nnodes,:),1);
-        Cz = mean(A(tar_nodes{n}+2*Nnodes,:),1);
+        Cy = mean(A(tar_nodes{n}+Nlocs,:),1);
+        Cz = mean(A(tar_nodes{n}+2*Nlocs,:),1);
         C = [Cx;Cy;Cz];
-        f = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nnodes));mean(d(tar_nodes{n}+2*Nnodes))];
+        f = [mean(d(tar_nodes{n}));mean(d(tar_nodes{n}+Nlocs));mean(d(tar_nodes{n}+2*Nlocs))];
         Cf(:,n) = C'*f;
     end
     
