@@ -15,7 +15,6 @@ end
               variable x(n);
               maximize( sum(f'*x) );
                subject to
-                 norm(x,1)+abs(sum(x)) <= ub;
-                 norm([x; sum(x)],inf) <= ub/solElecNum;
-                 %          sum(x)==0;
+                  norm([x;-sum(x)],1) <= 2*ub;
+                  norm([x;-sum(x)],inf) <= 2*ub/solElecNum;
     cvx_end

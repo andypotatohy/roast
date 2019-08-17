@@ -11,13 +11,7 @@ else
     cvx_begin quiet
 end
               variable x(n);
-%               maximize( f'*x );
               maximize( sum(f'*x) );
                subject to
-                 norm(x,1)+abs(sum(x)) <= ub;
-%                  abs(sum(x)) <= ub;
-%                  abs(x)<=ub;
-% norm(x,1)+abs(sum(x)) <= ub;
-% norm([x; sum(x)],inf) <= ub/4;
-                 %          sum(x)==0;
+                  norm([x;-sum(x)],1) <= 2*ub;
     cvx_end

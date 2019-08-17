@@ -13,5 +13,5 @@ end
               variable x(n);
               minimize( norm(A*x-d,2) );
                subject to
-                 norm(x,1)+abs(sum(x))<= ub;
+                  norm([x;-sum(x)],1) <= 2*ub;
     cvx_end

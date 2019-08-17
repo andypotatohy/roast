@@ -13,7 +13,7 @@ function [x_opt,s_opt,status] = optimize_currents(A,d,S_max,w,tar_nodes,method,U
 %
 % d: desired electric field (3N vector where N is the number of nodes)
 %
-% S_max: maximum allowable current density
+% S_max: maximum allowable current intensity
 %
 % w: weights used for weighted least square method, also used for indexing
 % target areas
@@ -30,7 +30,7 @@ function [x_opt,s_opt,status] = optimize_currents(A,d,S_max,w,tar_nodes,method,U
 % OUTPUTS:
 % x_opt: optimized electric field (3*N vector where N is the number of nodes)
 %
-% s_opt: optimal applied current densities (M vector where M is the number of
+% s_opt: optimal applied current intensities (M vector where M is the number of
 % electrodes, excluding reference electrode)
 %
 % status: a status variable indicating if the optimization is successful or
@@ -58,19 +58,12 @@ if strcmp(method,'unconstrained-wls') % unconstrained weighted least squares
     status = 'Solved';
 elseif strcmp(method,'wls-l1') % weighted least squares with L1 constraint
     sqrtw = sqrt(w);
-    [s_opt,status] = ls_l1(S*V',U'*(sqrtw.*d),2*S_max,verbose);
+    [s_opt,status] = ls_l1(S*V',U'*(sqrtw.*d),S_max,verbose);
     x_opt = A*s_opt;
 elseif strcmp(method,'wls-l1per') % weighted least squares with L1 constraint on individual electrode
     sqrtw = sqrt(w);
     [s_opt,status] = ls_l1per(S*V',U'*(sqrtw.*d),S_max,verbose);
     x_opt = A*s_opt;
-elseif strcmp(method,'wls-l1penalty') % weighted least squares with L1 constraint as a penalty in the cost function
-                                      % individual constraint on injected current will be imposed when optimization is done
-    sqrtw = sqrt(w);
-    [s_opt,status] = ls_l1asPenalty(S*V',U'*(sqrtw.*d),0.01*2*S_max,verbose);
-    % 0.01 is the best lambda so far (it should be relied on data)
-    x_opt = A*s_opt;
-    
 elseif strcmp(method,'unconstrained-lcmv') % unconstrained LCMV
     C = zeros(3*numOfROI,M);
     f = zeros(3*numOfROI,1);
@@ -92,7 +85,7 @@ elseif strcmp(method,'lcmv-l1') % LCMV with L1 constraint
     status = '';
     while strcmp(status,'Solved')~=1
         %         fprintf('CVX optimization infeasible under LCMV with L1 constraint...reducing target intensity...\n')
-        [s_opt,status] = lcmv_l1(S*V',C,f,2*S_max,verbose);
+        [s_opt,status] = lcmv_l1(S*V',C,f,S_max,verbose);
         f = f/1.25;
     end
     if all(abs(f)<1e-5)
@@ -117,8 +110,7 @@ elseif strcmp(method,'lcmv-l1per') % LCMV with L1 constraint on individual elect
         s_opt = nan(M,1);
         %         error('CVX optimization infeasible for this target using LCMV with L1 constraint on individual electrode! Consider targeting a nearby location.')
     end
-    x_opt = A*s_opt;
-    
+    x_opt = A*s_opt;    
 elseif strcmp(method,'max-l1') % maximum intensity in desired direction with L1 constraint
     
     %     indx = find(w);
@@ -144,9 +136,7 @@ elseif strcmp(method,'max-l1') % maximum intensity in desired direction with L1 
         Cf(:,n) = C'*f;
     end
     
-    [s_opt,status] = max_l1(Cf,2*S_max,verbose);
-    % [s_opt,status] = max_l1norm(Cf,2*S_max);
-    
+    [s_opt,status] = max_l1(Cf,S_max,verbose);
     x_opt = A*s_opt;
 elseif strcmp(method,'max-l1per') % maximum intensity in desired direction with L1 constraint on individual electrode
     %     indx = find(w);
@@ -164,6 +154,6 @@ elseif strcmp(method,'max-l1per') % maximum intensity in desired direction with 
         Cf(:,n) = C'*f;
     end
     
-    [s_opt,status] = max_l1per(Cf,2*S_max,solElecNum,verbose);
+    [s_opt,status] = max_l1per(Cf,S_max,solElecNum,verbose);
     x_opt = A*s_opt;
 end

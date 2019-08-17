@@ -146,7 +146,7 @@ end
 val = mydata.img(mydata.pos(1),mydata.pos(2),mydata.pos(3));
 for i=1:3
     subplot(2,2,i);
-    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[1 1 1],'linewidth',3); hold off;
+    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[1 1 1],'linewidth',3,'markersize',12); hold off;
     axis xy; axis equal; axis tight; axis off; caxis(mydata.clim);
     title([num2str(mydata.pos(d(i,:))) ': ' num2str(val,'%.2f')])
 end

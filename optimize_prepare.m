@@ -76,7 +76,7 @@ w(nontarget_nodes) = wn;
 w = repmat(w,3,1);
 p.w = w;
 
-if strcmp(optType,'wls-l1') || strcmp(optType,'wls-l1per') || strcmp(optType,'wls-l1penalty')
+if strcmp(optType,'wls-l1') || strcmp(optType,'wls-l1per')
     [U,S,V] = svd(repmat(sqrt(w),1,size(A,2)).*A, 0);
 elseif strcmp(optType,'lcmv-l1') || strcmp(optType,'lcmv-l1per')
     [U,S,V] = svd(A,0);

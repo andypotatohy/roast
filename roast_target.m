@@ -133,8 +133,8 @@ numOfTargets = size(targetCoord,1);
 if ~exist('optType','var')
     optType = 'max-l1';
 else
-    if ~any(strcmpi(optType,{'unconstrained-wls','wls-l1','wls-l1per','wls-l1penalty','unconstrained-lcmv','lcmv-l1','lcmv-l1per','max-l1','max-l1per'}))
-        error('Supported targeting optimizations are: ''unconstrained-wls'',''wls-l1'',''wls-l1per'',''wls-l1penalty'',''unconstrained-lcmv'',''lcmv-l1'',''lcmv-l1per'',''max-l1'' and ''max-l1per''.');
+    if ~any(strcmpi(optType,{'unconstrained-wls','wls-l1','wls-l1per','unconstrained-lcmv','lcmv-l1','lcmv-l1per','max-l1','max-l1per'}))
+        error('Supported targeting optimizations are: ''unconstrained-wls'',''wls-l1'',''wls-l1per'',''unconstrained-lcmv'',''lcmv-l1'',''lcmv-l1per'',''max-l1'' and ''max-l1per''.');
     end
 end
 
@@ -215,7 +215,7 @@ else
 end
 
 if ~exist('targetRadius','var')
-    targetRadius = 3;
+    targetRadius = 8;
 else
     if targetRadius<=0 || mod(targetRadius,1)~=0
         error('Unrecognized option value. Please enter positive integer value for option ''targetRadius''.');
@@ -224,7 +224,7 @@ end
 
 if ~exist('k','var')
     if ~isempty(strfind(lower(optType),'wls'))
-        k = 0.8;
+        k = 0.02; % you may want to decrease k if you want multi-focal targeting
     else
         k = [];
     end
