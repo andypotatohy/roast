@@ -39,7 +39,7 @@ distances_to_target = zeros(Nlocs,numOfTargets);
 for n = 1:numOfTargets
     tmp = locs - repmat(targetCoord(n,:),size(locs,1),1);
     distances_to_target(:,n) = sqrt(sum(tmp.*tmp,2));
-    %     [node_distances(:,n),sorted_nodes(:,n)] = sort(distances_to_target(:,n));
+%         [node_distances(:,n),sorted_nodes(:,n)] = sort(distances_to_target(:,n));
 end
 
 targetRadius = p.targetRadius;
@@ -85,4 +85,6 @@ else
 end
 p.U = U; p.S = S; p.V = V;
 
-% fprintf('Preprocessing done! Ready for optimization!\n');
+% p.node_distances = node_distances;
+% p.sorted_nodes = sorted_nodes;
+% % fprintf('Preprocessing done! Ready for optimization!\n');

@@ -47,9 +47,9 @@ if strcmp(status,'Failed')
     %     fprintf('\n\nOptimization COMPLETED successfully!\n\n')
 end
 
-% OUTPUT RESULTS
+% % OUTPUT RESULTS
 % xoptmag = sqrt(xopt(1:Nlocs).^2+xopt(Nlocs+1:2*Nlocs).^2+xopt(2*Nlocs+1:3*Nlocs).^2);
-
+% 
 % directivity = zeros(Nlocs,numOfTargets);
 % crad = zeros(numOfTargets,1);
 % for n = 1:numOfTargets
@@ -66,19 +66,18 @@ r.sopt = sopt;
 % r.xopt = xopt;
 % r.xoptmag = xoptmag;
 
-% r.directivity = directivity;
+% % r.directivity = directivity;
 % r.crad = crad;
-
-% r.targetintraw = xoptmag(sorted_nodes(1,:));
-% r.targetint = dot(Ed,reshape([xopt(sorted_nodes(1,:)); xopt(sorted_nodes(1,:)+Nlocs);xopt(sorted_nodes(1,:)+2*Nlocs)],numOfTargets,3),2); % intensity in specified direction
-
-% if exist('target_nodes','var')
-targetintraw = zeros(numOfTargets,1);
-targetint = zeros(numOfTargets,1);
-for n=1:numOfTargets
-    targetintraw(n) =  norm ( mean( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
-    targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
-end
-r.targetintraw = targetintraw;
-r.targetint = targetint;
+% 
+% % r.targetintraw = xoptmag(sorted_nodes(1,:));
+% % r.targetint = dot(Ed,reshape([xopt(sorted_nodes(1,:)); xopt(sorted_nodes(1,:)+Nlocs);xopt(sorted_nodes(1,:)+2*Nlocs)],numOfTargets,3),2); % intensity in specified direction
+% 
+% % if exist('target_nodes','var')
+% targetintraw = zeros(numOfTargets,1);
+% targetint = zeros(numOfTargets,1);
+% for n=1:numOfTargets
+%     targetintraw(n) =  norm ( mean( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
+%     targetint(n) = dot( Ed(n,:) , mean ( [ xopt(target_nodes{n}) , xopt(target_nodes{n}+Nlocs) , xopt(target_nodes{n}+2*Nlocs) ], 1 ) );
 % end
+% r.targetintraw = targetintraw;
+% r.targetint = targetint;
