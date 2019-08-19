@@ -1,5 +1,5 @@
-function r = optimize(p,A)
-% r = optimize(p,A)
+function sopt = optimize(p,A)
+% sopt = optimize(p,A)
 %
 % Gateway function for the tDCS targeting technique. Refer to the following
 % paper for details: J.P. Dmochowski, A. Datta, M. Bikson, Y. Su, L.C. Parra
@@ -39,7 +39,7 @@ end
 
 % CORE ALGORITHM
 fprintf('============================\nPerforming optimization...\n============================\n')
-[xopt,sopt,status] = optimize_currents(A,xd,I_max,w,target_nodes,optType,U,S,V,elecNum,0);
+[~,sopt,status] = optimize_currents(A,xd,I_max,w,target_nodes,optType,U,S,V,elecNum,0);
 if strcmp(status,'Failed')
     warning('Warn:convert',...
         'Optimization FAILED!!\n Program will continue but results may be INACCURATE!\n');
@@ -62,7 +62,7 @@ end
 %     end
 % end
 
-r.sopt = sopt;
+% r.sopt = sopt;
 % r.xopt = xopt;
 % r.xoptmag = xoptmag;
 

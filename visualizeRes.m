@@ -186,7 +186,7 @@ else
     color(C(:,1)) = sqrt(sum(C(:,2:4).^2,2));
     dataShow = [node(:,1:3) color];
     
-    figName = ['Electric field in Simulation: ' uniTag];
+    figName = ['Electric field in Targeting: ' uniTag];
     figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
     set(gcf,'color','w');
     colormap(jet);
@@ -241,7 +241,7 @@ if isRoast
 else
     
     for i=1:size(targetCoord,1)
-        figName = ['Electric field in Simulation: ' uniTag];
+        figName = ['Electric field in Targeting: ' uniTag];
         sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
     end
 end

@@ -42,25 +42,33 @@ if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
     load(optionFile,'opt');
+    optRoast = opt;
 end
 
-if ~strcmp(opt.configTxt,'leadFieldGeneration')
+if ~strcmp(optRoast.configTxt,'leadFieldGeneration')
     error(['Simulation ' simTag ' was NOT run for generating the lead field for subject ' subj '. roast_target() cannot work without a proper lead field. Please run ROAST with ''leadField'' as the recipe first.']);
 end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if opt.resamp
+if optRoast.resamp
     subjRS = [dirname filesep baseFilename '_1mm' ext];
 else
     subjRS = subj;
 end
 
-if opt.zeroPad>0
+if optRoast.zeroPad>0
     [dirname2,baseFilename2,ext2] = fileparts(subjRS);
-    subjRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(opt.zeroPad) ext2];
+    subjRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
     %     subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
     subjRSPD = subjRS;
+end
+
+meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
+if ~exist(meshFile,'file')
+    error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
+else
+    load(meshFile,'node','elem','face');
 end
 
 [~,baseFilenameRSPD] = fileparts(subjRSPD);
@@ -108,9 +116,12 @@ while indArg <= length(varargin)
             indArg = indArg+2;
         case 'a'
             a = varargin{indArg+1};
-            indArg = indArg+2;        
+            indArg = indArg+2;
+        case 'targetingtag'
+            tarTag = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''coordType'', ''optType'', ''orient'', ''elecNum'', ''targetRadius'', ''k'' and ''a''.');
+            error('Supported options are: ''coordType'', ''optType'', ''orient'', ''elecNum'', ''targetRadius'', ''k'', ''a'' and ''targetingtag''.');
     end
 end
 
@@ -192,8 +203,8 @@ if iscell(orient)
     for i=1:numOfTargets
         if ischar(orient{i}) && ismember(lower(orient{i}),{'radial-in','radial-out','optimal'})
             needOrigin = 1;
+            break;
         end
-        break;
     end
 end
 
@@ -260,8 +271,10 @@ else
     end    
 end
 
+if ~exist('tarTag','var'), tarTag = []; end
+
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if isempty(opt.T2)
+if isempty(optRoast.T2)
     baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
 else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
@@ -279,10 +292,13 @@ if strcmpi(coordType,'mni') || needOrigin
 end
 
 if strcmpi(coordType,'mni')
+    targetCoordMNI = targetCoord;
     for i=1:numOfTargets
         temp = mni2mri*[targetCoord(i,:) 1]';
         targetCoord(i,:) = round(temp(1:3)');
     end
+else
+    targetCoordMNI = [];
 end
 if any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
         any(targetCoord(:,2)>hdrInfo.dim(2)) || any(targetCoord(:,3)>hdrInfo.dim(3))
@@ -300,7 +316,7 @@ p.I_max = 2; % 2 mA
 p.targetCoord = targetCoord;
 p.optType = lower(optType);
 p.elecNum = elecNum;
-p.targetRadius = targetRadius;
+p.targetRadius = targetRadius/mean(hdrInfo.pixdim); % to voxel space
 p.k = k;
 p.a = a;
 
@@ -346,79 +362,114 @@ for i=1:size(u0,1)
 end
 p.u = u0;
 
+options = struct('targetCoord',targetCoord,'targetCoordMNI',targetCoordMNI,'optType',optType,'elecNum',elecNum,'targetRadius',targetRadius,'k',k,'a',a,'u0',u0,'uniqueTag',tarTag,'roastTag',simTag);
+options.orient = orient; % make sure options is a 1x1 struct
+
 % log tracking here
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
-if ~exist(meshFile,'file')
-    error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
+Sopt = dir([dirname filesep baseFilename '_*_targetOptions.mat']);
+if isempty(Sopt)
+    options = writeRoastLog(subj,options,'target');
 else
-    load(meshFile,'node','elem','face');
+    isNew = zeros(length(Sopt),1);
+    for i=1:length(Sopt)
+        load([dirname filesep Sopt(i).name],'opt');
+        isNew(i) = isNewOptions(options,opt);
+    end
+    if all(isNew)
+        options = writeRoastLog(subj,options,'target');
+    else
+        load([dirname filesep Sopt(find(~isNew)).name],'opt');
+        if ~isempty(options.uniqueTag)
+            warning(['The targeting with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
+        end
+        options.uniqueTag = opt.uniqueTag;
+    end
 end
+uniqueTag = options.uniqueTag;
 
-
-if 1 % not done target
-
-resFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
-if ~exist(resFile,'file')
-    error(['Lead field not found for subject ' subj ' under simulation tag ' simTag '. Please check if you ran ROAST with ''leadField'' as the recipe first.']);
+fprintf('\n');
+disp('======================================================')
+if ~strcmp(baseFilename,'nyhead')
+    disp(['ROAST-TARGET ' subj])
 else
-    disp('Loading the lead field for targeting...');
-    load(resFile,'A_all');
+    disp('ROAST-TARGET New York head')
 end
-
-% extract A matrix corresponding to the brain
-indBrain = elem((elem(:,5)==1 | elem(:,5)==2),1:4); indBrain = unique(indBrain(:));
-A = A_all(indBrain,:,:);
-
-% convert pseudo-world coordinates back to voxel coordinates for targeting,
-% as targeting code works in the voxel space
-nodeV = zeros(size(node,1),3);
-for i=1:3, nodeV(:,i) = node(:,i)/hdrInfo.pixdim(i); end
-locs = nodeV(indBrain,1:3);
-
-isNaNinA = isnan(sum(sum(A,3),2)); % make sure no NaN is in matrix A or in locs
-if any(isNaNinA), A = A(~isNaNinA,:,:); locs = locs(~isNaNinA,:); end
-
-Nlocs = size(locs,1);
-p.Nlocs = Nlocs;
-
-Nelec = size(A,3);
-A = reshape(A,Nlocs*3,Nelec);
-
-% start targeting code
-p = optimize_prepare(p,A,locs);
-
-if ismember('optimal',lower(orient))
-    u = zeros(numOfTargets,3);
-    t0 = zeros(numOfTargets,2);
-    for i=1:numOfTargets
-        [t0(i,1),t0(i,2)] = cart2sph(u0(i,1),u0(i,2),u0(i,3));
-        t0(i,2) = pi/2-t0(i,2);
-    end
-    fun = @(t)optimize_anon(p,t,A);
-    fprintf('============================\nSearching for the optimal orientation...\n')
-    % fprintf('with optimization performed inside...\n')
-    % fprintf('Below only outputs outer optimization info:\n============================\n')
-    warning('off','MATLAB:optim:fminunc:SwitchingMethod');
-    t_opt = fminunc(fun,t0,optimoptions('fminunc','display','iter'));
-    for i=1:numOfTargets
-        u(i,:) = [cos(t_opt(i,1))*sin(t_opt(i,2)) sin(t_opt(i,1))*sin(t_opt(i,2)) cos(t_opt(i,2))];
-    end
-    p.u = u;
+if ~isempty(targetCoordMNI)
+    disp('AT MNI COORDINATES:')
+    for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoordMNI(i,1),targetCoordMNI(i,2),targetCoordMNI(i,3)); end
+else
+    disp('AT VOXEL COORDINATES:')
+    for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoord(i,1),targetCoord(i,2),targetCoord(i,3)); end
 end
+disp('...using targeting options saved in:')
+disp([dirname filesep baseFilename '_targetLog,'])
+disp(['under tag: ' uniqueTag])
+disp('======================================================')
+fprintf('\n\n');
 
-r = optimize(p,A);
-mon = [r.sopt; -sum(r.sopt)]; % Ref electrode Iz is in the last one in .loc file
-
-disp('Optimization DONE!')
-disp('============================')
-fprintf('\n')
-
+if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
+    
+    leadFieldFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
+    if ~exist(leadFieldFile,'file')
+        error(['Lead field not found for subject ' subj ' under simulation tag ' simTag '. Please check if you ran ROAST with ''leadField'' as the recipe first.']);
+    else
+        disp('Loading the lead field for targeting...');
+        load(leadFieldFile,'A_all');
+    end
+    
+    % extract A matrix corresponding to the brain
+    indBrain = elem((elem(:,5)==1 | elem(:,5)==2),1:4); indBrain = unique(indBrain(:));
+    A = A_all(indBrain,:,:);
+    
+    % convert pseudo-world coordinates back to voxel coordinates for targeting,
+    % as targeting code works in the voxel space
+    nodeV = zeros(size(node,1),3);
+    for i=1:3, nodeV(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+    locs = nodeV(indBrain,1:3);
+    
+    isNaNinA = isnan(sum(sum(A,3),2)); % make sure no NaN is in matrix A or in locs
+    if any(isNaNinA), A = A(~isNaNinA,:,:); locs = locs(~isNaNinA,:); end
+    
+    Nlocs = size(locs,1);
+    p.Nlocs = Nlocs;
+    
+    Nelec = size(A,3);
+    A = reshape(A,Nlocs*3,Nelec);
+    
+    % start targeting code
+    p = optimize_prepare(p,A,locs);
+    
+    if iscell(orient) && ismember('optimal',lower(orient(1)))
+        u = zeros(numOfTargets,3);
+        t0 = zeros(numOfTargets,2);
+        for i=1:numOfTargets
+            [t0(i,1),t0(i,2)] = cart2sph(u0(i,1),u0(i,2),u0(i,3));
+            t0(i,2) = pi/2-t0(i,2);
+        end
+        fun = @(t)optimize_anon(p,t,A);
+        fprintf('============================\nSearching for the optimal orientation...\n')
+        % fprintf('with optimization performed inside...\n')
+        % fprintf('Below only outputs outer optimization info:\n============================\n')
+        warning('off','MATLAB:optim:fminunc:SwitchingMethod');
+        t_opt = fminunc(fun,t0,optimoptions('fminunc','display','iter'));
+        for i=1:numOfTargets
+            u(i,:) = [cos(t_opt(i,1))*sin(t_opt(i,2)) sin(t_opt(i,1))*sin(t_opt(i,2)) cos(t_opt(i,2))];
+        end
+        p.u = u;
+    end
+    
+    I_opt = optimize(p,A);
+    mon = [I_opt; -sum(I_opt)]; % Ref electrode Iz is in the last one in .loc file
+    r.mon = mon;
+    
+    disp('Optimization DONE!')
+    
 else
     
-%     load r
-
+    disp(['The targeting under tag ''' uniqueTag ''' has run before. Loading the results for visualization...'])
+    load([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'r');
+    mon = r.mon;
+    
 end
 
 fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
@@ -426,50 +477,61 @@ elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',
 elecPara = struct('capType','1010');
 
 indMonElec = find(abs(mon)>1e-3);
+fprintf('============================\n\n')
 disp('Electrodes used are:')
 for i=1:length(indMonElec), fprintf('%s (%.3f mA)\n',elecName{indMonElec(i)},mon(indMonElec(i))); end, fprintf('\n');
 
-if 1 % not done target
-% compute the optimized E-field
-disp('Computing the optimized electric field...');
-[xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
-r.ef_all = zeros([hdrInfo.dim 3]);
-isNaNinA = isnan(sum(sum(A_all,3),2)); % handle NaN properly
-r.xopt = zeros(sum(~isNaNinA),4);
-r.xopt(:,1) = find(~isNaNinA);
-for i=1:size(A_all,2), r.xopt(:,i+1) = squeeze(A_all(~isNaNinA,i,:))*r.sopt; end
+if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
+    
+    % compute the optimized E-field
+    disp('Computing the optimized electric field...');
+    [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
+    r.ef_all = zeros([hdrInfo.dim 3]);
+    isNaNinA = isnan(sum(sum(A_all,3),2)); % handle NaN properly
+    r.xopt = zeros(sum(~isNaNinA),4);
+    r.xopt(:,1) = find(~isNaNinA);
+    for i=1:size(A_all,2), r.xopt(:,i+1) = squeeze(A_all(~isNaNinA,i,:))*I_opt; end
+    
+    F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,2));
+    r.ef_all(:,:,:,1) = F(xi,yi,zi);
+    F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,3));
+    r.ef_all(:,:,:,2) = F(xi,yi,zi);
+    F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,4));
+    r.ef_all(:,:,:,3) = F(xi,yi,zi);
+    r.ef_mag = sqrt(sum(r.ef_all.^2,4));
+    
+    % output intensities and focalities at targets
+    masksFile = [dirname filesep baseFilenameRSPD '_masks.nii'];
+    if ~exist(masksFile,'file')
+        error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
+    else
+        masks = load_untouch_nii(masksFile);
+    end
+    brain = (masks.img==1 | masks.img==2);
+    nan_mask_brain = nan(size(brain));
+    nan_mask_brain(find(brain)) = 1;
+    
+    r.targetMag = zeros(numOfTargets,1); r.targetInt = zeros(numOfTargets,1);
+    r.targetMagFoc = zeros(numOfTargets,1);
+    ef_mag = r.ef_mag.*nan_mask_brain; ef_magTemp = ef_mag(~isnan(ef_mag(:)));
+    for i=1:numOfTargets
+        r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
+        r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean(hdrInfo.pixdim) / 10; % in cm
+        r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
+    end
+    
+    r.targetCoord = targetCoord;
 
-F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,2));
-r.ef_all(:,:,:,1) = F(xi,yi,zi);
-F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,3));
-r.ef_all(:,:,:,2) = F(xi,yi,zi);
-F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,4));
-r.ef_all(:,:,:,3) = F(xi,yi,zi);
-r.ef_mag = sqrt(sum(r.ef_all.^2,4));
-
-% output intensities and focalities at targets
-masksFile = [dirname filesep baseFilenameRSPD '_masks.nii'];
-if ~exist(masksFile,'file')
-    error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
-else
-    masks = load_untouch_nii(masksFile);
-end
-brain = (masks.img==1 | masks.img==2);
-nan_mask_brain = nan(size(brain));
-nan_mask_brain(find(brain)) = 1;
-
-r.targetMag = zeros(numOfTargets,1); r.targetInt = zeros(numOfTargets,1);
-r.targetMagFoc = zeros(numOfTargets,1);
-ef_mag = r.ef_mag.*nan_mask_brain; ef_magTemp = ef_mag(~isnan(ef_mag(:)));
-for i=1:numOfTargets
-    r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
-    r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean(hdrInfo.pixdim) / 10; % in cm
-    r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
-end
-
-r.targetCoord = targetCoord;
-% save r
-% save('','r','-v7.3')
+    % also record the results as text in the log file
+    montageTxt = [];
+    for i=1:length(indMonElec), montageTxt = [montageTxt elecName{indMonElec(i)} ' (' num2str(mon(indMonElec(i)),'%.3f') ' mA), ']; end
+    montageTxt = montageTxt(1:end-2);
+    r.montageTxt = montageTxt;
+    writeRoastLog(subj,r,'target-results');
+    
+    % save r
+    save([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'r','-v7.3');
+    
 end
 
 % visualize the results
@@ -478,17 +540,17 @@ cm_mon = colormap(jet(64));
 if strcmpi(optType,'max-l1') || strcmpi(optType,'max-l1per')
     cm_mon(3:62,:) = ones(60,3);
 end
-figure('Name',['Montage in Targeting: ' simTag]);
+figure('Name',['Montage in Targeting: ' uniqueTag]);
 mytopoplot(mon,'./elec72.loc','numcontour',0,'plotrad',0.9,'shading','flat','gridscale',1000,'whitebk','off','colormap',cm_mon);
 hc = colorbar; set(hc,'FontSize',18,'YAxisLocation','right');
 title(hc,'Injected current (mA)','FontSize',18);
 caxis([min(mon(indMonElec)) max(mon(indMonElec))]);
 drawnow
 
-% process electrodes to make order consistent (A and r.sopt follow .loc;
+% process electrodes to make order consistent (A and I_opt follow .loc;
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRSPD,opt.T2,node,elem,face,mon(indInUsrInput),hdrInfo,simTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+visualizeRes(subj,subjRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
-disp('==================ALL DONE ROAST TARGET=======================');
+disp('==================ALL DONE ROAST-TARGET=======================');

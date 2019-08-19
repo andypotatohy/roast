@@ -1058,7 +1058,7 @@ if isempty(dirname), dirname = pwd; end
 
 Sopt = dir([dirname filesep baseFilename '_*_options.mat']);
 if isempty(Sopt)
-    options = writeRoastLog(subj,options);
+    options = writeRoastLog(subj,options,'roast');
 else
     isNew = zeros(length(Sopt),1);
     for i=1:length(Sopt)
@@ -1066,9 +1066,12 @@ else
         isNew(i) = isNewOptions(options,opt);
     end
     if all(isNew)
-        options = writeRoastLog(subj,options);
+        options = writeRoastLog(subj,options,'roast');
     else
         load([dirname filesep Sopt(find(~isNew)).name],'opt');
+        if ~isempty(options.uniqueTag)
+            warning(['The simulation with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
+        end
         options.uniqueTag = opt.uniqueTag;
     end
 end
