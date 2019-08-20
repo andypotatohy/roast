@@ -87,6 +87,9 @@ end
 if size(targetCoord,2) ~= 3
     error('Unrecognized format of target coordinates. Please enter as [x y z].');
 end
+if size(unique(targetCoord,'rows'),1) < size(targetCoord,1)
+    error('Duplicated target locations. Please make sure each target is at a different location in the brain.');
+end
 
 % take in user-specified options
 if mod(length(varargin),2)~=0
@@ -373,13 +376,13 @@ else
     isNew = zeros(length(Sopt),1);
     for i=1:length(Sopt)
         load([dirname filesep Sopt(i).name],'opt');
-        isNew(i) = isNewOptions(options,opt);
+        isNew(i) = isNewOptions(options,opt,'target');
     end
     if all(isNew)
         options = writeRoastLog(subj,options,'target');
     else
         load([dirname filesep Sopt(find(~isNew)).name],'opt');
-        if ~isempty(options.uniqueTag)
+        if ~isempty(options.uniqueTag) && ~strcmp(options.uniqueTag,opt.uniqueTag)
             warning(['The targeting with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
         end
         options.uniqueTag = opt.uniqueTag;

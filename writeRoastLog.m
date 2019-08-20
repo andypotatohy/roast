@@ -1,7 +1,7 @@
 function opt = writeRoastLog(subject,opt,fun)
 % opt = writeRoastLog(subject,opt,fun)
 %
-% Write simulation log.
+% Write logs for roast() and roast_target().
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
@@ -230,8 +230,8 @@ switch fun
         
         fprintf(fid,'target radius (in mm):\t%d\n',opt.targetRadius);
         
-        fprintf(fid,'k:\t%.3f\n',opt.k);
-        fprintf(fid,'a:\t%.3f\n',opt.a);
+        fprintf(fid,'k (only for wls):\t%.3f\n',opt.k);
+        fprintf(fid,'a (only for lcmv):\t%.3f\n',opt.a);
         
         fclose(fid);
         
