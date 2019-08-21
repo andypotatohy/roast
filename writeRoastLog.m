@@ -230,8 +230,21 @@ switch fun
         
         fprintf(fid,'target radius (in mm):\t%d\n',opt.targetRadius);
         
-        fprintf(fid,'k (only for wls):\t%.3f\n',opt.k);
-        fprintf(fid,'a (only for lcmv):\t%.3f\n',opt.a);
+        fprintf(fid,'k (only for wls):\t');
+        if ~isempty(opt.k)
+            fprintf(fid,'%.3f',opt.k);
+        else
+            fprintf(fid,'N/A');
+        end
+        fprintf(fid,'\n');
+        
+        fprintf(fid,'a (only for lcmv):\t');
+        if strcmpi(opt.optType,'lcmv-l1') || strcmpi(opt.optType,'lcmv-l1per')
+            fprintf(fid,'%.3f',opt.a);
+        else
+            fprintf(fid,'N/A');
+        end
+        fprintf(fid,'\n');        
         
         fclose(fid);
         

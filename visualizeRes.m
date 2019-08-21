@@ -180,7 +180,7 @@ else
     
     indNode_elecFace = face(ismember(face(:,4),numOfTissue+numOfGel+indMonElec),1:3);
     indNode_elecElm = elem(ismember(elem(:,5),numOfTissue+numOfGel+indMonElec),1:4);
-    inCurrentRange = [min(inCurrent(indMonElec)) max(inCurrent(indMonElec))];
+    inCurrentRange = [min(inCurrent) max(inCurrent)];
     
     color = nan(size(node,1),1);
     color(C(:,1)) = sqrt(sum(C(:,2:4).^2,2));

@@ -465,11 +465,20 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file
     mon = [I_opt; -sum(I_opt)]; % Ref electrode Iz is in the last one in .loc file
     r.mon = mon;
     
-    disp('Optimization DONE!')
-    
+    disp('Optimization DONE!');
+    disp('======================================================');
+    disp('Results are saved as:');
+    disp([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat']);
+    disp('======================================================');
+    disp('Stats at target locations are also saved in the log file: ');
+    disp([dirname filesep baseFilename '_targetLog,']);
+    disp(['under tag: ' uniqueTag]);
+        
 else
     
-    disp(['The targeting under tag ''' uniqueTag ''' has run before. Loading the results for visualization...'])
+    disp(['The targeting under tag ''' uniqueTag ''' has been run before']);
+    disp([' and saved in ' dirname filesep baseFilename '_' uniqueTag '_targetResult.mat']);
+    disp('Loading the results for visualization...');
     load([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'r');
     mon = r.mon;
     
@@ -543,11 +552,11 @@ cm_mon = colormap(jet(64));
 if strcmpi(optType,'max-l1') || strcmpi(optType,'max-l1per')
     cm_mon(3:62,:) = ones(60,3);
 end
-figure('Name',['Montage in Targeting: ' uniqueTag]);
+figure('Name',['Montage in Targeting: ' uniqueTag],'NumberTitle','off');
 mytopoplot(mon,'./elec72.loc','numcontour',0,'plotrad',0.9,'shading','flat','gridscale',1000,'whitebk','off','colormap',cm_mon);
 hc = colorbar; set(hc,'FontSize',18,'YAxisLocation','right');
 title(hc,'Injected current (mA)','FontSize',18);
-caxis([min(mon(indMonElec)) max(mon(indMonElec))]);
+caxis([min(mon) max(mon)]);
 drawnow
 
 % process electrodes to make order consistent (A and I_opt follow .loc;
