@@ -486,7 +486,7 @@ else
     for i=1:size(r.ef_all,4), r.ef_all(:,:,:,i) = r.ef_all(:,:,:,i).*nan_mask; end
     r.ef_mag = r.ef_mag.*nan_mask;
     for i=1:size(r.targetCoord,1)
-        figName = ['Electric field in Targeting: ' tarTag];
+        figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' tarTag];
         sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all); drawnow
     end
 end

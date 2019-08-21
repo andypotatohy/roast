@@ -241,7 +241,7 @@ if isRoast
 else
     
     for i=1:size(targetCoord,1)
-        figName = ['Electric field in Targeting: ' uniTag];
+        figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' uniTag];
         sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
     end
 end

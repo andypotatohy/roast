@@ -1,8 +1,8 @@
-function sliceshow(img,pos,color,clim,label,figName,vecImg)
-% sliceshow(img,pos,color,clim,label,figName,vecImg)
+function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
+% sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
 %
 % sliceshow displays a 3D volume allowing the user to click on different
-% slices. If the last variable "vecImg" is specified, sliceshow will also
+% slices. If the variable "vecImg" is specified, sliceshow will also
 % overlay a 3D vectorial field represented by arrows on the slices.
 %
 % If pos is given as input, then the function will start the display with
@@ -15,10 +15,16 @@ function sliceshow(img,pos,color,clim,label,figName,vecImg)
 %
 % If label is given as input, then a colorbar with that label is added.
 % 
+% figName gives a name to the figure window.
+% 
 % vecImg is the 3D vectorial field, e.g. an electric field.
+% 
+% mri2mni is the mapping from MRI voxel space to the MNI space, so
+% sliceshow can display both the voxel and MNI coordinates.
 %
 % (c) Nov 02, 2017, Lucas C Parra
 % (c) June 29, 2018, Yu (Andy) Huang
+% (c) August 2019, Yu (Andy) Huang
 
 if nargin<1 || isempty(img)
     error('At least give us a volume to display')
@@ -71,6 +77,15 @@ else
     mydata.vecImg = vecImg;
     [xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
     mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
+end
+
+if nargin<8 || isempty(mri2mni)
+    mydata.mri2mni = [];
+else
+    if any(size(mri2mni)~=[4 4]) || any(mri2mni(4,:)~=[0 0 0 1])
+        error('Unrecognized format of the voxel-to-MNI mapping.');
+    end
+    mydata.mri2mni = mri2mni;
 end
 
 % link the calback function to new figure
@@ -149,6 +164,14 @@ for i=1:3
     hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',[1 1 1],'linewidth',3,'markersize',12); hold off;
     axis xy; axis equal; axis tight; axis off; caxis(mydata.clim);
     title([num2str(mydata.pos(d(i,:))) ': ' num2str(val,'%.2f')])
+end
+
+if ~isempty(mydata.mri2mni)
+    h(4) = subplot(2,2,4); axis off; caxis(mydata.clim);
+    mniCoord = mydata.mri2mni*[mydata.pos 1]';
+    coordInfo = {['Voxel: ' num2str(mydata.pos(1)) ',' num2str(mydata.pos(2)) ',' num2str(mydata.pos(3))],...
+        ['MNI: ' num2str(mniCoord(1)) ',' num2str(mniCoord(2)) ',' num2str(mniCoord(3))]};
+    title(h(4), coordInfo,'FontSize',18);
 end
 
 if ~isempty(mydata.label)
