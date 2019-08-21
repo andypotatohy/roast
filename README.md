@@ -454,7 +454,9 @@ on how to use this function, type `help reviewRes`.
 
 Please read the [Getting started](#getting-started) and the [Synopsis](#synopsis) sections first. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) for quick reference. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
 
-If you still get stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions and share your experiences there.
+If ROAST crashes, first check if there are any warning messages output in the command window. If there are, follow the suggestions in the warning messages. This will usually fix the problems and let you run through to get your model.
+
+If you are still stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions and share your experiences there.
 
 ## Acknowledgements
 

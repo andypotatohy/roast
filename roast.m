@@ -427,14 +427,6 @@ if ~strcmpi(subj,'example/nyhead.nii') && ~exist(subj,'file')
     error(['The subject MRI you provided ' subj ' does not exist.']);
 end
 
-if ~strcmpi(subj,'example/nyhead.nii')
-    t1Data = load_untouch_nii(subj);
-    if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
-        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM Display function to fix the header.');
-    end
-    % check if bad MRI header
-end
-
 if nargin<2 || isempty(recipe)
     recipe = {'Fp1',1,'P4',-1};
 end
@@ -952,6 +944,12 @@ end
 % preprocess MRI data
 if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
+    t1Data = load_untouch_nii(subj);
+    if t1Data.hdr.hist.qoffset_x == 0 && t1Data.hdr.hist.srow_x(4)==0
+        error('The MRI has a bad header. SPM cannot generate the segmentation properly for MRI with bad header. You can manually align the MRI in SPM Display function to fix the header.');
+    end
+    % check if bad MRI header
+
     if any(t1Data.hdr.dime.pixdim(2:4)<0.8) && ~doResamp
         warning('The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling process more computationally expensive and thus slower. If you wish to run faster using just 1-mm model, you can ask ROAST to re-sample the MRI into 1 mm first, by turning on the ''resampling'' option.');
     end
@@ -961,6 +959,9 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
         warning('The MRI has anisotropic resolution. It is highly recommended that you turn on the ''resampling'' option, as the electrode size will not be exact if the model is built from an MRI with anisotropic resolution.');
     end
     % check if anisotropic resolution MRI
+    
+    convertToRAS(t1Data,subj);
+    % check if in non-RAS orientation, and if yes, put it into RAS
     
     if doResamp
         subjRS = resampToOneMM(subj);
