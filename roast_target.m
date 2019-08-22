@@ -496,7 +496,7 @@ for i=1:length(indMonElec), fprintf('%s (%.3f mA)\n',elecName{indMonElec(i)},mon
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
     
     % compute the optimized E-field
-    disp('Computing the optimized electric field...');
+    disp('Computing the optimized electric field (this may take a while) ...');
     [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
     r.ef_all = zeros([hdrInfo.dim 3]);
     isNaNinA = isnan(sum(sum(A_all,3),2)); % handle NaN properly

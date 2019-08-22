@@ -169,6 +169,20 @@ else
     subjRSPD = subjRS;
 end
 
+[~,baseFilenameRSPD] = fileparts(subjRSPD);
+if isempty(optRoast.T2)
+    mappingFile = [dirname filesep baseFilenameRSPD '_T1orT2_seg8.mat'];
+else
+    mappingFile = [dirname filesep baseFilenameRSPD '_T1andT2_seg8.mat'];
+end
+if ~exist(mappingFile,'file')
+    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
+else
+    load(mappingFile,'image','Affine');
+    mri2mni = Affine*image(1).mat;
+    % mapping from MRI voxel space to MNI space
+end
+
 if isRoast
     
     lp = strfind(optRoast.configTxt,'(');
@@ -185,7 +199,7 @@ if isRoast
         if ~exist(subjRSPD,'file')
             error(['The subject MRI you provided ' subjRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
         else
-            data = load_untouch_nii(subjRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
+            data = load_untouch_nii(subjRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         end
         
         if ~isempty(optRoast.T2) %T2 specified
@@ -193,7 +207,7 @@ if isRoast
                 error(['T2 file ' optRoast.T2 ' does not exist. You used that to run ROAST but maybe later deleted it.']);
             else
                 data = load_untouch_nii(optRoast.T2);
-                sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
+                sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
             end
         end
     else
@@ -211,7 +225,6 @@ else
     
 end
 
-[~,baseFilenameRSPD] = fileparts(subjRSPD);
 if isempty(optRoast.T2)
     masksFile = [dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'];
 else
@@ -245,7 +258,7 @@ if isRoast
     allMaskShow = masks.img;
     allMaskShow(gel.img>0) = numOfTissue + 1;
     allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
     drawnow
     
 else
@@ -475,11 +488,11 @@ if isRoast
     end
     
     figName = ['Voltage in Simulation: ' simTag];
-    sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.']); drawnow
+    sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni); drawnow
     
     figName = ['Electric field in Simulation: ' simTag];
     for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
-    sliceshow(ef_mag.*nan_mask,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all); drawnow
+    sliceshow(ef_mag.*nan_mask,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
     
 else
     
@@ -487,6 +500,6 @@ else
     r.ef_mag = r.ef_mag.*nan_mask;
     for i=1:size(r.targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' tarTag];
-        sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all); drawnow
+        sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all,mri2mni); drawnow
     end
 end

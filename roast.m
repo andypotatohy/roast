@@ -827,7 +827,8 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
-    meshOpt = struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10);
+    meshOpt = struct('radbound',3,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',5);
+    % for lead field generation, use higher-resolution mesh
     
 end
 
@@ -1094,7 +1095,7 @@ disp('======================================================')
 fprintf('\n\n');
 
 if all(strcmpi(recipe,'leadfield')) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
-    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
+    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes and mesh resolution are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
     doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
     if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
 end

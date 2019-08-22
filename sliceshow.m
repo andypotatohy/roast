@@ -168,10 +168,10 @@ end
 
 if ~isempty(mydata.mri2mni)
     h(4) = subplot(2,2,4); axis off; caxis(mydata.clim);
-    mniCoord = mydata.mri2mni*[mydata.pos 1]';
+    mniCoord = round(mydata.mri2mni*[mydata.pos 1]');
     coordInfo = {['Voxel: ' num2str(mydata.pos(1)) ',' num2str(mydata.pos(2)) ',' num2str(mydata.pos(3))],...
         ['MNI: ' num2str(mniCoord(1)) ',' num2str(mniCoord(2)) ',' num2str(mniCoord(3))]};
-    title(h(4), coordInfo,'FontSize',18);
+    title(h(4), coordInfo,'FontSize',16);
 end
 
 if ~isempty(mydata.label)
