@@ -110,7 +110,7 @@ when you call roast, just like what you would do when you only have a T1.
 - `meshOpt.radbound`: maximal surface element size, default 5;
 - `meshOpt.angbound`: mimimal angle of a surface triangle, default 30;
 - `meshOpt.distbound`: maximal distance between the center of the surface bounding circle
-and center of the element bounding sphere, default 0.4;
+and center of the element bounding sphere, default 0.3;
 - `meshOpt.reratio`: maximal radius-edge ratio, default 3;
 - `meshOpt.maxvol`: target maximal tetrahedral element volume, default 10.  
 See iso2mesh documentation for more details on these options.
@@ -180,7 +180,7 @@ See options below for details.
 
 ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-machine of 32GB memory and above is recommended for running New York
+machine of 50GB memory and above is recommended for running New York
 head. Again electrodes are modeled by default as small disc electrodes.
 See options below for details.
 

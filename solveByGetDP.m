@@ -187,11 +187,11 @@ fclose(fid);
 str = computer('arch');
 switch str
     case 'win64'
-        solverPath = 'lib\getdp-2.11.2\bin\getdp.exe';
+        solverPath = 'lib\getdp-3.2.0\bin\getdp.exe';
     case 'glnxa64'
-        solverPath = 'lib/getdp-2.11.2/bin/getdp';
+        solverPath = 'lib/getdp-3.2.0/bin/getdp';
     case 'maci64'
-        solverPath = 'lib/getdp-2.11.2/bin/getdpMac';
+        solverPath = 'lib/getdp-3.2.0/bin/getdpMac';
     otherwise
         error('Unsupported operating system!');
 end

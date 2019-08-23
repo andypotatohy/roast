@@ -17,6 +17,15 @@ else
     baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
 end
 
+mappingFile = [dirname filesep baseFilenameRSPD '_seg8.mat'];
+if ~exist(mappingFile,'file')
+    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
+else
+    load(mappingFile,'image','Affine');
+    mri2mni = Affine*image(1).mat;
+    % mapping from MRI voxel space to MNI space
+end
+
 data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
 allMask = data.img;
 allMaskShow = data.img;
@@ -40,7 +49,7 @@ end
 allMaskShow(data.img>0) = numOfTissue + 2;
 
 % sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
-sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
 drawnow
 
 % allMask = uint8(allMask);

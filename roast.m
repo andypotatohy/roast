@@ -34,7 +34,7 @@ function roast(subj,recipe,varargin)
 % 
 % ROAST New York head. Again this will run a simulation with anode on Fp1 (1 mA)
 % and cathode on P4 (-1 mA), but on the 0.5-mm resolution New York head. A decent
-% machine of 32GB memory and above is recommended for running New York
+% machine of 50GB memory and above is recommended for running New York
 % head. Again electrodes are modeled by default as small disc electrodes.
 % See options below for details.
 %
@@ -119,7 +119,7 @@ function roast(subj,recipe,varargin)
 % meshOpt.radbound: maximal surface element size, default 5;
 % meshOpt.angbound: mimimal angle of a surface triangle, default 30;
 % meshOpt.distbound: maximal distance between the center of the surface bounding circle
-% and center of the element bounding sphere, default 0.4;
+% and center of the element bounding sphere, default 0.3;
 % meshOpt.reratio: maximal radius-edge ratio, default 3;
 % meshOpt.maxvol: target maximal tetrahedral element volume, default 10.
 % See iso2mesh documentation for more details on these options.
@@ -777,10 +777,13 @@ else
     % check if bad MRI header    
 end
 
-if any(~strcmpi(recipe,'leadfield'))
+% if any(~strcmpi(recipe,'leadfield'))
     
     if ~exist('meshOpt','var')
-        meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+%         meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+          meshOpt = struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10);
+          % mesh option defaults changed for higher-resolution mesh in version 3
+%         meshOpt = struct('radbound',3,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',5);
     else
         if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
         meshOptNam = fieldnames(meshOpt);
@@ -802,7 +805,7 @@ if any(~strcmpi(recipe,'leadfield'))
             end
         end
         if ~isfield(meshOpt,'distbound')
-            meshOpt.distbound = 0.4;
+            meshOpt.distbound = 0.3;
         else
             if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
                 error('Please enter a positive number for the mesh option ''distbound''.');
@@ -825,12 +828,9 @@ if any(~strcmpi(recipe,'leadfield'))
         warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
     end
     
-else
-    
-    meshOpt = struct('radbound',3,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',5);
-    % for lead field generation, use higher-resolution mesh
-    
-end
+% else
+%     
+% end
 
 if ~exist('simTag','var'), simTag = []; end
 
@@ -1133,7 +1133,7 @@ else
     disp('======================================================')
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
-    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>32GB memory) to run ROAST with New York head.')
+    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
     [~,baseFilenameRSPD] = fileparts(subjRSPD);
     
 end

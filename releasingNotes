@@ -1,4 +1,4 @@
-ROAST V3.0:
+ROAST V3.0 -- 2019/08/xx:
 
 Added a feature in ROAST main function roast() so that users can generate the data (lead field) for running targeted TES.
 
@@ -6,15 +6,25 @@ Introduced a new main function roast_target() for doing targeted TES. Users can 
 
 Enforce the RAS rule for all input data to roast(). This prevents a potential bug in the orientation option for pad electrodes in roast(), which was not paid attention to previously if NON-RAS head is modeled. This rule also makes the orientation option for roast_target() to work well.
 
-mni in sliceshow? 
+Make sliceshow() be able to show both the voxel and MNI coordinates when users click at different locations.
+
+Changed the default mesh options to generate slightly higher-resolution mesh.
+
+Updated the free solver getDP from version 2.11.2 to version 3.2.0.
+
 EGI?
 Added a new option that allows users to generate the data that can be loaded in Soterix software HD-Explore and HD-Targets (purchased separately)??
 
-ROAST V2.7:
+
+ROAST V2.7.1 -- 2019/03/13:
+Fixed a glitch. It's only related to running simulations on MRIs that are not in 1 mm isotropic resolution.
+
+
+ROAST V2.7 -- 2018/09/10:
 Upgraded SPM8 to SPM12, with all customized code in SPM8 transferred into SPM12. Now Mac users will not have any problems when running ROAST under Matlab version 2017 and later.
 
 
-ROAST V2.6:
+ROAST V2.6 -- 2018/07/05:
 
 Improved disc and ring placement so that for large electrodes, gel can be fully filled between scalp surface and the electrodes.
 
@@ -45,13 +55,16 @@ Opened conductivities as user options.
 Can output a 3D rendering of electrode placement result, before building the FEM model.
 
 
-ROAST V2.1:
+ROAST V2.1 -- 2018/05/16:
+
 Fixed a bug on placing electrodes on non-1mm data
+
 Added resampling and zero-padding options
+
 Can align T2 automatically if it's not aligned with T1
 
 
-ROAST V2.0:
+ROAST V2.0 -- 2018/05/01:
 
 Major feature added: costumized electrode placement. Users can specify any electrode from EEG 10/20, 10/10, 10/05 and BioSemi-256 system, and even electrodes at customized locations. They can customize the shape, size and orientation (only for pad electrode) of each electrode individually.
 
@@ -66,3 +79,34 @@ The New York head is added.
 Can handle non-1mm resolution MRI and non-RAS MRI.
 
 Improved the visualization function.
+
+
+ROAST V1.1 -- 2017/12/11:
+
+Fixed a bug in the 3D rendering using iso2mesh functions.
+
+Added visualization of stimulation electrodes in the 3D rendering.
+
+
+ROAST V1.0 -- 2017/11/10:
+
+Users now can do customized montage instead of just bipolar configurations.
+
+Added mechanisms to detect if each step is done and start from the first undone step.
+
+Added a solution to name the files properly for the convenience of managing different simulations.
+
+
+ROAST V0.3 -- 2017/11/10:
+
+Added individual head as another example; added drawnow; fixed an issue when calling solver if directory name has space character; fixed an issue in visualizeRes() about converting world coord to voxel coord; completely changed the method for generating 3D rendering (use plotmesh in iso2mesh toolbox instead of GIFTI object, which is buggy).
+
+
+ROAST V0.2 -- 2017/11/06:
+
+Only supports bipolar config, and only place the user-specified electrodes; improved visualization functions; suppressed some warning messages.
+
+
+ROAST V0.1 -- 2017/11/01:
+
+Placing all the 74 electrodes at once and then solve the user-specified bipolar config.
