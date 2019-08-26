@@ -491,8 +491,8 @@ if any(~strcmpi(recipe,'leadfield'))
     if ~exist('capType','var')
         capType = '1010';
     else
-        if ~any(strcmpi(capType,{'1020','1010','1005','biosemi'}))
-            error('Supported cap types are: ''1020'', ''1010'', ''1005'' and ''BioSemi''.');
+        if ~any(strcmpi(capType,{'1020','1010','1005','biosemi','egi'}))
+            error('Supported cap types are: ''1020'', ''1010'', ''1005'', ''BioSemi'' and ''EGI''.');
         end
     end
     

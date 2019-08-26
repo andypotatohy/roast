@@ -64,14 +64,21 @@ scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
 if ~isempty(indP)
-   if strcmpi(elecPara(1).capType,'biosemi')
-       isBiosemi = 1;
-       load('./capBioSemiFullWithExtra.mat','capInfo');
-   else
-       isBiosemi = 0;
-       load('./cap1005FullWithExtra.mat','capInfo');
+   switch lower(elecPara(1).capType)
+       case {'1020','1010','1005'}
+           load('./cap1005FullWithExtra.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 0;
+       case 'biosemi'
+           load('./capBioSemiFullWithExtra.mat','capInfo');
+           isBiosemi = 1;
+           isEGI = 0;
+       case 'egi'
+           load('./capEGIfull.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 1;
    end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi);
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi,isEGI);
 else
     electrode_coord_P = []; center_P = [];
 end

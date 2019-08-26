@@ -7,7 +7,7 @@ function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRang
 % yhuang16@citymail.cuny.edu
 % April 2018
 
-disp('placing electrodes...')
+disp(['placing electrodes following the ' lower(elecPara(1).capType) ' layout ...'])
 
 if length(elecPara)==1
     numOfElec = size(elecLoc,1);
@@ -76,7 +76,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     
     switch lower(elecPara(i).elecType)
         case 'pad'
-            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             
             pad_length = elecPara(i).elecSize(1)/res;
             pad_width = elecPara(i).elecSize(2)/res;
@@ -117,7 +117,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'disc'
-            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             
             disc_radius = elecPara(i).elecSize(1)/res;
             disc_height = elecPara(i).elecSize(2)/res;
@@ -144,7 +144,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'ring'
-            fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             
             ring_radiusIn = elecPara(i).elecSize(1)/res;
             ring_radiusOut = elecPara(i).elecSize(2)/res;

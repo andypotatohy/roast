@@ -19,8 +19,8 @@ switch fun
             return
         end
         
-        capNew = [any(strcmp(optNew.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optNew.elecPara(1).capType,'biosemi') strcmp(optNew.elecPara(1).capType,'none')];
-        capOld = [any(strcmp(optOld.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optOld.elecPara(1).capType,'biosemi') strcmp(optOld.elecPara(1).capType,'none')];
+        capNew = [any(strcmp(optNew.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optNew.elecPara(1).capType,'biosemi') strcmpi(optNew.elecPara(1).capType,'egi') strcmp(optNew.elecPara(1).capType,'none')];
+        capOld = [any(strcmp(optOld.elecPara(1).capType,{'1020','1010','1005'})) strcmpi(optOld.elecPara(1).capType,'biosemi') strcmpi(optOld.elecPara(1).capType,'egi') strcmp(optOld.elecPara(1).capType,'none')];
         if any(capNew~=capOld)
             isNewOpt = 1;
             return
