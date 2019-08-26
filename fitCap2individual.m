@@ -73,7 +73,7 @@ elec = capInfo{1};
 if ~isBiosemi
     centralElec = {'Oz';'POz';'Pz';'CPz';'Cz';'FCz';'Fz';'AFz';'Fpz'};
 else
-    centralElec = {'A19';'POz';'A6';'CPz';'A1';'FCz';'E17';'AFz';'E12'};
+    centralElec = {'A19';'POzAid';'A6';'CPzAid';'A1';'FCzAid';'E17';'AFzAid';'E12'};
 end
 [~,indCentralElec] = ismember(centralElec,elec);
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
