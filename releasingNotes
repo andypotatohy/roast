@@ -14,8 +14,11 @@ Updated the free solver getDP from version 2.11.2 to version 3.2.0.
 
 Fixed a potential bug if users want to place BioSemi electrodes (the four 10/10 electrodes in BioSemi layout that aid to place BioSemi electrodes have the same names as those in 10/10 system, which may cause complication in data management).
 
-EGI?
-Added a new option that allows users to generate the data that can be loaded in Soterix software HD-Explore and HD-Targets (purchased separately)??
+Added the EGI HCGSN 256-channel system as another option for 'capType'. Now users can place any electrodes following the EGI layout by specifying 'capType','egi' (thanks to github user iPsych).
+
+Fixed a bug when calling getDP solver when data are stored in folders with spaces in the folder name (thanks to github user bartkrekelberg).
+
+Made outputs from ROAST compatible with Soterix software HD-Explore and HD-Targets (purchased separately).
 
 
 ROAST V2.7.1 (codename: Hamilton Heights update 2) -- 2019/03/13:

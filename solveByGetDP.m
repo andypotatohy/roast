@@ -199,7 +199,7 @@ end
 % cmd = [fileparts(which(mfilename)) filesep solverPath ' '...
 %     fileparts(which(mfilename)) filesep dirname filesep baseFilename '_' uniTag '.pro -solve EleSta_v -msh '...
 %     fileparts(which(mfilename)) filesep dirname filesep baseFilename '_' uniTag '_ready.msh -pos Map'];
-cmd = [solverPath ' ' dirname filesep baseFilename '_' uniTag '.pro -solve EleSta_v -msh ' dirname filesep baseFilename '_' uniTag '_ready.msh -pos Map'];
+cmd = [solverPath ' "' dirname filesep baseFilename '_' uniTag '.pro" -solve EleSta_v -msh "' dirname filesep baseFilename '_' uniTag '_ready.msh" -pos Map'];
 try
     status = system(cmd);
 catch
