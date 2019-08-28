@@ -124,7 +124,7 @@ that ROAST will just use the date and time as the unique tag for the
 simulation. Or you can provide your preferred tag for a specific
 simulation ([Example 18](#example-18)), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
-log file (named as `"subjName_log"`), parsed by the simulation tags.
+log file (named as `"subjName_roastLog"`), parsed by the simulation tags.
 
 `'resampling'` -- re-sample the input MRI to 1mm isotropic resolution.  
 `'on' | 'off' (default)`  
@@ -412,7 +412,7 @@ results. These figures include the slice view of the MRI (T1 and/or T2) and the 
 
 ### Outputs in Matlab format
 
-ROAST saves the results as `"subjName_simulationTag_result.mat"`, where 3 variables are available:
+ROAST saves the results as `"subjName_simulationTag_roastResult.mat"`, where 3 variables are available:
 
 `vol_all`: the voltage at each pixel in the MRI voxel space, unit in mV.
 

@@ -10,7 +10,7 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % subj -- path to the MRI that was used for simulations/targeting, defaults to the
 % MRI of the MNI152 head.
 % simTag -- the unique simulation tag of each simulation, which can be
-% looked up in the log file of the subject (subjName_log).
+% looked up in the log file of the subject (subjName_roastLog).
 % For roast_target():
 % tarTag -- the unique tag of each run of targeting, which can also be
 % looked up in the log file of the subject (subjName_targetLog).
@@ -117,7 +117,7 @@ if nargin<4 || isempty(fastRender)
 end
 
 [dirname,baseFilename,ext] = fileparts(subj);
-optionFile = [dirname filesep baseFilename '_' simTag '_options.mat'];
+optionFile = [dirname filesep baseFilename '_' simTag '_roastOptions.mat'];
 if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
@@ -487,7 +487,7 @@ cm = colormap(jet(256)); cm = [1 1 1;cm];
 
 if isRoast
     
-    resFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
+    resFile = [dirname filesep baseFilename '_' simTag '_roastResult.mat'];
     if ~exist(resFile,'file')
         error(['Result file ' resFile ' not found. Check if you run through post processing after solving.']);
     else

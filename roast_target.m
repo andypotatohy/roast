@@ -37,7 +37,7 @@ if nargin<2 || isempty(simTag)
 end
 
 [dirname,baseFilename,ext] = fileparts(subj);
-optionFile = [dirname filesep baseFilename '_' simTag '_options.mat'];
+optionFile = [dirname filesep baseFilename '_' simTag '_roastOptions.mat'];
 if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
@@ -412,7 +412,7 @@ fprintf('\n\n');
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
     
-    leadFieldFile = [dirname filesep baseFilename '_' simTag '_result.mat'];
+    leadFieldFile = [dirname filesep baseFilename '_' simTag '_roastResult.mat'];
     if ~exist(leadFieldFile,'file')
         error(['Lead field not found for subject ' subj ' under simulation tag ' simTag '. Please check if you ran ROAST with ''leadField'' as the recipe first.']);
     else

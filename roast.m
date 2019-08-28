@@ -133,7 +133,7 @@ function roast(subj,recipe,varargin)
 % simulation. Or you can provide your preferred tag for a specific
 % simulation (Example 18), then you can find it more easily later. Also all the
 % simulation history with options info for each simulation are saved in the
-% log file (named as "subjName_log"), parsed by the simulation tags.
+% log file (named as "subjName_roastLog"), parsed by the simulation tags.
 % 
 % 'resampling': re-sample the input MRI to 1mm isotropic resolution
 % 'on' | 'off' (default)
@@ -334,7 +334,7 @@ function roast(subj,recipe,varargin)
 % slice view is always in the MRI voxel space, and the 3D rendering displays 
 % the data in the world space.
 % 
-% ROAST also saves the results as "subjName_simulationTag_result.mat", where 3 variables are available:
+% ROAST also saves the results as "subjName_simulationTag_roastResult.mat", where 3 variables are available:
 % vol_all: the voltage at each pixel in the MRI voxel space, unit in mV.
 % ef_all: the electric field vector at each pixel in the MRI voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
 % ef_mag: the magnitude of the electric field at each pixel in the MRI voxel space, unit in V/m.
@@ -1058,7 +1058,7 @@ options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',mes
 [dirname,baseFilename] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-Sopt = dir([dirname filesep baseFilename '_*_options.mat']);
+Sopt = dir([dirname filesep baseFilename '_*_roastOptions.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options,'roast');
 else
@@ -1089,7 +1089,7 @@ end
 disp('USING RECIPE:')
 disp(configTxt)
 disp('...and simulation options saved in:')
-disp([dirname filesep baseFilename '_log,'])
+disp([dirname filesep baseFilename '_roastLog,'])
 disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
@@ -1106,7 +1106,7 @@ if all(strcmpi(recipe,'leadfield'))
         end
     end
     % only warn users the first time they run for this subject
-    if all(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+    if all(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
         warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
         doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
         if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
@@ -1192,7 +1192,7 @@ if any(~strcmpi(recipe,'leadfield'))
         %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
     
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
@@ -1202,13 +1202,13 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
-        load([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'vol_all','ef_mag','ef_all');
+        load([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
         visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
     
 else
     
-    if any(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+    if any(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
         disp('           NOTE THIS WILL TAKE SOME TIME...           ')
@@ -1234,7 +1234,7 @@ else
         %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
     
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+    if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')

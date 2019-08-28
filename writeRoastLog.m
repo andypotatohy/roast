@@ -2,6 +2,8 @@ function opt = writeRoastLog(subject,opt,fun)
 % opt = writeRoastLog(subject,opt,fun)
 %
 % Write logs for roast() and roast_target().
+% The log file for roast() ends with '_roastLog' and the log file for
+% roast_target() ends with '_targetLog'.
 %
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
@@ -15,7 +17,7 @@ switch fun
     
     case 'roast'
         
-        fid = fopen([dirname filesep baseFilename '_log'],'a');
+        fid = fopen([dirname filesep baseFilename '_roastLog'],'a');
         
         if ~isempty(opt.uniqueTag)
             uniqueTag = opt.uniqueTag;
@@ -25,8 +27,8 @@ switch fun
             opt.uniqueTag = uniqueTag;
         end
         
-        if ~exist([dirname filesep baseFilename '_' uniqueTag '_options.mat'],'file')
-            save([dirname filesep baseFilename '_' uniqueTag '_options.mat'],'opt');
+        if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastOptions.mat'],'file')
+            save([dirname filesep baseFilename '_' uniqueTag '_roastOptions.mat'],'opt');
         else
             error('You''re about to run a simulation using options that you never used before, but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
         end

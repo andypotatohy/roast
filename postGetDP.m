@@ -52,7 +52,7 @@ if ~isempty(P2) % for roast()
     ef_mag = sqrt(sum(ef_all.^2,4));
     
     disp('saving the final results...')
-    save([dirname filesep baseFilename '_' uniTag '_result.mat'],'vol_all','ef_all','ef_mag','-v7.3');
+    save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
     
     if isempty(strfind(P2,'example/nyhead'))
         template = load_untouch_nii(P2);
@@ -91,7 +91,7 @@ if ~isempty(P2) % for roast()
     
     disp('======================================================');
     disp('Results are saved as:');
-    disp([dirname filesep baseFilename '_' uniTag '_result.mat']);
+    disp([dirname filesep baseFilename '_' uniTag '_roastResult.mat']);
     disp('...and also saved as NIFTI files:');
     disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.nii']);
     disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.nii']);
@@ -102,7 +102,7 @@ if ~isempty(P2) % for roast()
     disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.pos']);
     disp('======================================================');
     disp('Look up the detailed info for this simulation in the log file: ');
-    disp([dirname filesep baseFilename '_log']);
+    disp([dirname filesep baseFilename '_roastLog']);
     disp(['under the simulation tag "' uniTag '".']);
     disp('======================================================');
     
@@ -148,19 +148,19 @@ else % for roast_target()
     A_all = A_all(:,:,indInCore);
     
     disp('saving the final results...')
-%     save([dirname filesep baseFilename '_' uniTag '_result.mat'],'A','locs','-v7.3');
-    save([dirname filesep baseFilename '_' uniTag '_result.mat'],'A_all','-v7.3');
+%     save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'A','locs','-v7.3');
+    save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'A_all','-v7.3');
     
     disp('======================================================');
     disp('The lead field matrix is saved as:');
-    disp([dirname filesep baseFilename '_' uniTag '_result.mat']);
+    disp([dirname filesep baseFilename '_' uniTag '_roastResult.mat']);
     disp('======================================================');
     % disp('You can also find all the results in the following two text files: ');
     % disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.pos']);
     % disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.pos']);
     disp('======================================================');
     disp('Look up the detailed info for this simulation in the log file: ');
-    disp([dirname filesep baseFilename '_log']);
+    disp([dirname filesep baseFilename '_roastLog']);
     disp(['under the simulation tag "' uniTag '".']);
     disp('======================================================');
     disp('======================================================');
