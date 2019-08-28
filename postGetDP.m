@@ -1,5 +1,5 @@
-function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,elem,hdrInfo,uniTag,indSolved,indInCore)
-% [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,elem,hdrInfo,uniTag,indSolved,indInCore)
+function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag,indSolved,indInCore)
+% [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag,indSolved,indInCore)
 %
 % Post processing after solving the model / generating the lead field.
 % Save the result in Matlab format in the MRI voxel space. For the lead
@@ -131,8 +131,8 @@ else % for roast_target()
         
         A_all(C{1},:,i) = cell2mat(C(2:4));
         
-% %        user option to be added: keep all .pos files or not (for saving disk space)
-%         delete([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
+        % to save disk space
+        delete([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
     end
     
 %     indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A

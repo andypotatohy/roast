@@ -1094,10 +1094,23 @@ disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
 
-if all(strcmpi(recipe,'leadfield')) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
-    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
-    doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
-    if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
+% warn users lead field will take a long time to generate
+if all(strcmpi(recipe,'leadfield'))
+    [~,indRef] = ismember('Iz',elecName);
+    indStimElec = setdiff(1:length(elecName),indRef);
+    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
+    isSolved = zeros(length(indStimElec),1);
+    for i=1:length(indStimElec)
+        if exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
+            isSolved(i) = 1;
+        end
+    end
+    % only warn users the first time they run for this subject
+    if all(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
+        warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
+        doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
+        if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
+    end
 end
 
 if ~strcmp(baseFilename,'nyhead')
@@ -1169,7 +1182,7 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
         disp('======================================================')
-        prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
+        prepareForGetDP(subj,node,elem,elecName,uniqueTag);
         indElecSolve = 1:length(elecName);
         solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,'');
     else
@@ -1183,7 +1196,7 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,[],hdrInfo,uniqueTag);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
         visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
@@ -1195,25 +1208,24 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
-    [~,indRef] = ismember('Iz',elecName);
-    indStimElec = setdiff(1:length(elecName),indRef);
-    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(1)) '.pos'],'file')
+    if any(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_result.mat'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
         disp('           NOTE THIS WILL TAKE SOME TIME...           ')
         disp('======================================================')
-        prepareForGetDP(subj,node,elem,hdrInfo,elecName,uniqueTag);
+        prepareForGetDP(subj,node,elem,elecName,uniqueTag);
         injectCurrent = ones(length(elecName),1); % 1 mA at each candidate electrode
         injectCurrent(indRef) = -1;
         for i=1:length(indStimElec)
-            fprintf('\n');
-            disp('======================================================')
-            disp(['SOLVING FOR ELECTRODE ' num2str(i) ' OUT OF ' num2str(length(indStimElec)) ' ...']);
-            disp('======================================================')
-            fprintf('\n');
-            indElecSolve = [indStimElec(i) indRef];
-            solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
+            if ~isSolved(i)
+                fprintf('\n======================================================\n');
+                disp(['SOLVING FOR ELECTRODE ' num2str(i) ' OUT OF ' num2str(length(indStimElec)) ' ...']);
+                fprintf('======================================================\n\n');
+                indElecSolve = [indStimElec(i) indRef];
+                solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
+            else
+                disp(['ELECTRODE ' num2str(i) ' HAS BEEN SOLVED, SKIPPING...']);
+            end
         end
     else
         disp('======================================================')
@@ -1226,7 +1238,7 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDP(subj,[],node,elem,hdrInfo,uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
+        postGetDP(subj,[],node,hdrInfo,uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')

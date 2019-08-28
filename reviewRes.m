@@ -54,6 +54,13 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % June 2018
 % August 2019 make it compatible with also roast_target()
 
+fprintf('\n\n');
+disp('=============================================================')
+disp('ROAST is an aggregated work by Yu (Andy) Huang licensed under')
+disp('General Public License version 3 or later. It''s supported by')
+disp('both NIH grants and Soterix Medical Inc.')
+disp('=============================================================')
+
 addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
 
 % check subject name
