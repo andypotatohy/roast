@@ -2,8 +2,8 @@
 
 1. [Getting started](#getting-started)
 2. [How to use `roast`](#how-to-use-roast)
-- [Synopsis of `roast`](#synopsis-of-roast)
-- [Examples on `roast`](#examples-on-roast)
+   - [Synopsis of `roast`](#synopsis-of-roast)
+   - [Examples on `roast`](#examples-on-roast)
 3. [How to use `roast_target`](#how-to-use-roast_target)
 4. [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
 5. [Outputs of ROAST software](#outputs-of-roast-software)
