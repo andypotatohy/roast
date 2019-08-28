@@ -2,6 +2,8 @@
 
 - [Getting started](#getting-started)
 - [How to use `roast`](#how-to-use-roast)
+- [Synopsis of `roast`](#synopsis-of-roast)
+- [Examples on `roast`](#examples-on-roast)
 - [How to use `roast_target`](#how-to-use-roast_target)
 - [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
 - [Outputs of ROAST software](#outputs-of-roast-software)
@@ -19,11 +21,11 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-There are 3 main functions that you can call: `roast`, `roast_target` and `reviewRes()`. The following sections will cover how to use them.
+There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`. The following sections will cover how to use them.
 
 ## How to use `roast`
 
-### Synopsis
+### Synopsis of `roast`
 
 `roast(subj,recipe,varargin)`
 
@@ -403,7 +405,7 @@ Now you should know what this will do.
 
 ## How to use `roast_target`
 
-### Synopsis
+### Synopsis of `roast_target`
 
 `roast_target(subj,simTag,targetCoord,varargin)`
 
