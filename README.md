@@ -1,10 +1,10 @@
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
 - [Getting started](#getting-started)
-- [Synopsis](#synopsis)
-- [Examples](#examples)
+- [How to use `roast`](#how-to-use-roast)
+- [How to use `roast_target`](#how-to-use-roast_target)
 - [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
-- [Outputs of ROAST](#outputs-of-roast)
+- [Outputs of ROAST software](#outputs-of-roast-software)
 - [Review of simulation data](#review-of-simulation-data)
 - [How to ask questions](#how-to-ask-questions)
 - [Acknowledgements](#acknowledgements)
@@ -19,7 +19,11 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-## Synopsis
+There are 3 main functions that you can call: `roast`, `roast_target` and `reviewRes()`. The following sections will cover how to use them.
+
+## How to use `roast`
+
+### Synopsis
 
 `roast(subj,recipe,varargin)`
 
@@ -162,9 +166,9 @@ conducting medium under each electrode. You can even assign different conductivi
 values to different electrodes and their conducting media (e.g., `'gel'`). See
 [Example 21](#example-21) and [Example 22](#example-22) for details.
 
-## Examples
+### Examples on `roast`
 
-### Example 1
+#### Example 1
 
     roast
 
@@ -174,7 +178,7 @@ of transcranial electric stimulation (TES) with anode on Fp1 (1 mA) and cathode
 on P4 (-1 mA). Electrodes are modeled by default as small disc electrodes.
 See options below for details.
 
-### Example 2
+#### Example 2
 
     roast('nyhead')
 
@@ -184,7 +188,7 @@ machine of 50GB memory and above is recommended for running New York
 head. Again electrodes are modeled by default as small disc electrodes.
 See options below for details.
 
-### Example 3
+#### Example 3
 
     roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
 
@@ -198,7 +202,7 @@ the info on electrodes (names, locations, coordinates) in the Microsoft
 Excel file `capInfo.xls` under the root directory of ROAST. Note the unit of
 the injected current is milliampere (mA). Make sure they sum up to 0.
 
-### Example 4
+#### Example 4
 
     roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
 
@@ -206,7 +210,7 @@ Run simulation on subject1 with anode on G12 (1 mA) and cathode on J7 (-1
 mA) from the extended BioSemi-256 system (see `capInfo.xls` under the root
 directory of ROAST).
  
-### Example 5
+#### Example 5
 
     roast('example/subject1.nii',{'G12',0.25,'J7',-0.25,'Nk1',0.5,'Nk3',-0.5,'custom1',0.25,'custom3',-0.25},'captype','biosemi')
 
@@ -225,7 +229,7 @@ the text file starting with `"custom"` (e.g., for this example they're
 named as `custom1`, `custom2`, etc. You can of course do
 `"custom_MyPreferredElectrodeName"`).
 
-### Example 6
+#### Example 6
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'})
 
@@ -234,7 +238,7 @@ electrode will be placed at location Fp1, a pad electrode will be placed at FC4,
 and a ring electrode will be placed at POz. The sizes and orientations will be set
 as default.
 
-### Example 7
+#### Example 7
 
     roast('nyhead',[],'electype','ring','elecsize',[7 10 3])
 
@@ -242,7 +246,7 @@ Run simulation on the New York head with default recipe. Ring electrodes
 will be placed at Fp1 and P4. The size of each ring is 7mm inner radius,
 10mm outter radius and 3mm height.
 
-### Example 8
+#### Example 8
 
     roast('nyhead',{'Fp1',1,'FC4',1,'POz',-2},'electype','ring','elecsize',[7 10 3;6 8 3;4 6 2])
 
@@ -250,7 +254,7 @@ Run simulation on the New York head with the specified recipe. Ring electrode
 placed at Fp1 will have size `[7mm 10mm 3mm]`; ring at FC4 will have size
 `[6mm 8mm 3mm]`; and ring at POz will have size `[4mm 6mm 2mm]`.
 
-### Example 9
+#### Example 9
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'},'elecsize',{[8 2],[45 25 4],[5 8 2]})
 
@@ -259,7 +263,7 @@ electrode will be placed at location Fp1 with size `[8mm 2mm]`, a pad electrode
 will be placed at FC4 with size `[45mm 25mm 4mm]`, and a ring electrode will be
 placed at POz with size `[5mm 8mm 2mm]`.
 
-### Example 10
+#### Example 10
 
     roast([],[],'electype','pad','elecori','ap')
 
@@ -267,7 +271,7 @@ Run simulation on the MNI152 averaged head with default recipe. Pad
 electrodes will be placed at Fp1 and P4, with default size of `[50mm 30mm
 3mm]` and the long axis will be oriented in the direction of front to back.
 
-### Example 11
+#### Example 11
 
     roast([],[],'electype','pad','elecori',[0.71 0.71 0])
 
@@ -276,7 +280,7 @@ electrodes will be placed at Fp1 and P4, with default size of `[50mm 30mm
 3mm]` and the long axis will be oriented in the direction specified by the
 vector `[0.71 0.71 0]`.
 
-### Example 12
+#### Example 12
 
     roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',{'ap','lr','si'})
 
@@ -285,7 +289,7 @@ placed at Fp1, FC4 and POz, with default size of `[50mm 30mm 3mm]`. The long
 axis will be oriented in the direction of front to back for the 1st pad,
 left to right for the 2nd pad, and up to down for the 3rd pad.
 
-### Example 13
+#### Example 13
 
     roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',[0.71 0.71 0;-0.71 0.71 0;0 0.71 0.71])
 
@@ -294,7 +298,7 @@ placed at Fp1, FC4 and POz, with default size of `[50mm 30mm 3mm]`. The long
 axis will be oriented in the direction of `[0.71 0.71 0]` for the 1st pad,
 `[-0.71 0.71 0]` for the 2nd pad, and `[0 0.71 0.71]` for the 3rd pad.
 
-### Example 14
+#### Example 14
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',[0.71 0.71 0;0 0.71 0.71])
 
@@ -303,7 +307,7 @@ electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
 and POz, with long axis oriented in the direction of `[0.71 0.71 0]` and 
 `[0 0.71 0.71]`, respectively.
 
-### Example 15
+#### Example 15
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'elecori',{'ap',[],[0 0.71 0.71]})
 
@@ -311,27 +315,27 @@ Run simulation on the MNI152 averaged head with specified recipe. A disc
 electrode will be placed at FC4. Two pad electrodes will be placed at Fp1
 and POz, with long axis oriented in the direction of front-back and `[0 0.71 0.71]`, respectively.
 
-### Example 16
+#### Example 16
 
     roast('example/subject1.nii',[],'T2','example/subject1_T2.nii')
 
 Run simulation on subject1 with default recipe. The T2 image will be used
 for segmentation as well.
 
-### Example 17
+#### Example 17
 
     roast([],[],'meshoptions',struct('radbound',4,'maxvol',8))
 
 Run simulation on the MNI152 averaged head with default recipe. Two of
 the mesh options are customized.
 
-### Example 18
+#### Example 18
 
     roast([],[],'simulationTag','roastDemo')
 
 Give the default run of ROAST a tag as `'roastDemo'`.
 
-### Example 19
+#### Example 19
 
     roast('example/subject1.nii',[],'resampling','on')
 
@@ -339,7 +343,7 @@ Run simulaiton on subject1 with default recipe, but resample the MRI of
 subject1 to 1mm isotropic resolution first (the original MRI of subject1
 has resolution of 1mm by 0.99mm by 0.99mm).
 
-### Example 20
+#### Example 20
 
     roast([],{'Exx19',1,'C4',-1},'zeropadding',60,'simulationTag','paddingExample')
 
@@ -361,7 +365,7 @@ of 10 to start with, and if you're not happy with the results, just increase
 the amount of zero-padding. But the best solution is to get an MRI that covers
 the area where you want to place the electrodes.
 
-### Example 21
+#### Example 21
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))
 
@@ -369,7 +373,7 @@ Run simulation on the MNI152 averaged head with specified recipe. The
 conductivity values of CSF and electrodes are customized. Conductivities
 of other tissues will use the literature values.
 
-### Example 22
+#### Example 22
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))
 
@@ -382,7 +386,7 @@ in mind that the values you put in the vector in `'gel'` and `'electrode'`
 field in `'conductivities'` option should follow the order of electrodes
 you put in the `'recipe'` argument.
 
-### Example 23
+#### Example 23
 
 All the options can be combined to meet your specific simulation needs.
 
@@ -397,20 +401,33 @@ All the options can be combined to meet your specific simulation needs.
 
 Now you should know what this will do.
 
+## How to use `roast_target`
+
+### Synopsis
+
+`roast_target(subj,simTag,targetCoord,varargin)`
+
+TO BE ADDED...
+
+### Examples on `roast_target`
+
+TO BE ADDED...
 
 ## More notes on the `capInfo.xls` file
 
 A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of both [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6) and [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
 
 
-## Outputs of ROAST
+## Outputs of ROAST software
 
-### Figure outputs
+### Outputs of `roast`
+
+#### Figure outputs
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
 results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the MRI voxel space, and the 3D rendering displays the data in the world space.
 
-### Outputs in Matlab format
+#### Outputs in Matlab format
 
 ROAST saves the results as `"subjName_simulationTag_roastResult.mat"`, where 3 variables are available:
 
@@ -420,7 +437,7 @@ ROAST saves the results as `"subjName_simulationTag_roastResult.mat"`, where 3 v
 
 `ef_mag`: the magnitude of the electric field at each pixel in the MRI voxel space, unit in V/m.
 
-### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
+#### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
 
 Voltage: `"subjName_simulationTag_v.nii"`, unit in mV.
 
@@ -428,13 +445,17 @@ E-field: `"subjName_simulationTag_e.nii"`, unit in V/m.
 
 E-field magnitude: `"subjName_simulationTag_emag.nii"`, unit in V/m.
 
-### Outputs in text files
+#### Outputs in text files
 
 Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.
 
 E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
 
 Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
+
+### Outputs of `roast_target`
+
+TO BE ADDED...
 
 ## Review of simulation data
 
@@ -449,6 +470,8 @@ simply type
 
 where `'awesomeSimulation'` is the corresponding `'simulationTag'`. For more info 
 on how to use this function, type `help reviewRes`.
+
+TO BE ADDED...
 
 ## How to ask questions
 
@@ -472,17 +495,21 @@ Huang, Y., Parra, L.C., Haufe, S.,2016. [The New York Head - A precise
 standardized volume conductor model for EEG source localization and tES
 targeting.](https://www.sciencedirect.com/science/article/pii/S1053811915011325) NeuroImage,140, 150-162
 
+If you also use the targeting feature (`roast_target`), please cite these:
+
+TO BE ADDED...
+
 ROAST was supported by NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
 ## Notes
 
-Version 2.x is incompatible with simulation data generated by Version 1.x. V2.6 is incompatible with V2.1 and earlier versions.
+Version 3.0 is incompatible with simulation data generated by Version 2.7 and earlier versions.
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
 ROAST was not designed to build models for pathological heads, but there are plans to add this capability in the future versions.
 
 ## License
 
-General Public License version 3 or later.
+General Public License version 3 or later. See LICENSE.md for details.
 
 This software uses free packages from the Internet, except Matlab, which is a proprietary software by the MathWorks. You need a valid Matlab license to run this software.
 
@@ -492,4 +519,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-July 2019
+August 2019
