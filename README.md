@@ -1,17 +1,17 @@
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
-- [Getting started](#getting-started)
-- [How to use `roast`](#how-to-use-roast)
+1. [Getting started](#getting-started)
+2. [How to use `roast`](#how-to-use-roast)
 - [Synopsis of `roast`](#synopsis-of-roast)
 - [Examples on `roast`](#examples-on-roast)
-- [How to use `roast_target`](#how-to-use-roast_target)
-- [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
-- [Outputs of ROAST software](#outputs-of-roast-software)
-- [Review of simulation data](#review-of-simulation-data)
-- [How to ask questions](#how-to-ask-questions)
-- [Acknowledgements](#acknowledgements)
-- [Notes](#notes)
-- [License](#license)
+3. [How to use `roast_target`](#how-to-use-roast_target)
+4. [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
+5. [Outputs of ROAST software](#outputs-of-roast-software)
+6. [Review of simulation data](#review-of-simulation-data)
+7. [How to ask questions](#how-to-ask-questions)
+8. [Acknowledgements](#acknowledgements)
+9. [Notes](#notes)
+10. [License](#license)
 
 ## Getting started
 
