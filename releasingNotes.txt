@@ -12,7 +12,7 @@ Changed the default mesh options to generate slightly higher-resolution mesh.
 
 Updated the free solver getDP from version 2.11.2 to version 3.2.0.
 
-Fixed a potential bug if users want to place BioSemi electrodes (the four 10/10 electrodes in BioSemi layout that aid to place BioSemi electrodes have the same names as those in 10/10 system, which may cause complication in data management).
+Fixed a potential bug if users want to place BioSemi electrodes (the four 10/10 electrodes in BioSemi layout that aid to place BioSemi electrodes have the same names as those in 10/10 system, which may cause complication in data management). Fixed a bug in data management when users are using only the neck electrodes and/or the customized electrodes.
 
 Added the EGI HCGSN 256-channel system as another option for 'capType'. Now users can place any electrodes following the EGI layout by specifying 'capType','egi' (thanks to github user iPsych).
 

@@ -7,11 +7,7 @@ function [elec_allCoord,gel_allCoord] = placeAndModelElectrodes(elecLoc,elecRang
 % yhuang16@citymail.cuny.edu
 % April 2018
 
-if strcmpi(elecPara(1).capType,'none')
-    disp('placing electrodes following the customized layout ...')
-else
-    disp(['placing electrodes following the ' lower(elecPara(1).capType) ' layout ...'])
-end
+disp('placing electrodes...')
 
 if length(elecPara)==1
     numOfElec = size(elecLoc,1);
@@ -80,14 +76,12 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     
     switch lower(elecPara(i).elecType)
         case 'pad'
-            if ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
+                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
-                if strcmpi(elecPara(i).capType,'none')
-                    fprintf('placing electrode %s (%d out of %d) following the customized layout...\n',elecPlacing{i},i,size(elecLoc,1));
-                else
-                    fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
-                end
+                fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             end
             
             pad_length = elecPara(i).elecSize(1)/res;
@@ -129,14 +123,12 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'disc'
-            if ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
+                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
-                if strcmpi(elecPara(i).capType,'none')
-                    fprintf('placing electrode %s (%d out of %d) following the customized layout...\n',elecPlacing{i},i,size(elecLoc,1));
-                else
-                    fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
-                end
+                fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             end
             
             disc_radius = elecPara(i).elecSize(1)/res;
@@ -164,14 +156,12 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'ring'
-            if ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
+                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
+            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
-                if strcmpi(elecPara(i).capType,'none')
-                    fprintf('placing electrode %s (%d out of %d) following the customized layout...\n',elecPlacing{i},i,size(elecLoc,1));
-                else
-                    fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
-                end
+                fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
             end
             
             ring_radiusIn = elecPara(i).elecSize(1)/res;

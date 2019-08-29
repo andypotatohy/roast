@@ -94,7 +94,7 @@ end
 for i=1:length(para)
     para(i).indP = indP; para(i).indN = indN; para(i).indC = indC;
 end
-if isempty(indP) && isempty(indN) && ~isempty(indC)
+if isempty(indP)
     for i=1:length(para), para(i).capType = 'none'; end
 end
 
