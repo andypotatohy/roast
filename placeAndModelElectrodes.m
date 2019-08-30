@@ -76,9 +76,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
     
     switch lower(elecPara(i).elecType)
         case 'pad'
-            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
-                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
-            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom')) || ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
                 fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
@@ -123,9 +121,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'disc'
-            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
-                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
-            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom')) || ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
                 fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));
@@ -156,9 +152,7 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
             
         case 'ring'
-            if ~isempty(strfind(lower(elecPlacing{i}),'custom'))
-                fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
-            elseif ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
+            if ~isempty(strfind(lower(elecPlacing{i}),'custom')) || ismember(lower(elecPlacing{i}),{'nk1';'nk2';'nk3';'nk4'})
                 fprintf('placing electrode %s (%d out of %d)...\n',elecPlacing{i},i,size(elecLoc,1));
             else
                 fprintf('placing electrode %s (%d out of %d) in the %s layout...\n',elecPlacing{i},i,size(elecLoc,1),lower(elecPara(i).capType));

@@ -121,7 +121,7 @@ when you call roast, just like what you would do when you only have a T1.
 and center of the element bounding sphere, default 0.3;
 - `meshOpt.reratio`: maximal radius-edge ratio, default 3;
 - `meshOpt.maxvol`: target maximal tetrahedral element volume, default 10.  
-See iso2mesh documentation for more details on these options.
+See [iso2mesh documentation](http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Doc) for more details on these options.
 
 `'simulationTag'` -- a unique tag that identifies each simulation.  
 `dateTime string (default) | user-provided string`  
@@ -413,9 +413,9 @@ From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling t
 
     roast([],'leadField','simulationTag','MNI152leadField')
 
-This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get warning message the first time you run this asking you for confirmation, so be patient to get the lead field for targeting.
+This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message the first time you run this asking you for confirmation, so be patient to get the lead field for targeting.
 
-Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating lead field are: `T2`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
+Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
 
 If the input MRI has 1 mm isotropic resolution, then results from using `leadField` as the recipe can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). If the input MRI does not have 1 mm isotropic resolution but you turn on the `resampling` option, the generated lead field can also be readable by Soterix software.
 
@@ -438,21 +438,36 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `varargin`: Options for `roast_target()`. This follows the [same syntax](#synopsis-of-roast) as the `roast()` function.
 
-`coordType` --
+`'coordType'` -- the coordinate space where the target coordinates reside.
+`'MNI'` (default) | `'voxel'`  
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates.
 
-`optType` --
+`'optType'` -- the specific algorithm used to perform the targeted TES.
+`'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta).
+- `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
+- `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
+- `'wls-l1per'`: weighted least squares with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode. Aside from restricting the total injected current to be below 4 mA, you can also restrict the current at each electrode not exceeding a specified amount, for example, 1 mA.
+- `'unconstrained-lcmv'`: unconstrained LCMV (linearly constrained minimum variance). This is for max-focality without any constraint on injected current intensities.
+- `'lcmv-l1'`: LCMV with L1-norm constraint on injected current intensities.
+- `'lcmv-l1per'`: LCMV with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode.
+- `'max-l1'`: maximum intensity with L1-norm constraint.
+- `'max-l1per'`: maximum intensity with L1-norm constraint, with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`.
 
-`orient` --
+`'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.
+`'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1].
 
-`elecNum` --
+`'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.
+This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4.
 
-`targetRadius` --
+`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to XXX mm.
 
-`k` --
+`'k'` -- advanced option of roast_target()
 
-`a` --
+`'a'` -- advanced option of roast_target()
 
-`targetingtag` --
+`'targetingTag'` --
 
 
 ### Examples on `roast_target`
