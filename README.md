@@ -417,9 +417,15 @@ This will automatically generate all the lead field data on the MNI152 head requ
 
 Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
 
-If the input MRI has 1 mm isotropic resolution, then results from using `leadField` as the recipe can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). If the input MRI does not have 1 mm isotropic resolution but you turn on the `resampling` option, the generated lead field can also be readable by Soterix software.
+You can also generate the lead field for the New York head, which will take even more time as the solving of the New York head (0.5 mm resolution) takes twice the time of solving a 1-mm head model.
 
 ### Example 25
+
+    roast('nyhead','leadField','simulationTag','nyheadLeadField')
+
+If the input MRI has 1 mm isotropic resolution, then results from using `leadField` as the recipe can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). If the input MRI does not have 1 mm isotropic resolution but you turn on the `resampling` option, the generated lead field can also be readable by Soterix software.
+
+### Example 26
 
     roast('example/subject1.nii','leadField','resampling','on','simulationTag','subj1LeadFieldForSoterix')
 
@@ -432,7 +438,7 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#synopsis-of-roast) as the `roast()` function.
 
-`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 24](#example-24), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 26](#example-26).
+`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 24](#example-24), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 27](#example-27).
 
 `targetCoord`: the coordinates of the locations in the brain that you want to target. You can do either single location or multiple locations, by putting the coordinates into a *N-by-3* matrix, where *N* is the number of target locations. The coordinates can be either the voxel coordinates or the MNI coordinates, specified by the option `coordType` (see below). If you don't provide any target location, it defaults to the MNI coordinates of the left primary motor cortex (`[-48 -8 50]`).
 
@@ -440,11 +446,11 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates.
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, please make sure you get them using the original MRI that you used to run roast(). This is important because if you turned on 'resampling' or did 'zeropadding' the voxel coordinates from the original MRI need to be updated and roast_target() will do it for you automatically (see [Example 29] in [Example 26] you need to use '' to get the voxel coordinates instead of using ''). Also note if the raw MRI is not in RAS orientation, please run roast() first and then load the MRI to get the voxel coordinates (see [Example 30]). To avoid these complications, it is recommended to use the MNI coordinates.
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
-You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta).
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 31] and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
 - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
 - `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
 - `'wls-l1per'`: weighted least squares with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode. Aside from restricting the total injected current to be below 4 mA, you can also restrict the current at each electrode not exceeding a specified amount, for example, 1 mA.
@@ -456,29 +462,58 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1]. You can mix orientations for multi-focal, but cannot mix optimal with other unoptimal.
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28] and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29]. Note if you provide more than 1 target location, you can specify different orientations at each target, see [Example 31]. But you cannot mix the `'optimal'` orientation with other orientation.
 
-`'desiredintensity'` -- the desired electric field intensity at target node (in V/m), only applies to the max-focality algorithms (wls lcmv). Defaults to 1 V/m. Scalar only, cannot mix.
+`'desiredintensity'` -- the desired electric field intensity at target node (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target. see [Example 29].
 
 `'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.  
-This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4.
+This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4. See [Example 32].
 
-`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error xxx please increase xx.
+`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value for this option.
 
-`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to xx for details. Also you may want to decrease k if you want multi-focal targeting.
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [the paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 31].
 
-`'targetingTag'` --
+`'targetingTag'` -- a unique tag that identifies each run of targeting.  
+`dateTime string (default) | user-provided string`  
+This tag is used by roast_target() for managing the data generated from each run of targeting. It's like the `'simulationTag'` in roast(), which can
+identify if a certain run of targeting has been already done. If yes, it will
+just load the results to save time. You can leave this option empty so 
+that roast_target() will just use the date and time as the unique tag for the targeting. Or you can provide your preferred tag for a specific
+targeting ([Example 31](#example-)), then you can find it more easily later. Also all the
+targeting history with options info and results are saved in the
+log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
 
 ### Examples on `roast_target`
 
-#### Example 26
+#### Example 27
 
     roast_target([],'MNI152leadField')
 
 If you have run [Example 24](#example-24), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 24](#example-24). Here in this example, ...
 
-TO BE ADDED...
+#### Example 28
+
+nyhead with optimal orient
+
+#### Example 29
+
+subj1 with custom orient  desiredInt
+
+#### Example 30
+non ras head click vox coord
+roast
+now click
+roast_target left wls-l1
+
+#### Example 31
+multifocal mixed orient low k  tarTag
+
+#### Example 32
+elecnum 8
+
+
+
 
 ## More notes on the `capInfo.xls` file
 
@@ -564,7 +599,7 @@ targeting.](https://www.sciencedirect.com/science/article/pii/S1053811915011325)
 
 If you also use the targeting feature (`roast_target`), please cite these:
 
-TO BE ADDED...
+jck20112013 huang2018
 
 ROAST was supported by NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
