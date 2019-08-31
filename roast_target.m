@@ -108,6 +108,9 @@ while indArg <= length(varargin)
         case 'orient'
             orient = varargin{indArg+1};
             indArg = indArg+2;
+        case 'desiredintensity'
+            desiredIntensity = varargin{indArg+1};
+            indArg = indArg+2;
         case 'elecnum'
             elecNum = varargin{indArg+1};
             indArg = indArg+2;
@@ -117,14 +120,11 @@ while indArg <= length(varargin)
         case 'k'
             k = varargin{indArg+1};
             indArg = indArg+2;
-        case 'a'
-            a = varargin{indArg+1};
-            indArg = indArg+2;
         case 'targetingtag'
             tarTag = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
-            error('Supported options are: ''coordType'', ''optType'', ''orient'', ''elecNum'', ''targetRadius'', ''k'', ''a'' and ''targetingtag''.');
+            error('Supported options are: ''coordType'', ''optType'', ''orient'', ''desiredIntensity'', ''elecNum'', ''targetRadius'', ''k'', and ''targetingtag''.');
     end
 end
 
@@ -211,6 +211,19 @@ if iscell(orient)
     end
 end
 
+if ~exist('desiredIntensity','var')
+    desiredIntensity = 1;
+else
+    if ~isempty(strfind(lower(optType),'wls')) || ~isempty(strfind(lower(optType),'lcmv'))
+        if desiredIntensity<=0
+            error('Unrecognized option value. ''desiredIntensity'' should be a positive value.');
+        end
+    else
+        warning('Option ''desiredIntensity'' will be ignored for max-intensity optimization.');
+        desiredIntensity = 1;
+    end    
+end
+
 if ~exist('elecNum','var')
     if strcmpi(optType,'max-l1per')
         elecNum = 4;
@@ -245,8 +258,8 @@ if ~exist('k','var')
     end
 else
     if ~isempty(strfind(lower(optType),'wls'))
-        if k<=0 || k>=1
-            error('Unrecognized option value. Please enter the ''k'' value between 0 and 1.');
+        if k<=0
+            error('Unrecognized option value. ''k'' should be a positive value.');
         else
             warning('You''re changing the advanced options of ROAST-TARGET. Unless you know what you''re doing, please keep the ''k'' value default.');
         end
@@ -254,25 +267,6 @@ else
         warning('Option ''k'' will be ignored for optimization type other than weighted least square.');
         k = [];
     end
-end
-
-if ~exist('a','var')
-    if strcmpi(optType,'lcmv-l1') || strcmpi(optType,'lcmv-l1per')
-        a = 0.5;
-    else
-        a = 1;
-    end
-else
-    if strcmpi(optType,'lcmv-l1') || strcmpi(optType,'lcmv-l1per')
-        if a<=0 || a>=1
-            error('Unrecognized option value. Please enter the ''a'' value between 0 and 1.');
-        else
-            warning('You''re changing the advanced options of ROAST-TARGET. Unless you know what you''re doing, please keep the ''a'' value default.');
-        end
-    else
-        warning('Option ''a'' will be ignored for optimization type other than the constrained LCMV.');
-        a = 1;
-    end    
 end
 
 if ~exist('tarTag','var'), tarTag = []; end
@@ -322,7 +316,7 @@ p.optType = lower(optType);
 p.elecNum = elecNum;
 p.targetRadius = targetRadius/mean(hdrInfo.pixdim); % to voxel space
 p.k = k;
-p.a = a;
+p.desiredIntensity = desiredIntensity;
 
 if ~iscell(orient)
     u0 = orient;
@@ -366,7 +360,7 @@ for i=1:size(u0,1)
 end
 p.u = u0;
 
-options = struct('targetCoord',targetCoord,'targetCoordMNI',targetCoordMNI,'optType',optType,'elecNum',elecNum,'targetRadius',targetRadius,'k',k,'a',a,'u0',u0,'uniqueTag',tarTag,'roastTag',simTag);
+options = struct('targetCoord',targetCoord,'targetCoordMNI',targetCoordMNI,'optType',optType,'desiredIntensity',desiredIntensity,'elecNum',elecNum,'targetRadius',targetRadius,'k',k,'u0',u0,'uniqueTag',tarTag,'roastTag',simTag);
 options.orient = orient; % make sure options is a 1x1 struct
 
 % log tracking here

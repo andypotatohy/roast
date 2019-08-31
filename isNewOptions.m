@@ -235,12 +235,14 @@ switch fun
             end
         end
         
-        if ~strcmpi(optNew.optType,optOld.optType)
-            isNewOpt = 1;
-            return
+        if ~isempty(strfind(lower(optNew.optType),'wls')) || ~isempty(strfind(lower(optNew.optType),'lcmv'))
+            if optNew.desiredIntensity ~= optOld.desiredIntensity
+                isNewOpt = 1;
+                return
+            end
         end
         
-        if optNew.targetRadius ~= optOld.targetRadius
+        if ~strcmpi(optNew.optType,optOld.optType)
             isNewOpt = 1;
             return
         end
@@ -252,15 +254,13 @@ switch fun
             end
         end
         
-        if ~isempty(strfind(lower(optNew.optType),'wls'))
-            if optNew.k ~= optOld.k
-                isNewOpt = 1;
-                return
-            end
+        if optNew.targetRadius ~= optOld.targetRadius
+            isNewOpt = 1;
+            return
         end
         
-        if strcmpi(optNew.optType,'lcmv-l1') || strcmpi(optNew.optType,'lcmv-l1per')
-            if optNew.a ~= optOld.a
+        if ~isempty(strfind(lower(optNew.optType),'wls'))
+            if optNew.k ~= optOld.k
                 isNewOpt = 1;
                 return
             end

@@ -192,6 +192,14 @@ switch fun
         end
         fprintf(fid,'\n');
         
+        fprintf(fid,'desired intensity at each target (in V/m, only for max-focality):\t');
+        if ~isempty(strfind(lower(opt.optType),'wls')) || ~isempty(strfind(lower(opt.optType),'lcmv'))
+            fprintf(fid,'%.3f',opt.desiredIntensity);
+        else
+            fprintf(fid,'N/A');
+        end
+        fprintf(fid,'\n');
+        
         fprintf(fid,'desired orientation at each target:\t');
         if ~iscell(opt.orient)
             for i=1:size(opt.orient,1)
@@ -239,14 +247,6 @@ switch fun
             fprintf(fid,'N/A');
         end
         fprintf(fid,'\n');
-        
-        fprintf(fid,'a (only for lcmv):\t');
-        if strcmpi(opt.optType,'lcmv-l1') || strcmpi(opt.optType,'lcmv-l1per')
-            fprintf(fid,'%.3f',opt.a);
-        else
-            fprintf(fid,'N/A');
-        end
-        fprintf(fid,'\n');        
         
         fclose(fid);
         

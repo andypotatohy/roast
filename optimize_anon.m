@@ -50,12 +50,12 @@ for n = 1:numOfTargets
     Ed(n,:) = [cos(t(n,1))*sin(t(n,2)) sin(t(n,1))*sin(t(n,2)) cos(t(n,2))]; % spherical to cartesian coordinates
 end
 
-a = p.a;
+desiredIntensity = p.desiredIntensity;
 xd = zeros(3*Nlocs,1);
 for n = 1:numOfTargets
-    xd(target_nodes{n}) = a*Ed(n,1);
-    xd(target_nodes{n}+Nlocs) = a*Ed(n,2);
-    xd(target_nodes{n}+2*Nlocs) = a*Ed(n,3);
+    xd(target_nodes{n}) = desiredIntensity*Ed(n,1);
+    xd(target_nodes{n}+Nlocs) = desiredIntensity*Ed(n,2);
+    xd(target_nodes{n}+2*Nlocs) = desiredIntensity*Ed(n,3);
 end
 
 % CORE ALGORITHM

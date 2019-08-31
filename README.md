@@ -456,7 +456,9 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1].
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1]. You can mix orientations for multi-focal, but cannot mix optimal with other unoptimal.
+
+`'desiredintensity'` -- the desired electric field intensity at target node (in V/m), only applies to the max-focality algorithms (wls lcmv). Defaults to 1 V/m. Scalar only, cannot mix.
 
 `'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.  
 This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4.
@@ -464,8 +466,6 @@ This option only applies when `'optType'` is set to `'max-l1per'`. Please provid
 `'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error xxx please increase xx.
 
 `'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to xx for details. Also you may want to decrease k if you want multi-focal targeting.
-
-`'a'` -- advanced option of roast_target(). It's the desired electric field at target node (in V/m), only applies to the constrained LCMV algorithms ().
 
 `'targetingTag'` --
 
