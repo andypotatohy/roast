@@ -438,11 +438,11 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `varargin`: Options for `roast_target()`. This follows the [same syntax](#synopsis-of-roast) as the `roast()` function.
 
-`'coordType'` -- the coordinate space where the target coordinates reside.
+`'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
 You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates.
 
-`'optType'` -- the specific algorithm used to perform the targeted TES.
+`'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
 You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta).
 - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
@@ -454,18 +454,18 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
 - `'max-l1'`: maximum intensity with L1-norm constraint.
 - `'max-l1per'`: maximum intensity with L1-norm constraint, with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`.
 
-`'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.
-`'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice
+`'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
+`'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
 The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1].
 
-`'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.
+`'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.  
 This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4.
 
-`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to XXX mm.
+`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error xxx please increase xx.
 
-`'k'` -- advanced option of roast_target()
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to xx for details. Also you may want to decrease k if you want multi-focal targeting.
 
-`'a'` -- advanced option of roast_target()
+`'a'` -- advanced option of roast_target(). It's the desired electric field at target node (in V/m), only applies to the constrained LCMV algorithms ().
 
 `'targetingTag'` --
 

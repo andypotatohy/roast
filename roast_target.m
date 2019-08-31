@@ -229,7 +229,7 @@ else
 end
 
 if ~exist('targetRadius','var')
-    targetRadius = 8;
+    targetRadius = 2;
 else
     if targetRadius<=0 || mod(targetRadius,1)~=0
         error('Unrecognized option value. Please enter positive integer value for option ''targetRadius''.');
@@ -239,7 +239,7 @@ end
 
 if ~exist('k','var')
     if ~isempty(strfind(lower(optType),'wls'))
-        k = 0.02; % you may want to decrease k if you want multi-focal targeting
+        k = 0.2; % you may want to decrease k if you want multi-focal targeting
     else
         k = [];
     end
