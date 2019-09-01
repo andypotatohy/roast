@@ -438,7 +438,7 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#synopsis-of-roast) as the `roast()` function.
 
-`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 24](#example-24), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 27](#example-27).
+`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 24](#example-24), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 27](#example-27). Similarly, if you run [Example 25](#example-25) first, you can run [Example 28](#example-28) for targeting on the New York head.
 
 `targetCoord`: the coordinates of the locations in the brain that you want to target. You can do either single location or multiple locations, by putting the coordinates into a *N-by-3* matrix, where *N* is the number of target locations. The coordinates can be either the voxel coordinates or the MNI coordinates, specified by the option `coordType` (see below). If you don't provide any target location, it defaults to the MNI coordinates of the left primary motor cortex (`[-48 -8 50]`).
 
@@ -446,40 +446,42 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, please make sure you get them using the original MRI that you used to run roast(). This is important because if you turned on 'resampling' or did 'zeropadding' the voxel coordinates from the original MRI need to be updated and roast_target() will do it for you automatically (see [Example 29] in [Example 26] you need to use '' to get the voxel coordinates instead of using ''). Also note if the raw MRI is not in RAS orientation, please run roast() first and then load the MRI to get the voxel coordinates (see [Example 30]). To avoid these complications, it is recommended to use the MNI coordinates.
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, please make sure you get them using the original MRI that you used to run `roast()`, even if you turned on `'resampling'` or did `'zeropadding'` when running `roast()` to generate the lead field (see [Example 29](#example-29)). Also note if the raw MRI is not in RAS orientation, please run `roast()` first and then load the MRI to get the voxel coordinates (see [Example 30]). To avoid these complications, it is recommended to just use the MNI coordinates.
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
-You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 31] and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
-- `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
-- `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
-- `'wls-l1per'`: weighted least squares with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode. Aside from restricting the total injected current to be below 4 mA, you can also restrict the current at each electrode not exceeding a specified amount, for example, 1 mA.
-- `'unconstrained-lcmv'`: unconstrained LCMV (linearly constrained minimum variance). This is for max-focality without any constraint on injected current intensities.
-- `'lcmv-l1'`: LCMV with L1-norm constraint on injected current intensities.
-- `'lcmv-l1per'`: LCMV with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode.
-- `'max-l1'`: maximum intensity with L1-norm constraint.
-- `'max-l1per'`: maximum intensity with L1-norm constraint, with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`.
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 31](#example-31) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
+- Max-focality algorithms
+  - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
+  - `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
+  - `'wls-l1per'`: weighted least squares with L1-norm constraint on injected current intensities, with additional L1-norm constraint on each individual electrode. Aside from restricting the total injected current to be below 4 mA, this also restricts the current at each electrode not exceeding 1 mA.
+  - `'unconstrained-lcmv'`: unconstrained LCMV (linearly constrained minimum variance). This is for max-focality without any constraint on injected current intensities.
+  - `'lcmv-l1'`: LCMV with L1-norm constraint on injected current intensities to be smaller than 4 mA.
+  - `'lcmv-l1per'`: LCMV with L1-norm constraint on injected current intensities below 4 mA, with additional L1-norm constraint on each individual electrode to be below 1 mA.
+- Max-intensity algorithms
+  - `'max-l1'`: maximum intensity with L1-norm constraint on injected current intensities to be smaller than 4 mA.
+  - `'max-l1per'`: maximum intensity with L1-norm constraint on injected current intensities below 4 mA., with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`, see [Example 32](#example-32).
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28] and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29]. Note if you provide more than 1 target location, you can specify different orientations at each target, see [Example 31]. But you cannot mix the `'optimal'` orientation with other orientation.
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28](#example-28) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29](#example-29). Note if you provide more than 1 target location, you can specify different orientations at each target, see [Example 31](#example-31). But you cannot mix the `'optimal'` orientation with other orientations.
 
-`'desiredintensity'` -- the desired electric field intensity at target node (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target. see [Example 29].
+`'desiredIntensity'` -- the desired electric field intensity at target location (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target.
 
-`'elecNum'` -- the desired number of electrodes in the optimal montage when using algorithm `'max-l1per'`.  
-This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4. See [Example 32].
+`'elecNum'` -- the desired number of electrodes in the optimal montage when using the algorithm `'max-l1per'`.  
+This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4. See [Example 32](#example-32).
 
-`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value for this option.
+`'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value of this option.
 
-`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [the paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 31].
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 31](#example-31).
 
 `'targetingTag'` -- a unique tag that identifies each run of targeting.  
 `dateTime string (default) | user-provided string`  
-This tag is used by roast_target() for managing the data generated from each run of targeting. It's like the `'simulationTag'` in roast(), which can
+This tag is used by `roast_target()` for managing the data generated from each run of targeting. It's like the `'simulationTag'` in `roast()`, which can
 identify if a certain run of targeting has been already done. If yes, it will
 just load the results to save time. You can leave this option empty so 
-that roast_target() will just use the date and time as the unique tag for the targeting. Or you can provide your preferred tag for a specific
-targeting ([Example 31](#example-)), then you can find it more easily later. Also all the
+that `roast_target()` will just use the date and time as the unique tag for the targeting. Or you can provide your preferred tag for a specific
+targeting ([Example 31](#example-31)), then you can find it more easily later. Also all the
 targeting history with options info and results are saved in the
 log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
@@ -494,11 +496,17 @@ If you have run [Example 24](#example-24), now you can perform targeting on the 
 
 #### Example 28
 
+    roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
+
 nyhead with optimal orient
+If you have run [Example 25](#example-25)
 
 #### Example 29
 
-subj1 with custom orient  desiredInt
+    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[vox;vox],'coordType','voxel','optType','wls-l1','orient',[],'k',0.02)
+
+subj1 with custom orient 
+you need to use '' to get the voxel coordinates instead of using ''
 
 #### Example 30
 non ras head click vox coord
@@ -507,6 +515,9 @@ now click
 roast_target left wls-l1
 
 #### Example 31
+
+    roast_target([],'MNI152leadField',[52 184 72;25 80 72;130 39 72;147 125 72],'coordtype','voxel','opttype','wls-l1','k',0.002,'targetingTag','sdfadfa')
+
 multifocal mixed orient low k  tarTag
 
 #### Example 32
