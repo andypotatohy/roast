@@ -231,7 +231,7 @@ into a text file, and save the text file to the MRI data directory with name
 electrodes you specified. You need to name each customized electrode in
 the text file starting with `"custom"` (e.g., for this example they're
 named as `custom1`, `custom2`, etc. You can of course do
-`"custom_MyPreferredElectrodeName"`).
+`"custom_MyPreferredElectrodeName"`). Note that you need to use the MRI that enters ROAST to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
 
 #### Example 6
 
@@ -446,7 +446,7 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, please make sure you get them using the original MRI that you used to run `roast()`, even if you turned on `'resampling'` or did `'zeropadding'` when running `roast()` to generate the lead field (see [Example 29](#example-29)). Also note if the raw MRI is not in RAS orientation, please run `roast()` first and then load the MRI to get the voxel coordinates (see [Example 30]). To avoid these complications, it is recommended to just use the MNI coordinates.
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 29](#example-29)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
@@ -464,7 +464,7 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28](#example-28) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29](#example-29). Note if you provide more than 1 target location, you can specify different orientations at each target, see [Example 31](#example-31). But you cannot mix the `'optimal'` orientation with other orientations.
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28](#example-28) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29](#example-29). If you provide more than 1 target location, you can specify different orientations at each target, by providing a cell string of different keywords or putting customized orientation vectors into an *N-by-3* matrix, where *N* is the number of target locations, see [Example 30](#example-30). You can also mix pre-defined orientation keywords with customized orientation vectors, see [Example 31](#example-31). But you cannot mix the `'optimal'` orientation with other orientations.
 
 `'desiredIntensity'` -- the desired electric field intensity at target location (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target.
 
@@ -503,20 +503,23 @@ If you have run [Example 25](#example-25)
 
 #### Example 29
 
-    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[vox;vox],'coordType','voxel','optType','wls-l1','orient',[],'k',0.02)
+    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordtype','voxel','orient',[1 1 1])
 
 subj1 with custom orient 
 you need to use '' to get the voxel coordinates instead of using ''
 
 #### Example 30
-non ras head click vox coord
-roast
-now click
-roast_target left wls-l1
+
+    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',{'right','left'},'optType','wls-l1')
+
+#### Example 30
+
+    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',[1 1 1;-1 -1 -1],'optType','wls-l1')
+
 
 #### Example 31
 
-    roast_target([],'MNI152leadField',[52 184 72;25 80 72;130 39 72;147 125 72],'coordtype','voxel','opttype','wls-l1','k',0.002,'targetingTag','sdfadfa')
+    roast_target([],'MNI152leadField',[52 184 72;25 80 72;130 39 72;147 125 72],'coordtype','voxel','orient',{'radial-in,[1 1 1],'left','anterior'},'opttype','wls-l1','k',0.002,'targetingTag','sdfadfa')
 
 multifocal mixed orient low k  tarTag
 
@@ -528,27 +531,29 @@ elecnum 8
 
 ## More notes on the `capInfo.xls` file
 
-A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of both [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6) and [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
+A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of the [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6), [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg), and [EGI HCGSN](https://www.egi.com/images/stories/manuals/Second%20Batch%20of%20IFUs%20with%20new%20Notified%20Body%20Jan%202019/GSN_tman_8105171-51_20181231.pdf) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
 
 
 ## Outputs of ROAST software
 
 ### Outputs of `roast`
 
+`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all options. The simulation data are mainly output in the following formats.
+
 #### Figure outputs
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the MRI voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
 
 #### Outputs in Matlab format
 
 ROAST saves the results as `"subjName_simulationTag_roastResult.mat"`, where 3 variables are available:
 
-`vol_all`: the voltage at each pixel in the MRI voxel space, unit in mV.
+`vol_all`: the voltage at each pixel in the model voxel space, unit in mV.
 
-`ef_all`: the electric field vector at each pixel in the MRI voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
+`ef_all`: the electric field vector at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
 
-`ef_mag`: the magnitude of the electric field at each pixel in the MRI voxel space, unit in V/m.
+`ef_mag`: the magnitude of the electric field at each pixel in the model voxel space, unit in V/m.
 
 #### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
 
@@ -564,11 +569,31 @@ Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.
 
 E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
 
-Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
+Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
 
 ### Outputs of `roast_target`
 
-TO BE ADDED...
+`roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded.
+
+The results are also output in the following formats.
+
+#### Figure outputs
+
+`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a white circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
+
+#### Outputs in Matlab format
+
+`roast_target()` saves the results as `"subjName_targetingTag_targetResult.mat"`, where a structure variable named `'r'` with the following fields are available:
+
+`targetCoord`: the target coordinates in the model voxel space.
+`mon`: the optimal montage in a format of a vector with each element indicating the injected current intensity (in mA).
+`montageTxt`: the optimal montage in text format.
+`xopt`: the optimized electric field vector induced by the optimal montage at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
+`ef_all`: the optimized electric field induced by the optimal montage at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
+`ef_mag`: the magnitude of the optimized electric field at each pixel in the model voxel space, unit in V/m.
+`targetMag`: the magnitude of the optimized electric field at each target location (in V/m).
+`targetInt`: the intensity of the optimized electric field along the desired orientation at each target location (in V/m).
+`targetMagFoc`: the focality of the magnitude of the optimized electric field at each target location (in cm).
 
 ## Review of simulation data
 

@@ -292,6 +292,7 @@ end
 
 if strcmpi(coordType,'mni')
     targetCoordMNI = targetCoord;
+    targetCoordOriginal = [];
     for i=1:numOfTargets
         temp = mni2mri*[targetCoord(i,:) 1]';
         targetCoord(i,:) = round(temp(1:3)'); % model voxel coord

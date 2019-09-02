@@ -189,14 +189,18 @@ switch fun
         fprintf(fid,'\n');
         
         fprintf(fid,'targetCoord (in original MRI voxel space):\t');
-        for i=1:size(opt.targetCoordOriginal,1)
-            fprintf(fid,'[');
-            for j=1:size(opt.targetCoordOriginal,2)
-                fprintf(fid,'%d',opt.targetCoordOriginal(i,j));
-                if j<size(opt.targetCoordOriginal,2), fprintf(fid,','); end
+        if ~isempty(opt.targetCoordOriginal)
+            for i=1:size(opt.targetCoordOriginal,1)
+                fprintf(fid,'[');
+                for j=1:size(opt.targetCoordOriginal,2)
+                    fprintf(fid,'%d',opt.targetCoordOriginal(i,j));
+                    if j<size(opt.targetCoordOriginal,2), fprintf(fid,','); end
+                end
+                fprintf(fid,']');
+                if i<size(opt.targetCoordOriginal,1), fprintf(fid,'; '); end
             end
-            fprintf(fid,']');
-            if i<size(opt.targetCoordOriginal,1), fprintf(fid,'; '); end
+        else
+            fprintf(fid,'not provided');
         end
         fprintf(fid,'\n');
         
