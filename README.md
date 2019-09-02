@@ -637,7 +637,7 @@ Review the results generated from running [Example 23](#example-23), where `'awe
 
     reviewRes('nyhead','20180611T185950')
 
-Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brian by default
+Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brian by default.
 
 #### Example 37
 
@@ -658,11 +658,11 @@ Review the results from running targeting `'mixed_orient'` in [Example 32](#exam
 
 ## 7. How to ask questions
 
-Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) and [Example 32](#example-32) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
+Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) and [Example 32](#example-32) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#4-more-notes-on-the-capInfoxls-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
-If you are still stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions and share your experiences there.
+If you are still stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions, answer other users' questions and share your experiences there.
 
 ## 8. Acknowledgements
 
