@@ -2,11 +2,11 @@
 
 [1. Getting started](#1-getting-started)  
 [2. How to use `roast`](#2-how-to-use-roast)  
-   - [2.1 Synopsis of `roast`](#21-synopsis-of-roast)
-   - [Examples on `roast`](#examples-on-roast)
+   - [2.1 Synopsis of `roast`](#21-synopsis-of-roast)  
+   - [2.2 Examples on `roast`](#22examples-on-roast)  
 [3. How to use `roast_target`](#3-how-to-use-roast_target)  
-   - [Synopsis of `roast_target`](#synopsis-of-roast_target)
-   - [Examples on `roast_target`](#examples-on-roast_target)
+   - [3.1 Synopsis of `roast_target`](#31synopsis-of-roast_target)
+   - [3.2 Examples on `roast_target`](#32examples-on-roast_target)
 4. [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)  
 5. [Outputs of ROAST software](#outputs-of-roast-software)  
    - [Outputs of `roast`](#outputs-of-roast)
@@ -25,7 +25,7 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#2-how-to-use-roast), [Section 3](#3-how-to-use-roast_target), and [Section 6](#review-of-simulation-data), respectively.
+There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#2-how-to-use-roast), [Section 3](#3-how-to-use-roast_target), and [Section 6](#6-review-of-simulation-data), respectively.
 
 ## 2. How to use `roast`
 
@@ -170,7 +170,7 @@ conducting medium under each electrode. You can even assign different conductivi
 values to different electrodes and their conducting media (e.g., `'gel'`). See
 [Example 21](#example-21) and [Example 22](#example-22) for details.
 
-### Examples on `roast`
+### 2.2 Examples on `roast`
 
 #### Example 1
 
@@ -432,7 +432,7 @@ If the input MRI has 1 mm isotropic resolution, then results from using `leadFie
 This will generate the lead field for subject1. Also since the MRI resolution is resampled into 1 mm isotropic, the results can be loaded into Soterix software.
 
 
-### Synopsis of `roast_target`
+### 3.1 Synopsis of `roast_target`
 
 `roast_target(subj,simTag,targetCoord,varargin)`
 
@@ -486,7 +486,7 @@ targeting history with options info and results are saved in the
 log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
 
-### Examples on `roast_target`
+### 3.2 Examples on `roast_target`
 
 #### Example 27
 
@@ -544,7 +544,7 @@ A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root di
 
 ## 5. Outputs of ROAST software
 
-### Outputs of `roast`
+### 5.1 Outputs of `roast`
 
 `roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all the options.
 
@@ -581,7 +581,7 @@ E-field: `"subjName_simulationTag_e.pos"`, unit in V/m.
 
 Note in these text files, voltage and electric field are defined at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
 
-### Outputs of `roast_target`
+### 5.2 Outputs of `roast_target`
 
 `roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all the options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after possible transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded.
 
@@ -623,7 +623,7 @@ You can use a main function `reviewRes()` to review/visualize the simulations/ta
 
 `fastRender`: do fast 3D rendering or not. By default it's fast rendering. If you turn this option off, it'll generate a smoother surface rendering but also needs more time if the mesh is big.
 
-### Review of data from `roast`
+### 6.1 Review of data from `roast`
 
 #### Example 35
 
@@ -653,7 +653,7 @@ lead field as your recipe, please go to roast_target() to run targeting.
 After running targeting, you can visualize the optimized electric field
 using this function, by providing both the simTag and tarTag.
 
-### Review of data from `roast_target`
+### 6.2 Review of data from `roast_target`
 
 #### Example 38
 
