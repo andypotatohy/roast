@@ -4,7 +4,7 @@ Added a feature in ROAST main function roast() so that users can generate the da
 
 Introduced a new main function roast_target() for doing targeted TES. Users can also use the MNI coordinates for targeting.
 
-Enforce the RAS rule for all input data to roast(). This prevents a potential bug in the orientation option for pad electrodes in roast(), which was not paid attention to previously if NON-RAS head is modeled. This rule also makes the orientation option for roast_target() to work well.
+Enforce the RAS rule for all input data to roast(). This prevents a potential bug in the orientation option ('elecOri') for pad electrodes in roast(), which was not paid attention to previously if NON-RAS head is modeled. This rule also makes the orientation option ('orient') for roast_target() to work well.
 
 Make sliceshow() be able to show both the voxel and MNI coordinates when users click at different locations.
 

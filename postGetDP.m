@@ -21,7 +21,7 @@ if ~isempty(P2) % for roast()
     % interpolation into regular grid in the voxel space
     for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
 
-    [~,baseFilenameRSPD] = fileparts(P2);
+    [~,baseFilenameRasRSPD] = fileparts(P2);
     
     [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
     
@@ -57,7 +57,7 @@ if ~isempty(P2) % for roast()
     if isempty(strfind(P2,'example/nyhead'))
         template = load_untouch_nii(P2);
     else
-        template = load_untouch_nii([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii']);
+        template = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii']);
     end % Load the original MRI to save the results as NIFTI format
     
     template.hdr.dime.datatype = 16;

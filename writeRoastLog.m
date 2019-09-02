@@ -139,6 +139,14 @@ switch fun
         else
             fprintf(fid,'none');
         end
+        fprintf(fid,'\n');
+        
+        fprintf(fid,'original MRI in RAS?:\t');
+        if opt.isNonRAS
+            fprintf(fid,'no, and is re-oriented into RAS');
+        else
+            fprintf(fid,'yes');
+        end
         
         fprintf(fid,'\n\n');
         fclose(fid);
@@ -180,7 +188,19 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'targetCoord (in voxel space):\t');
+        fprintf(fid,'targetCoord (in original MRI voxel space):\t');
+        for i=1:size(opt.targetCoordOriginal,1)
+            fprintf(fid,'[');
+            for j=1:size(opt.targetCoordOriginal,2)
+                fprintf(fid,'%d',opt.targetCoordOriginal(i,j));
+                if j<size(opt.targetCoordOriginal,2), fprintf(fid,','); end
+            end
+            fprintf(fid,']');
+            if i<size(opt.targetCoordOriginal,1), fprintf(fid,'; '); end
+        end
+        fprintf(fid,'\n');
+        
+        fprintf(fid,'targetCoord (in model voxel space):\t');
         for i=1:size(opt.targetCoord,1)
             fprintf(fid,'[');
             for j=1:size(opt.targetCoord,2)

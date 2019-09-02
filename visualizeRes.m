@@ -19,14 +19,14 @@ end
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRSPD] = fileparts(P2);
+[~,baseFilenameRasRSPD] = fileparts(P2);
 if isempty(T2)
-    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
 else
-    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
 end
 
-mappingFile = [dirname filesep baseFilenameRSPD '_seg8.mat'];
+mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -49,7 +49,7 @@ if showAll
     end    
 end
 
-masks = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+masks = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
 allMask = masks.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 if isRoast

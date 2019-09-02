@@ -162,25 +162,33 @@ else
     
 end
 
-if optRoast.resamp
-    subjRS = [dirname filesep baseFilename '_1mm' ext];
+% to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
+if optRoast.isNonRAS
+    subjRas = [dirname filesep baseFilename '_ras' ext];
 else
-    subjRS = subj;
+    subjRas = subj;
+end
+
+if optRoast.resamp
+    [dirname2,baseFilename2,ext2] = fileparts(subjRas);
+    subjRasRS = [dirname filesep baseFilename2 '_1mm' ext];
+else
+    subjRasRS = subjRas;
 end
 
 if optRoast.zeroPad>0
-    [dirname2,baseFilename2,ext2] = fileparts(subjRS);
-    subjRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
-    %     subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
+    [dirname2,baseFilename2,ext2] = fileparts(subjRasRS);
+    subjRasRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
+    %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
-    subjRSPD = subjRS;
+    subjRasRSPD = subjRasRS;
 end
 
-[~,baseFilenameRSPD] = fileparts(subjRSPD);
+[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
 if isempty(optRoast.T2)
-    mappingFile = [dirname filesep baseFilenameRSPD '_T1orT2_seg8.mat'];
+    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_seg8.mat'];
 else
-    mappingFile = [dirname filesep baseFilenameRSPD '_T1andT2_seg8.mat'];
+    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_seg8.mat'];
 end
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
@@ -203,10 +211,10 @@ if isRoast
     if ~strcmp(baseFilename,'nyhead')
         
         disp('showing MRI and segmentations...');
-        if ~exist(subjRSPD,'file')
-            error(['The subject MRI you provided ' subjRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
+        if ~exist(subjRasRSPD,'file')
+            error(['The subject MRI you provided ' subjRasRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
         else
-            data = load_untouch_nii(subjRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
+            data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         end
         
         if ~isempty(optRoast.T2) %T2 specified
@@ -233,9 +241,9 @@ else
 end
 
 if isempty(optRoast.T2)
-    masksFile = [dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'];
+    masksFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'];
 else
-    masksFile = [dirname filesep baseFilenameRSPD '_T1andT2_masks.nii'];
+    masksFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'];
 end
 if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
@@ -309,7 +317,7 @@ if ~fastRender
     % very slow if mesh is big
 end
 
-hdrFile = [dirname filesep baseFilenameRSPD '_header.mat'];
+hdrFile = [dirname filesep baseFilenameRasRSPD '_header.mat'];
 if ~exist(hdrFile,'file')
     error(['Header file ' hdrFile ' not found. Check if you run through electrode placement.']);
 else

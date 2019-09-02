@@ -199,12 +199,12 @@ switch fun
             return
         end
         
-        if size(optNew.targetCoord,1) ~= size(optOld.targetCoord,1)
+        if size(optNew.targetCoordOriginal,1) ~= size(optOld.targetCoordOriginal,1)
             isNewOpt = 1;
             return
         end
         
-        [isDone,indInOldRun] = ismember(optNew.targetCoord,optOld.targetCoord,'rows');
+        [isDone,indInOldRun] = ismember(optNew.targetCoordOriginal,optOld.targetCoordOriginal,'rows');
         if ~all(isDone), isNewOpt = 1; return; end
         % indInOldRun ensures target order will not affect determining if
         % it's a new run

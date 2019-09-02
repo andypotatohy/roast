@@ -538,7 +538,7 @@ A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root di
 #### Figure outputs
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the MRI voxel space, and the 3D rendering displays the data in the world space.
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the MRI voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
 
 #### Outputs in Matlab format
 

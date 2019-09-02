@@ -50,18 +50,25 @@ if ~strcmp(optRoast.configTxt,'leadFieldGeneration')
 end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if optRoast.resamp
-    subjRS = [dirname filesep baseFilename '_1mm' ext];
+if optRoast.isNonRAS
+    subjRas = [dirname filesep baseFilename '_ras' ext];
 else
-    subjRS = subj;
+    subjRas = subj;
+end
+
+if optRoast.resamp
+    [dirname2,baseFilename2,ext2] = fileparts(subjRas);
+    subjRasRS = [dirname filesep baseFilename2 '_1mm' ext];
+else
+    subjRasRS = subjRas;
 end
 
 if optRoast.zeroPad>0
-    [dirname2,baseFilename2,ext2] = fileparts(subjRS);
-    subjRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
-    %     subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
+    [dirname2,baseFilename2,ext2] = fileparts(subjRasRS);
+    subjRasRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
+    %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
-    subjRSPD = subjRS;
+    subjRasRSPD = subjRasRS;
 end
 
 meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
@@ -71,8 +78,8 @@ else
     load(meshFile,'node','elem','face');
 end
 
-[~,baseFilenameRSPD] = fileparts(subjRSPD);
-hdrFile = [dirname filesep baseFilenameRSPD '_header.mat'];
+[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
+hdrFile = [dirname filesep baseFilenameRasRSPD '_header.mat'];
 if ~exist(hdrFile,'file')
     error(['Header file ' hdrFile ' not found. Check if you run through electrode placement in ROAST.']);
 else
@@ -90,6 +97,7 @@ end
 if size(unique(targetCoord,'rows'),1) < size(targetCoord,1)
     error('Duplicated target locations. Please make sure each target is at a different location in the brain.');
 end
+numOfTargets = size(targetCoord,1);
 
 % take in user-specified options
 if mod(length(varargin),2)~=0
@@ -136,13 +144,6 @@ else
         error('Please enter either ''mni'' or ''voxel'' for option ''coordType''.');
     end
 end
-
-if strcmpi(coordType,'voxel') && (any(mod(targetCoord(:),1)~=0) || ...
-        any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
-        any(targetCoord(:,2)>hdrInfo.dim(2)) || any(targetCoord(:,3)>hdrInfo.dim(3)))
-    error('Voxel coordinates should be entered as positive integers, and should not go beyond image boundary.');
-end
-numOfTargets = size(targetCoord,1);
 
 if ~exist('optType','var')
     optType = 'max-l1';
@@ -273,13 +274,13 @@ if ~exist('tarTag','var'), tarTag = []; end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
 if isempty(optRoast.T2)
-    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
 else
-    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
 end
 
 if strcmpi(coordType,'mni') || needOrigin
-    mappingFile = [dirname filesep baseFilenameRSPD '_seg8.mat'];
+    mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
     if ~exist(mappingFile,'file')
         error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
     else
@@ -293,19 +294,40 @@ if strcmpi(coordType,'mni')
     targetCoordMNI = targetCoord;
     for i=1:numOfTargets
         temp = mni2mri*[targetCoord(i,:) 1]';
-        targetCoord(i,:) = round(temp(1:3)');
+        targetCoord(i,:) = round(temp(1:3)'); % model voxel coord
     end
 else
     targetCoordMNI = [];
+    if any(mod(targetCoord(:),1)~=0) || any(targetCoord(:)<=0)
+        error('Voxel coordinates should be entered as positive integers');
+    end
+    targetCoordOriginal = targetCoord;
+    % save original MRI voxel coord, before updating them into model voxel coord
+    % according to options of isNonRAS, resamp, and zeroPad
+    if optRoast.isNonRAS
+        [targetCoord,perm] = convertToRASpointCloud(subj,targetCoord);
+    else
+        perm = [1 2 3];
+    end
+    if optRoast.resamp
+        data = load_untouch_nii(subj);
+        temp = data.hdr.dime.pixdim(2:4);
+        temp = temp(perm);
+        targetCoord = round(targetCoord.*repmat(temp,size(targetCoord,1),1));
+    end
+    if optRoast.zeroPad>0
+        targetCoord = targetCoord + optRoast.zeroPad;
+    end
 end
+
 if any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
         any(targetCoord(:,2)>hdrInfo.dim(2)) || any(targetCoord(:,3)>hdrInfo.dim(3))
-    error('Unrecognized target coordinates. Please check if you entered voxel coordinates but specified MNI coordinates, or the other way around.');
+    error('Voxel coordinates should not go beyond image boundary. Please check if you entered voxel coordinates but specified MNI coordinates, or the other way around.');
 end
 
 if needOrigin
     temp = mni2mri*[0 0 0 1]';
-    origin = round(temp(1:3)');
+    origin = round(temp(1:3)'); % model voxel coord
 end
 
 % prepare data
@@ -360,7 +382,7 @@ for i=1:size(u0,1)
 end
 p.u = u0;
 
-options = struct('targetCoord',targetCoord,'targetCoordMNI',targetCoordMNI,'optType',optType,'desiredIntensity',desiredIntensity,'elecNum',elecNum,'targetRadius',targetRadius,'k',k,'u0',u0,'uniqueTag',tarTag,'roastTag',simTag);
+options = struct('targetCoordMNI',targetCoordMNI,'targetCoordOriginal',targetCoordOriginal,'targetCoord',targetCoord,'optType',optType,'desiredIntensity',desiredIntensity,'elecNum',elecNum,'targetRadius',targetRadius,'k',k,'u0',u0,'uniqueTag',tarTag,'roastTag',simTag);
 options.orient = orient; % make sure options is a 1x1 struct
 
 % log tracking here
@@ -396,8 +418,8 @@ if ~isempty(targetCoordMNI)
     disp('AT MNI COORDINATES:')
     for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoordMNI(i,1),targetCoordMNI(i,2),targetCoordMNI(i,3)); end
 else
-    disp('AT VOXEL COORDINATES:')
-    for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoord(i,1),targetCoord(i,2),targetCoord(i,3)); end
+    disp('AT ORIGINAL MRI VOXEL COORDINATES:')
+    for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoordOriginal(i,1),targetCoordOriginal(i,2),targetCoordOriginal(i,3)); end
 end
 disp('...using targeting options saved in:')
 disp([dirname filesep baseFilename '_targetLog,'])
@@ -508,7 +530,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file
     r.ef_mag = sqrt(sum(r.ef_all.^2,4));
     
     % output intensities and focalities at targets
-    masksFile = [dirname filesep baseFilenameRSPD '_masks.nii'];
+    masksFile = [dirname filesep baseFilenameRasRSPD '_masks.nii'];
     if ~exist(masksFile,'file')
         error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
     else
@@ -558,6 +580,6 @@ drawnow
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+visualizeRes(subj,subjRasRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
 disp('==================ALL DONE ROAST-TARGET=======================');

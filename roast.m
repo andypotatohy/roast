@@ -961,23 +961,19 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     end
     % check if anisotropic resolution MRI
     
-    convertToRAS(t1Data,subj);
+    [subjRas,isNonRAS] = convertToRAS(subj);
     % check if in non-RAS orientation, and if yes, put it into RAS
     
-    if doResamp
-        subjRS = resampToOneMM(subj);
-    else
-        subjRS = subj;
-    end
+    [subjRasRS,doResamp] = resampToOneMM(subjRas,doResamp);    
     
     if paddingAmt>0
-        subjRSPD = zeroPadding(subjRS,paddingAmt);
+        subjRasRSPD = zeroPadding(subjRasRS,paddingAmt);
     else
-        subjRSPD = subjRS;
+        subjRasRSPD = subjRasRS;
     end
     
     if ~isempty(T2)
-        T2 = realignT2(T2,subjRSPD);
+        T2 = realignT2(T2,subjRasRSPD);
     end
     % check if T2 is aligned with T1
     
@@ -987,13 +983,15 @@ else
         unzip('example/nyhead_T1orT2_masks.nii.zip','example')
     end
     
+    isNonRAS = 0; % New York head is in RAS
+    
     if doResamp
         error('The beauty of New York head is its 0.5 mm resolution. It''s a bad practice to resample it into 1 mm. Use another head ''example/MNI152_T1_1mm.nii'' for 1 mm model.');
     end
     
     if paddingAmt>0
         zeroPadding('example/nyhead_T1orT2_masks.nii',paddingAmt);
-        subjRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
+        subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
         if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
             load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
             origin = inv(image.mat)*[0;0;0;1];
@@ -1002,7 +1000,7 @@ else
             save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
         end
     else
-        subjRSPD = subj;
+        subjRasRSPD = subj;
     end
     
     if ~isempty(T2)
@@ -1052,7 +1050,7 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -1115,26 +1113,26 @@ end
 
 if ~strcmp(baseFilename,'nyhead')
     
-    [~,baseFilenameRSPD] = fileparts(subjRSPD);
+    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
     
-    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1orT2.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRSPD '_T1andT2.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1orT2.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1andT2.nii'],'file'))
         disp('======================================================')
         disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
         disp('======================================================')
-        start_seg(subjRSPD,T2);
+        start_seg(subjRasRSPD,T2);
     else
         disp('======================================================')
         disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1orT2_masks.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilenameRSPD '_T1andT2_masks.nii'],'file'))
+    if (isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
+            (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))
         disp('======================================================')
         disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
-        segTouchup(subjRSPD,T2);
+        segTouchup(subjRasRSPD,T2);
     else
         disp('======================================================')
         disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
@@ -1147,7 +1145,7 @@ else
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-    [~,baseFilenameRSPD] = fileparts(subjRSPD);
+    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
     
 end
 
@@ -1155,20 +1153,20 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    hdrInfo = electrodePlacement(subj,subjRSPD,T2,elecName,options,uniqueTag);
+    hdrInfo = electrodePlacement(subj,subjRasRSPD,T2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
 %     load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-    load([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
+    load([dirname filesep baseFilenameRasRSPD '_header.mat'],'hdrInfo');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRSPD,T2,meshOpt,hdrInfo,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPD,T2,meshOpt,hdrInfo,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -1196,14 +1194,14 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRSPD,node,hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPD,node,hdrInfo,uniqueTag);
+        visualizeRes(subj,subjRasRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
+        visualizeRes(subj,subjRasRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
     
 else
