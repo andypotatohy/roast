@@ -17,7 +17,7 @@
 9. [Notes](#notes)
 10. [License](#license)
 
-## Getting started
+## 1. Getting started
 
 After you download the zip file, unzip it, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see `example/`, `lib/`, and all other files), and then enter:
 
@@ -25,9 +25,9 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`. The following sections will cover their usages.
+There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#how-to-use-roast), [Section 3](#how-to-use-roast_target), and [Section 6](#review-of-simulation-data), respectively.
 
-## How to use `roast`
+## 2. How to use `roast`
 
 ### Synopsis of `roast`
 
@@ -405,7 +405,7 @@ All the options can be combined to meet your specific simulation needs.
 
 Now you should know what this will do.
 
-## How to use `roast_target`
+## 3. How to use `roast_target`
 
 From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling the `roast_target()` function. To be able to do targeting, you have to first run `roast()` with `leadField` as the value for argument `recipe`, i.e.,
 
@@ -446,11 +446,11 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 29](#example-29)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 29](#example-29)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
-You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 30](#example-30) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 30](#example-30) to [Example 33](#example-33) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
 - Max-focality algorithms
   - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
   - `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
@@ -460,20 +460,20 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
   - `'lcmv-l1per'`: LCMV with L1-norm constraint on injected current intensities below 4 mA, with additional L1-norm constraint on each individual electrode to be below 1 mA.
 - Max-intensity algorithms
   - `'max-l1'`: maximum intensity with L1-norm constraint on injected current intensities to be smaller than 4 mA.
-  - `'max-l1per'`: maximum intensity with L1-norm constraint on injected current intensities below 4 mA., with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`, see [Example 32](#example-32).
+  - `'max-l1per'`: maximum intensity with L1-norm constraint on injected current intensities below 4 mA., with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`, see [Example 34](#example-34).
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28](#example-28) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by customized vector, e.g. [1 1 1], see [Example 29](#example-29). If you provide more than 1 target location, you can specify different orientations at each target, by providing a cell string of different keywords or putting customized orientation vectors into an *N-by-3* matrix, where *N* is the number of target locations, see [Example 30](#example-30). You can also mix pre-defined orientation keywords with customized orientation vectors, see [Example 31](#example-31). But you cannot mix the `'optimal'` orientation with other orientations.
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 28](#example-28) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by a customized vector, e.g. [1 1 1], see [Example 29](#example-29). If you provide more than 1 target location, you can specify different orientations at each target, by providing a cell string of different keywords ([Example 30](#example-30)) or putting customized orientation vectors into an *N-by-3* matrix, where *N* is the number of target locations ([Example 31](#example-31)). You can also mix pre-defined orientation keywords with customized orientation vectors, see [Example 32](#example-32). But you cannot mix the `'optimal'` orientation with other orientations.
 
 `'desiredIntensity'` -- the desired electric field intensity at target location (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target.
 
 `'elecNum'` -- the desired number of electrodes in the optimal montage when using the algorithm `'max-l1per'`.  
-This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an even number of at least 4 to this option. The default is 4. See [Example 32](#example-32).
+This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an *even* number of at least 4 to this option. The default is 4. See [Example 34](#example-34).
 
 `'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value of this option.
 
-`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 30](#example-30).
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 30](#example-30) to [Example 33](#example-33).
 
 `'targetingTag'` -- a unique tag that identifies each run of targeting.  
 `dateTime string (default) | user-provided string`  
@@ -481,7 +481,7 @@ This tag is used by `roast_target()` for managing the data generated from each r
 identify if a certain run of targeting has been already done. If yes, it will
 just load the results to save time. You can leave this option empty so 
 that `roast_target()` will just use the date and time as the unique tag for the targeting. Or you can provide your preferred tag for a specific
-targeting ([Example 31](#example-31)), then you can find it more easily later. Also all the
+targeting ([Example 32](#example-32) and [Example 33](#example-33)), then you can find it more easily later. Also all the
 targeting history with options info and results are saved in the
 log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
@@ -498,13 +498,13 @@ If you have run [Example 24](#example-24), now you can perform targeting on the 
 
     roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
 
-If you have run [Example 25](#example-25), now you can perform targeting on the New York head using the simulation tag you used in [Example 25](#example-25). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized in all possible directions.
+If you have run [Example 25](#example-25), now you can perform targeting on the New York head using the simulation tag you used in [Example 25](#example-25). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized among all possible directions.
 
 #### Example 29
 
     roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordType','voxel','orient',[1 1 1])
 
-If you have run [Example 26](#example-26), now you can perform targeting on subject1 using the simulation tag you used in [Example 26](#example-26). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 26](#example-26), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`''example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orient (`[1 1 1]`).
+If you have run [Example 26](#example-26), now you can perform targeting on subject1 using the simulation tag you used in [Example 26](#example-26). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 26](#example-26), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`'example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orientation (`[1 1 1]`).
 
 #### Example 30
 
@@ -516,7 +516,7 @@ Run targeting on the MNI152 head at both the left and right primary motor cortex
 
     roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',[1 1 1;-1 -1 -1],'optType','wls-l1','k',0.002)
 
-Same as [Example 30](#example-30), but with customized orientation at the two target locations.
+Same as [Example 30](#example-30), but with customized orientations at the two target locations.
 
 #### Example 32
 
@@ -524,7 +524,7 @@ Same as [Example 30](#example-30), but with customized orientation at the two ta
 
 Run targeting on the MNI152 head at three locations indicated by their voxel coordinates (note obtained from original MRI, `'example/MNI152_T1_1mm.nii'`), with maximal focality (`'wls-l1'` algorithm used). Desired orientation at the targets are `'radial-in'`, customized vector (`[-1 1 1]`), and `'posterior'`, respectively. A smaller value of `'k'` is used for better focality of electric field at the targets. This targeting run is also tagged as `'mixed_orient'`.
 
-In [Example 32](#example-32), you can also leave the `'orient'` option blank, so then the desired orientation at the three targets will all be `'radial-in'`, i.e.
+In [Example 32](#example-32), you can also leave the `'orient'` option blank, so then the desired orientations at the three targets will all be `'radial-in'`, i.e.
 
 #### Example 33
 
@@ -534,24 +534,26 @@ In [Example 32](#example-32), you can also leave the `'orient'` option blank, so
 
     roast_target([],'MNI152leadField',[],'optType','max-l1per','elecNum',8)
 
-Run targeting on the MNI152 head at the default target location (left primary motor cortex) with maximal intensity (`'max-l1per'` algorithm used) along the `'radial-in'` direction. Besides the L1-norm constraint on the total injected current (4 mA), additional L1-norm constraint on each electrode is also enforced. 8 electrodes are specified in the optimal montage, so that the injected current at each electrode will not exceed 4 mA / 8 = 0.5 mA. Note by adding L1-norm constraint on each electrode, you may lose electric field intensity at the target.
+Run targeting on the MNI152 head at the default target location (left primary motor cortex) with maximal intensity (`'max-l1per'` algorithm used) along the `'radial-in'` direction. Besides the L1-norm constraint on the total injected current (4 mA), additional L1-norm constraint on each individual electrode is also enforced. 8 electrodes are specified in the optimal montage, so that the injected current at each individual electrode will not exceed 4 mA / 8 = 0.5 mA. Note by adding the L1-norm constraint on each individual electrode, you may lose electric field intensity at the target.
 
 
-## More notes on the `capInfo.xls` file
+## 4. More notes on the `capInfo.xls` file
 
 A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of the [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6), [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg), and [EGI HCGSN](https://www.egi.com/images/stories/manuals/Second%20Batch%20of%20IFUs%20with%20new%20Notified%20Body%20Jan%202019/GSN_tman_8105171-51_20181231.pdf) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
 
 
-## Outputs of ROAST software
+## 5. Outputs of ROAST software
 
 ### Outputs of `roast`
 
-`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all options. The simulation data are mainly output in the following formats.
+`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all the options.
+
+The simulation data are mainly output in the following formats.
 
 #### Figure outputs
 
 ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
 
 #### Outputs in Matlab format
 
@@ -581,53 +583,95 @@ Note in these text files, voltage and electric field are defined at each mesh no
 
 ### Outputs of `roast_target`
 
-`roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded.
+`roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all the options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after possible transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded.
 
 The results are also output in the following formats.
 
 #### Figure outputs
 
-`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a grayish/black circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
+`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a grayish/black circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
 
 #### Outputs in Matlab format
 
 `roast_target()` saves the results as `"subjName_targetingTag_targetResult.mat"`, where a structure variable named `'r'` with the following fields are available:
 
-`targetCoord`: the target coordinates in the model voxel space.
-`mon`: the optimal montage in a format of a vector with each element indicating the injected current intensity (in mA).
-`montageTxt`: the optimal montage in text format.
-`xopt`: the optimized electric field vector induced by the optimal montage at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).
-`ef_all`: the optimized electric field induced by the optimal montage at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
-`ef_mag`: the magnitude of the optimized electric field at each pixel in the model voxel space, unit in V/m.
-`targetMag`: the magnitude of the optimized electric field at each target location (in V/m).
-`targetInt`: the intensity of the optimized electric field along the desired orientation at each target location (in V/m).
-`targetMagFoc`: the focality of the magnitude of the optimized electric field at each target location (in cm).
+`targetCoord`: the target coordinates in the model voxel space.  
+`mon`: the optimal montage in a format of a vector with each element indicating the injected current intensity (in mA).  
+`montageTxt`: the optimal montage in text format.  
+`xopt`: the optimized electric field vector induced by the optimal montage at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).  
+`ef_all`: the optimized electric field induced by the optimal montage at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.  
+`ef_mag`: the magnitude of the optimized electric field at each pixel in the model voxel space, unit in V/m.  
+`targetMag`: the magnitude of the optimized electric field at each target location (in V/m).  
+`targetInt`: the intensity of the optimized electric field along the desired orientation at each target location (in V/m).  
+`targetMagFoc`: the focality of the magnitude of the optimized electric field at each target location (in cm).  
 
-## Review of simulation data
+## 6. Review of simulation data
 
-You can also use the other function `reviewRes()` to review/visualize the
-simulations that you already run before. `reviewRes()` has a simpler
-interface than `roast()` so that you do not have to enter all the
-simulation parameters again as you would have to do in `roast()`. For example, 
-to review the results generated from running [Example 23](#example-23), you can
-simply type
+You can use a main function `reviewRes()` to review/visualize the simulations/targetings that you already run before using `roast()` and `roast_target()`. `reviewRes()` has a simpler interface so that you do not have to enter all the option values again as you would have to in `roast()` or `roast_target()`. Instead, you just need to enter the path to the input MRI and the unique simulation/targeting tag for that MRI.
+
+`reviewRes(subj,simTag,tissue,fastRender,tarTag)`
+
+`subj`: path to the MRI that was used for simulations/targeting, defaults to the MRI of the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) stored under `'example/'`.
+
+`simTag`: the unique simulation tag of each simulation, which can be looked up in the log file of the subject (`"subjName_roastLog"`).
+
+`tarTag`: the unique tag of each run of targeting, which can be looked up in the log file of the subject (`"subjName_targetLog"`).
+
+`tissue`: which tissue to show in the visualization. You can choose from:  
+`white` | `gray` | `csf` | `bone` | `skin` | `air` | `brain` (default) | `all`
+`'all'` means the entire head volume.
+
+`fastRender`: do fast 3D rendering or not. By default it's fast rendering. If you turn this option off, it'll generate a smoother surface rendering but also needs more time if the mesh is big.
+
+### Review of data from `roast`
+
+#### Example 35
 
     reviewRes('path/to/your/subject.nii','awesomeSimulation')
 
-where `'awesomeSimulation'` is the corresponding `'simulationTag'`. For more info 
-on how to use this function, type `help reviewRes`.
+to review the results generated from running [Example 23](#example-23), where `'awesomeSimulation'` is the corresponding `'simulationTag'`. Review the results from simulation tagged 'awesomeSimulation' on the
+MNI152 head, showing the results in white matter specifically.
 
-TO BE ADDED...
+#### Example 36
 
-## How to ask questions
+    reviewRes('nyhead','20180611T185950')
 
-Please read the [Getting started](#getting-started) and the [Synopsis](#synopsis) sections first. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) for quick reference. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
+Review the results from simulation tagged '20180611T185950' on the
+New York head, showing the results in the brian specifically.
+
+#### Example 37
+
+    reviewRes('example/subject1.nii','20180613T142621','bone',0)
+
+Review the results from simulation tagged '20180613T142621' on subject
+example/subject1.nii, showing the results in the bone specifically, with
+smoothed surface rendering. If you change 'bone' to 'all', then it'll
+show the slice views of the results in all the tissues.
+
+Note this function cannot visualize the lead field. If you ran roast with
+lead field as your recipe, please go to roast_target() to run targeting.
+After running targeting, you can visualize the optimized electric field
+using this function, by providing both the simTag and tarTag.
+
+### Review of data from `roast_target`
+
+#### Example 38
+
+reviewRes([],'MNI152leadField','','','mixed_orient')
+
+#### Example 39
+
+reviewRes([],'MNI152leadField','all','','mixed_orient')
+
+## 7. How to ask questions
+
+Please read the [Getting started](#getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) and [Example 32](#example-32) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
 If you are still stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions and share your experiences there.
 
-## Acknowledgements
+## 8. Acknowledgements
 
 If you use ROAST in your research, please cite these:
 
@@ -647,14 +691,14 @@ jck20112013 huang2018
 
 ROAST was supported by NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
-## Notes
+## 9. Notes
 
 Version 3.0 is incompatible with simulation data generated by Version 2.7 and earlier versions.
 Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our effort to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
 ROAST was not designed to build models for pathological heads, but there are plans to add this capability in the future versions.
 
-## License
+## 10. License
 
 General Public License version 3 or later. See LICENSE.md for details.
 
