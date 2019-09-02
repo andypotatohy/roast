@@ -1,6 +1,6 @@
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
-1. [Getting started](#1.-getting-started)
+[1.Getting started](#1.-getting-started)
 2. [How to use `roast`](#how-to-use-roast)
    - [Synopsis of `roast`](#synopsis-of-roast)
    - [Examples on `roast`](#examples-on-roast)
@@ -17,7 +17,7 @@
 9. [Notes](#notes)
 10. [License](#license)
 
-##1. Getting started
+## 1. Getting started
 
 After you download the zip file, unzip it, launch your Matlab, make sure you are under the root directory of ROAST (i.e., you can see `example/`, `lib/`, and all other files), and then enter:
 
