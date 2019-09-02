@@ -409,8 +409,8 @@ if isRoast
     set(gcf,'color','w');
     colormap(jet);
     plotmesh(dataShow,indNode_showFace,indNode_showElm,'LineStyle','none');
-    dataShowVal = dataShow(unique(indNode_showElm(:)),4);
-    dataShowRange = [min(dataShowVal) prctile(dataShowVal,95)];
+%     dataShowVal = dataShow(unique(indNode_showElm(:)),4);
+    dataShowRange = [min(dataShow(unique(indNode_showElm(:)),4)) prctile(dataShow(unique(indNode_showElm(:)),4),95)];
     dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent);
     for i=1:length(inCurrent)
         %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
@@ -452,8 +452,8 @@ else
     set(gcf,'color','w');
     colormap(jet);
     plotmesh(dataShow,indNode_showFace,indNode_showElm,'LineStyle','none');
-    dataShowVal = dataShow(unique(indNode_showElm(:)),4);
-    dataShowRange = [min(dataShowVal) prctile(dataShowVal,95)];
+%     dataShowVal = dataShow(unique(indNode_showElm(:)),4);
+    dataShowRange = [min(dataShow(unique(indNode_showElm(:)),4)) prctile(dataShow(unique(indNode_showElm(:)),4),95)];
     dataShowForElec = interp1(inCurrentRange,dataShowRange,inCurrent(indMonElec));
     for i=1:length(indMonElec)
         %     indNodeTemp = indNode_elecElm(find(label_elec==i),:);
@@ -491,7 +491,7 @@ end
 nan_mask = nan(size(mask));
 nan_mask(find(mask)) = 1;
 
-cm = colormap(jet(256)); cm = [1 1 1;cm];
+cm = colormap(jet(2^11)); cm = [1 1 1;cm];
 
 if isRoast
     
@@ -507,12 +507,15 @@ if isRoast
     
     figName = ['Electric field in Simulation: ' simTag];
     for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
-    sliceshow(ef_mag.*nan_mask,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+    ef_mag = ef_mag.*nan_mask;
+    dataShowVal = ef_mag(~isnan(ef_mag(:)));
+    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
     
 else
     
     for i=1:size(r.ef_all,4), r.ef_all(:,:,:,i) = r.ef_all(:,:,:,i).*nan_mask; end
     r.ef_mag = r.ef_mag.*nan_mask;
+    dataShowVal = r.ef_mag(~isnan(r.ef_mag(:)));
     for i=1:size(r.targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' tarTag];
         sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all,mri2mni); drawnow
