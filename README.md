@@ -450,7 +450,7 @@ You can tell `roast_target()` the target locations in either the MNI coordinates
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
-You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 31](#example-31) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 30](#example-30) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
 - Max-focality algorithms
   - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
   - `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
@@ -473,7 +473,7 @@ This option only applies when `'optType'` is set to `'max-l1per'`. Please provid
 
 `'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value of this option.
 
-`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 31](#example-31).
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 30](#example-30).
 
 `'targetingTag'` -- a unique tag that identifies each run of targeting.  
 `dateTime string (default) | user-provided string`  
@@ -492,41 +492,49 @@ log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
     roast_target([],'MNI152leadField')
 
-If you have run [Example 24](#example-24), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 24](#example-24). Here in this example, ...
+If you have run [Example 24](#example-24), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 24](#example-24). Here in this example, we try to guide the current flow to hit the default target location (left primary motor cortex (`[-48 -8 50]`)) with maximal intensity (`'max-l1'` algorithm used) along the `'radial-in'` direction. All the options are in their defaults.
 
 #### Example 28
 
     roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
 
-nyhead with optimal orient
-If you have run [Example 25](#example-25)
+If you have run [Example 25](#example-25), now you can perform targeting on the New York head using the simulation tag you used in [Example 25](#example-25). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized in all possible directions.
 
 #### Example 29
 
-    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordtype','voxel','orient',[1 1 1])
+    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordType','voxel','orient',[1 1 1])
 
-subj1 with custom orient 
-you need to use '' to get the voxel coordinates instead of using ''
-
-#### Example 30
-
-    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',{'right','left'},'optType','wls-l1')
+If you have run [Example 26](#example-26), now you can perform targeting on subject1 using the simulation tag you used in [Example 26](#example-26). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 26](#example-26), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`''example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orient (`[1 1 1]`).
 
 #### Example 30
 
-    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',[1 1 1;-1 -1 -1],'optType','wls-l1')
+    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',{'right','left'},'optType','wls-l1','k',0.002)
 
+Run targeting on the MNI152 head at both the left and right primary motor cortex with maximal focality (`'wls-l1'` algorithm used). Desired orientation at the first target (left primary motor cortex) is `'right'`, and at the second target (right primary motor cortex) is `'left'`. A smaller value of `'k'` is used for better focality of electric field at the two targets.
 
 #### Example 31
 
-    roast_target([],'MNI152leadField',[52 184 72;25 80 72;130 39 72;147 125 72],'coordtype','voxel','orient',{'radial-in,[1 1 1],'left','anterior'},'opttype','wls-l1','k',0.002,'targetingTag','sdfadfa')
+    roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',[1 1 1;-1 -1 -1],'optType','wls-l1','k',0.002)
 
-multifocal mixed orient low k  tarTag
+Same as [Example 30](#example-30), but with customized orientation at the two target locations.
 
 #### Example 32
-elecnum 8
 
+    roast_target([],'MNI152leadField',[52 184 72;25 80 72;139 171 72],'coordType','voxel','optType','wls-l1','k',0.002,'orient',{'radial-in',[-1 1 1],'posterior'},'targetingTag','mixed_orient')
 
+Run targeting on the MNI152 head at three locations indicated by their voxel coordinates (note obtained from original MRI, `'example/MNI152_T1_1mm.nii'`), with maximal focality (`'wls-l1'` algorithm used). Desired orientation at the targets are `'radial-in'`, customized vector (`[-1 1 1]`), and `'posterior'`, respectively. A smaller value of `'k'` is used for better focality of electric field at the targets. This targeting run is also tagged as `'mixed_orient'`.
+
+In [Example 32](#example-32), you can also leave the `'orient'` option blank, so then the desired orientation at the three targets will all be `'radial-in'`, i.e.
+
+#### Example 33
+
+    roast_target([],'MNI152leadField',[52 184 72;25 80 72;139 171 72],'coordType','voxel','optType','wls-l1','k',0.002,'targetingTag','3targets_radialIn')
+
+#### Example 34
+
+    roast_target([],'MNI152leadField',[],'optType','max-l1per','elecNum',8)
+
+Run targeting on the MNI152 head at the default target location (left primary motor cortex) with maximal intensity (`'max-l1per'` algorithm used) along the `'radial-in'` direction. Besides the L1-norm constraint on the total injected current (4 mA), additional L1-norm constraint on each electrode is also enforced. 8 electrodes are specified in the optimal montage, so that the injected current at each electrode will not exceed 4 mA / 8 = 0.5 mA. Note by adding L1-norm constraint on each electrode, you may lose electric field intensity at the target.
 
 
 ## More notes on the `capInfo.xls` file
@@ -579,7 +587,7 @@ The results are also output in the following formats.
 
 #### Figure outputs
 
-`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a white circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
+`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a grayish/black circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a while circle.
 
 #### Outputs in Matlab format
 
@@ -615,7 +623,7 @@ TO BE ADDED...
 
 Please read the [Getting started](#getting-started) and the [Synopsis](#synopsis) sections first. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) for quick reference. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
 
-If ROAST crashes, first check if there are any warning messages output in the command window. If there are, follow the suggestions in the warning messages. This will usually fix the problems and let you run through to get your model.
+If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
 If you are still stuck, please subscribe to the ROAST user mailing list by clicking [here](https://groups.google.com/group/roast-users/subscribe). You can ask any questions and share your experiences there.
 
