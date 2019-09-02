@@ -1,6 +1,6 @@
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
-[1.Getting started](#-1-getting-started)  
+[1.Getting started](#1-getting-started)  
 2. [How to use `roast`](#how-to-use-roast)
    - [Synopsis of `roast`](#synopsis-of-roast)
    - [Examples on `roast`](#examples-on-roast)
