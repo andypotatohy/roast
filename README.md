@@ -1,21 +1,21 @@
 # ROAST: Realistic vOlumetric-Approach-based Simulator for Transcranial electric stimulation
 
-[1.Getting started](#1-getting-started)  
-2. [How to use `roast`](#how-to-use-roast)
-   - [Synopsis of `roast`](#synopsis-of-roast)
+[1. Getting started](#1-getting-started)  
+[2. How to use `roast`](#2-how-to-use-roast)  
+   - [2.1 Synopsis of `roast`](#21-synopsis-of-roast)
    - [Examples on `roast`](#examples-on-roast)
-3. [How to use `roast_target`](#how-to-use-roast_target)
+[3. How to use `roast_target`](#3-how-to-use-roast_target)  
    - [Synopsis of `roast_target`](#synopsis-of-roast_target)
    - [Examples on `roast_target`](#examples-on-roast_target)
-4. [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)
-5. [Outputs of ROAST software](#outputs-of-roast-software)
+4. [More notes on the `capInfo.xls` file](#more-notes-on-the-capInfoxls-file)  
+5. [Outputs of ROAST software](#outputs-of-roast-software)  
    - [Outputs of `roast`](#outputs-of-roast)
    - [Outputs of `roast_target`](#outputs-of-roast_target)
-6. [Review of simulation data](#review-of-simulation-data)
-7. [How to ask questions](#how-to-ask-questions)
-8. [Acknowledgements](#acknowledgements)
-9. [Notes](#notes)
-10. [License](#license)
+6. [Review of simulation data](#review-of-simulation-data)  
+7. [How to ask questions](#how-to-ask-questions)  
+8. [Acknowledgements](#acknowledgements)  
+9. [Notes](#notes)  
+10. [License](#license)  
 
 ## 1. Getting started
 
@@ -25,11 +25,11 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#how-to-use-roast), [Section 3](#how-to-use-roast_target), and [Section 6](#review-of-simulation-data), respectively.
+There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#2-how-to-use-roast), [Section 3](#3-how-to-use-roast_target), and [Section 6](#review-of-simulation-data), respectively.
 
 ## 2. How to use `roast`
 
-### Synopsis of `roast`
+### 2.1 Synopsis of `roast`
 
 `roast(subj,recipe,varargin)`
 
