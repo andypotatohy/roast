@@ -1,4 +1,11 @@
 function srcR = realignT2(src,ref)
+% srcR = realignT2(src,ref)
+% 
+% Aligned the T2 image to T1 MRI using SPM functions.
+%
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% April 2018
 
 refData = load_untouch_nii(ref);
 srcData = load_untouch_nii(src);

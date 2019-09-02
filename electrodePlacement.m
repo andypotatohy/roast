@@ -10,11 +10,11 @@ function hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRSPD] = fileparts(P2);
+[~,baseFilenameRasRSPD] = fileparts(P2);
 if isempty(T2)
-    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
 else
-    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
 end
 
 elecPara = options.elecPara;
@@ -23,24 +23,26 @@ indP = elecPara(1).indP;
 indN = elecPara(1).indN;
 indC = elecPara(1).indC;
 
-%% can be any non-ras head (to be consistent with user-provided coordinates)
-landmarks_original = getLandmarks(P2,T2);
+% %% can be any non-ras head (to be consistent with user-provided coordinates)
+% Enforcing RAS in the first step starting from ROAST v3.0
+% landmarks_original = getLandmarks(P2,T2);
+% 
+% [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
 
-[perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
-
-template = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+template = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
 % Load the scalp mask; template is used for saving the results with the same header info as the input
 pixdim = template.hdr.dime.pixdim(2:4);
 dim = size(template.img);
 v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
 hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 % keep the header info for use later
-scalp_original = template.img==5;
-
-scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
+% scalp_original = template.img==5;
+% scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
+scalp = template.img==5;
 
 if ~isempty(indP) || ~isempty(indN)
-    landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
+%     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
+    landmarks = getLandmarks(P2,T2);
 end
 
 if ~isempty(indC)
@@ -48,30 +50,45 @@ if ~isempty(indC)
     capInfo_C = textscan(fid,'%s %f %f %f');
     fclose(fid);
     elecLoc_C = cell2mat(capInfo_C(2:4));
-    % update customized elec coords according to options of resamp and zeroPad
+    % update customized elec coords according to options of isNonRAS, resamp, and zeroPad
+    if options.isNonRAS
+        [elecLoc_C,perm] = convertToRASpointCloud(P1,elecLoc_C);
+    else
+        perm = [1 2 3];
+    end
     if options.resamp
         data = load_untouch_nii(P1);
-        elecLoc_C = elecLoc_C.*repmat(data.hdr.dime.pixdim(2:4),size(elecLoc_C,1),1);
+        temp = data.hdr.dime.pixdim(2:4);
+        temp = temp(perm);
+        elecLoc_C = elecLoc_C.*repmat(temp,size(elecLoc_C,1),1);
     end
     if options.zeroPad>0
         elecLoc_C = elecLoc_C + options.zeroPad;
     end
+    
     elecLoc_C = elecLoc_C(indC,:);
-    elecLoc_C = changeOrientationPointCloud(elecLoc_C,perm,isFlipInner,size(scalp));
+%     elecLoc_C = changeOrientationPointCloud(elecLoc_C,perm,isFlipInner,size(scalp));
 end
 
 scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 %% fit cap position on the individual's head
 if ~isempty(indP)
-   if strcmpi(elecPara(1).capType,'biosemi')
-       isBiosemi = 1;
-       load('./capBioSemiFullWithExtra.mat','capInfo');
-   else
-       isBiosemi = 0;
-       load('./cap1005FullWithExtra.mat','capInfo');
+   switch lower(elecPara(1).capType)
+       case {'1020','1010','1005'}
+           load('./cap1005FullWithExtra.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 0;
+       case 'biosemi'
+           load('./capBioSemiFullWithExtra.mat','capInfo');
+           isBiosemi = 1;
+           isEGI = 0;
+       case 'egi'
+           load('./capEGIfull.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 1;
    end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi);
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indP,isBiosemi,isEGI);
 else
     electrode_coord_P = []; center_P = [];
 end
@@ -151,17 +168,19 @@ resolution = mean(pixdim);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
-for i = 1:length(elec_C)
-    if ~isempty(elec_C{i})
-        elec_C{i} = changeOrientationPointCloud(elec_C{i},iperm,isFlipOutter,size(scalp_original));
-        gel_C{i} = changeOrientationPointCloud(gel_C{i},iperm,isFlipOutter,size(scalp_original));
-    end
-end
+% for i = 1:length(elec_C)
+%     if ~isempty(elec_C{i})
+%         elec_C{i} = changeOrientationPointCloud(elec_C{i},iperm,isFlipOutter,size(scalp_original));
+%         gel_C{i} = changeOrientationPointCloud(gel_C{i},iperm,isFlipOutter,size(scalp_original));
+%     end
+% end
 
 % [volume_elec,volume_elecLabel] = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
 % [volume_gel,volume_gelLabel] = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
-volume_elec_C = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
-volume_gel_C = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
+% volume_elec_C = generateElecMask(elec_C,size(scalp_original),elecNeeded,1);
+% volume_gel_C = generateElecMask(gel_C,size(scalp_original),elecNeeded,0);
+volume_elec_C = generateElecMask(elec_C,size(scalp),elecNeeded,1);
+volume_gel_C = generateElecMask(gel_C,size(scalp),elecNeeded,0);
 
 disp('final clean-up...')
 volume_elec = volume_elec_C>0;
@@ -185,7 +204,7 @@ template.img = uint8(volume_gel_C.*volume_gel);
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 
 % save([dirname filesep baseFilename '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-[~,baseFilenameRSPD] = fileparts(P2);
-if ~exist([dirname filesep baseFilenameRSPD '_header.mat'],'file')
-    save([dirname filesep baseFilenameRSPD '_header.mat'],'hdrInfo');
+[~,baseFilenameRasRSPD] = fileparts(P2);
+if ~exist([dirname filesep baseFilenameRasRSPD '_header.mat'],'file')
+    save([dirname filesep baseFilenameRasRSPD '_header.mat'],'hdrInfo');
 end

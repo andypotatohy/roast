@@ -19,6 +19,9 @@ switch lower(para(1).capType)
     case 'biosemi'
         load('./capBioSemiFullWithExtra.mat','capInfo');
         elecPool_P = capInfo{1};
+    case 'egi'
+        load('./capEGIfull.mat','capInfo');
+        elecPool_P = capInfo{1};
 end
 
 elecPool_N = {'nk1';'nk2';'nk3';'nk4'};
@@ -42,17 +45,17 @@ for i=1:length(elec)
             fclose(fid);
         end
         if ~ismember(elec{i},elecPool_C)
-            fprintf('Unrecognized electrode %s.\n',elec{i});
+            warning(['Unrecognized electrode ',elec{i}]);
             unknownElec = unknownElec+1;
         end
     else
-        fprintf('Unrecognized electrode %s.\n',elec{i});
+        warning(['Unrecognized electrode ',elec{i}]);
         unknownElec = unknownElec+1;
     end
 end
 
 if unknownElec>0
-    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you picked up one of the electrodes that falls on the ears or eyes (which are removed, see capInfo.xls); 4) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, nor your customized electrodes).');
+    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you picked up one of the electrodes that falls on the ears or eyes (which are removed, see capInfo.xls); 4) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, EGI, nor your customized electrodes).');
 end
 
 if doPredefined
@@ -91,7 +94,7 @@ end
 for i=1:length(para)
     para(i).indP = indP; para(i).indN = indN; para(i).indC = indC;
 end
-if isempty(indP) && isempty(indN) && ~isempty(indC)
+if isempty(indP)
     for i=1:length(para), para(i).capType = 'none'; end
 end
 

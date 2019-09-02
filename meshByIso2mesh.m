@@ -10,14 +10,23 @@ function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRSPD] = fileparts(P2);
+[~,baseFilenameRasRSPD] = fileparts(P2);
 if isempty(T2)
-    baseFilenameRSPD = [baseFilenameRSPD '_T1orT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
 else
-    baseFilenameRSPD = [baseFilenameRSPD '_T1andT2'];
+    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
 end
 
-data = load_untouch_nii([dirname filesep baseFilenameRSPD '_masks.nii']);
+mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
+if ~exist(mappingFile,'file')
+    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
+else
+    load(mappingFile,'image','Affine');
+    mri2mni = Affine*image(1).mat;
+    % mapping from MRI voxel space to MNI space
+end
+
+data = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
 allMask = data.img;
 allMaskShow = data.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
@@ -40,7 +49,7 @@ end
 allMaskShow(data.img>0) = numOfTissue + 2;
 
 % sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
-sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
+sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
 drawnow
 
 % allMask = uint8(allMask);
