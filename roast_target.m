@@ -1,4 +1,61 @@
 function roast_target(subj,simTag,targetCoord,varargin)
+% roast_target(subj,simTag,targetCoord,varargin)
+% 
+% Main function of ROAST-TARGET.
+% 
+% Please refer to the README.md on the github repo for better formated
+% documentations: https://github.com/andypotatohy/roast
+% 
+% If you use ROAST in your research, please cite these:
+% 
+% Huang, Y., Datta, A., Bikson, M., Parra, L.C., Realistic vOlumetric-Approach
+% to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated
+% open-source pipeline, Journal of Neural Engineering, Vol. 16, No. 5, 2019 (prefered reference)
+% 
+% Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
+% fully-automated, Realistic vOlumetric-Approach-based Simulator for TES,
+% Proceedings of the 40th Annual International Conference of the IEEE Engineering
+% in Medicine and Biology Society, Honolulu, HI, July 2018
+% 
+% If you use New York head to run simulation, please also cite the following:
+% Huang, Y., Parra, L.C., Haufe, S.,2016. The New York Head - A precise
+% standardized volume conductor model for EEG source localization and tES
+% targeting, NeuroImage,140, 150-162
+% 
+% If you also use the targeting feature (`roast_target`), please cite these:
+% 
+% Dmochowski, J.P., Datta, A., Bikson, M., Su, Y., Parra, L.C., Optimized 
+% multi-electrode stimulation increases focality and intensity at target,
+% Journal of Neural Engineering 8 (4), 046011, 2011
+% 
+% Dmochowski, J.P., Datta, A., Huang, Y., Richardson, J.D., Bikson, M.,
+% Fridriksson, J., Parra, L.C., Targeted transcranial direct current stimulation 
+% for rehabilitation after stroke, NeuroImage, 75, 12-19, 2013
+% 
+% Huang, Y., Thomas, C., Datta, A., Parra, L.C., Optimized tDCS for Targeting
+% Multiple Brain Regions: An Integrated Implementation. Proceedings of the 40th
+% Annual International Conference of the IEEE Engineering in Medicine and Biology
+% Society, Honolulu, HI, July 2018, 3545-3548
+% 
+% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
+% 
+% General Public License version 3 or later. See LICENSE.md for details.
+% 
+% This software uses free packages from the Internet, except Matlab, which
+% is a proprietary software by the MathWorks. You need a valid Matlab license
+% to run this software.
+% 
+% ROAST is considered as an "aggregate" rather than "derived work", based on
+% the definitions in GPL FAQ. The ROAST license only applies to the scripts,
+% documentation and the individual MRI data under example/ folder in this 
+% package and excludes those programs stored in the lib/ directory. The software 
+% under lib/ follow their respective licenses. This software is only intended
+% for non-commercial use.
+% 
+% (c) Yu (Andy) Huang, Parra Lab at CCNY
+% yhuang16@citymail.cuny.edu
+% September 2019
 
 fprintf('\n\n');
 disp('=============================================================')

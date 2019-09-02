@@ -561,11 +561,11 @@ results. These figures include the slice view of the MRI (T1 and/or T2) and the 
 
 ROAST saves the results as `"subjName_simulationTag_roastResult.mat"`, where 3 variables are available:
 
-`vol_all`: the voltage at each pixel in the model voxel space, unit in mV.
+`vol_all`: the voltage at each voxel in the model voxel space, unit in mV.
 
-`ef_all`: the electric field vector at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
+`ef_all`: the electric field vector at each voxel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.
 
-`ef_mag`: the magnitude of the electric field at each pixel in the model voxel space, unit in V/m.
+`ef_mag`: the magnitude of the electric field at each voxel in the model voxel space, unit in V/m.
 
 #### Outputs in [NIfTI](https://nifti.nimh.nih.gov/) format
 
@@ -601,8 +601,8 @@ The results are also output in the following formats.
 `mon`: the optimal montage in a format of a vector with each element indicating the injected current intensity (in mA).  
 `montageTxt`: the optimal montage in text format.  
 `xopt`: the optimized electric field vector induced by the optimal montage at each mesh node, whose location can be found in the mesh file `"subjName_simulationTag.msh"` or `"subjName_simulationTag.mat"`. Also note that in these two mesh files the node coordinates are in the model voxel space but with the scaling factors in the MRI header applied, i.e., the unit of the mesh coordinates is millimeter (mm).  
-`ef_all`: the optimized electric field induced by the optimal montage at each pixel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.  
-`ef_mag`: the magnitude of the optimized electric field at each pixel in the model voxel space, unit in V/m.  
+`ef_all`: the optimized electric field induced by the optimal montage at each voxel in the model voxel space, unit in V/m. This variable includes 3 volumes, representing the x-, y-, and z-component of the electric field.  
+`ef_mag`: the magnitude of the optimized electric field at each voxel in the model voxel space, unit in V/m.  
 `targetMag`: the magnitude of the optimized electric field at each target location (in V/m).  
 `targetInt`: the intensity of the optimized electric field along the desired orientation at each target location (in V/m).  
 `targetMagFoc`: the focality of the magnitude of the optimized electric field at each target location (in cm).  
@@ -615,59 +615,50 @@ You can use a main function `reviewRes()` to review/visualize the simulations/ta
 
 `subj`: path to the MRI that was used for simulations/targeting, defaults to the MRI of the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858) stored under `'example/'`.
 
-`simTag`: the unique simulation tag of each simulation, which can be looked up in the log file of the subject (`"subjName_roastLog"`).
-
-`tarTag`: the unique tag of each run of targeting, which can be looked up in the log file of the subject (`"subjName_targetLog"`).
+`simTag`: the unique tag of each simulation, which can be looked up in the log file of the subject (`"subjName_roastLog"`).
 
 `tissue`: which tissue to show in the visualization. You can choose from:  
-`white` | `gray` | `csf` | `bone` | `skin` | `air` | `brain` (default) | `all`
+`white` | `gray` | `csf` | `bone` | `skin` | `air` | `brain` (default) | `all`  
 `'all'` means the entire head volume.
 
 `fastRender`: do fast 3D rendering or not. By default it's fast rendering. If you turn this option off, it'll generate a smoother surface rendering but also needs more time if the mesh is big.
+
+`tarTag`: the unique tag of each run of targeting, which can be looked up in the log file of the subject (`"subjName_targetLog"`).
 
 ### 6.1 Review of data from `roast`
 
 #### Example 35
 
-    reviewRes('path/to/your/subject.nii','awesomeSimulation')
+    reviewRes('path/to/your/subject.nii','awesomeSimulation','white')
 
-to review the results generated from running [Example 23](#example-23), where `'awesomeSimulation'` is the corresponding `'simulationTag'`. Review the results from simulation tagged 'awesomeSimulation' on the
-MNI152 head, showing the results in white matter specifically.
+Review the results generated from running [Example 23](#example-23), where `'awesomeSimulation'` is the corresponding `'simulationTag'`. This will show the results in the white matter specifically.
 
 #### Example 36
 
     reviewRes('nyhead','20180611T185950')
 
-Review the results from simulation tagged '20180611T185950' on the
-New York head, showing the results in the brian specifically.
+Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brian by default
 
 #### Example 37
 
     reviewRes('example/subject1.nii','20180613T142621','bone',0)
 
-Review the results from simulation tagged '20180613T142621' on subject
-example/subject1.nii, showing the results in the bone specifically, with
-smoothed surface rendering. If you change 'bone' to 'all', then it'll
-show the slice views of the results in all the tissues.
+Review the results from simulation tagged `'20180613T142621'` on subject1, showing the results in the bone specifically, with smoothed surface rendering. If you change `'bone'` to `'all'`, then it'll show the slice views of the results in all the tissues.
 
-Note this function cannot visualize the lead field. If you ran roast with
-lead field as your recipe, please go to roast_target() to run targeting.
-After running targeting, you can visualize the optimized electric field
-using this function, by providing both the simTag and tarTag.
+Note this function cannot visualize the lead field. If you ran `roast()` with `'leadField'` as your recipe, please go to `roast_target()` to run targeting. After running targeting, you can visualize the optimized electric field using this function, by providing both the `'simTag'` and `'tarTag'`, see the next section.
 
 ### 6.2 Review of data from `roast_target`
 
 #### Example 38
 
-reviewRes([],'MNI152leadField','','','mixed_orient')
+    reviewRes([],'MNI152leadField','','','mixed_orient')
 
-#### Example 39
+Review the results from running targeting `'mixed_orient'` in [Example 32](#example-32), showing the results in the brain by default and with fast rendering by default (no smoothing). You can specify `'all'` in the third argument so that it'll show the results in the entire head. You can also specify `0` in the fourth argument so that the 3D rendering will be more smooth (but takes more time to render).
 
-reviewRes([],'MNI152leadField','all','','mixed_orient')
 
 ## 7. How to ask questions
 
-Please read the [Getting started](#getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) and [Example 32](#example-32) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
+Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 23](#example-23) and [Example 32](#example-32) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#more-notes-on-the-capInfoxls-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
@@ -677,7 +668,7 @@ If you are still stuck, please subscribe to the ROAST user mailing list by click
 
 If you use ROAST in your research, please cite these:
 
-Huang, Y., Datta, A., Bikson, M., Parra, L.C., [Realistic vOlumetric-Approach to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated open-source pipeline](https://iopscience.iop.org/article/10.1088/1741-2552/ab208d), Journal of Neural Engineering, Vol. 16, No. 5, 2019. (prefered reference)
+Huang, Y., Datta, A., Bikson, M., Parra, L.C., [Realistic vOlumetric-Approach to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated open-source pipeline](https://iopscience.iop.org/article/10.1088/1741-2552/ab208d), Journal of Neural Engineering, Vol. 16, No. 5, 2019 (prefered reference)
 
 Huang, Y., Datta, A., Bikson, M., Parra, L.C., [ROAST: an open-source,
 fully-automated, Realistic vOlumetric-Approach-based Simulator for TES](https://www.parralab.org/publications/ROAST_EMBC_forFinalSubmission.pdf), Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018
@@ -689,15 +680,22 @@ targeting.](https://www.sciencedirect.com/science/article/pii/S1053811915011325)
 
 If you also use the targeting feature (`roast_target`), please cite these:
 
-jck20112013 huang2018
+Dmochowski, J.P., Datta, A., Bikson, M., Su, Y., Parra, L.C., [Optimized multi-electrode stimulation increases focality and intensity at target](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta), Journal of Neural Engineering 8 (4), 046011, 2011
+
+Dmochowski, J.P., Datta, A., Huang, Y., Richardson, J.D., Bikson, M., Fridriksson, J., Parra, L.C., [Targeted transcranial direct current stimulation for rehabilitation after stroke](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833), NeuroImage, 75, 12-19, 2013
+
+Huang, Y., Thomas, C., Datta, A., Parra, L.C., [Optimized tDCS for Targeting Multiple Brain Regions: An Integrated Implementation](https://ieeexplore.ieee.org/abstract/document/8513034). Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018, 3545-3548
 
 ROAST was supported by NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
 ## 9. Notes
 
 Version 3.0 is incompatible with simulation data generated by Version 2.7 and earlier versions.
-Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our effort to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
+
+Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
+
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
+
 ROAST was not designed to build models for pathological heads, but there are plans to add this capability in the future versions.
 
 ## 10. License
@@ -712,4 +710,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-August 2019
+September 2019

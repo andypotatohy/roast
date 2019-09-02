@@ -6,53 +6,59 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % roast() or roast_target() main function. Instead, they just need to enter the path
 % to the input MRI and the unique simulation/targeting tag for that MRI.
 %
-% Required input:
-% subj -- path to the MRI that was used for simulations/targeting, defaults to the
-% MRI of the MNI152 head.
-% simTag -- the unique simulation tag of each simulation, which can be
-% looked up in the log file of the subject (subjName_roastLog).
-% For roast_target():
-% tarTag -- the unique tag of each run of targeting, which can also be
-% looked up in the log file of the subject (subjName_targetLog).
-%
-% Optional input:
-% tissue -- which tissue to show in the visualization, defaults to the
-% brain. You can also choose from white matter, gray matter, CSF, bone,
-% skin, air cavities, and all of them.
-% fastRender -- do fast 3D rendering or not. By default it's fast
-% rendering. If you turn this option off, it'll generate a smoother surface
-% rendering but also needs more time if the mesh is big.
-%
-% Examples:
-%
-% reviewRes([],'awesomeSimulation','white')
-% Review the results from simulation tagged 'awesomeSimulation' on the
-% MNI152 head, showing the results in white matter specifically.
-%
-% reviewRes('nyhead','20180611T185950')
-% Review the results from simulation tagged '20180611T185950' on the
-% New York head, showing the results in the brian specifically.
-%
-% reviewRes('example/subject1.nii','20180613T142621','bone',0)
-% Review the results from simulation tagged '20180613T142621' on subject
-% example/subject1.nii, showing the results in the bone specifically, with
-% smoothed surface rendering. If you change 'bone' to 'all', then it'll
-% show the slice views of the results in all the tissues.
-%
-% MORE TO ADD FOR roast_target()..........
-%
-% Note the 3D rendering is displayed in the world space, while the slice view
-% is done in the voxel space.
-%
-% Note this function cannot visualize the lead field. If you ran roast with
-% lead field as your recipe, please go to roast_target() to run targeting.
-% After running targeting, you can visualize the optimized electric field
-% using this function, by providing both the simTag and tarTag.
-%
+% Please refer to the README.md on the github repo for better formated
+% documentations: https://github.com/andypotatohy/roast
+% 
+% If you use ROAST in your research, please cite these:
+% 
+% Huang, Y., Datta, A., Bikson, M., Parra, L.C., Realistic vOlumetric-Approach
+% to Simulate Transcranial Electric Stimulation -- ROAST -- a fully automated
+% open-source pipeline, Journal of Neural Engineering, Vol. 16, No. 5, 2019 (prefered reference)
+% 
+% Huang, Y., Datta, A., Bikson, M., Parra, L.C., ROAST: an open-source,
+% fully-automated, Realistic vOlumetric-Approach-based Simulator for TES,
+% Proceedings of the 40th Annual International Conference of the IEEE Engineering
+% in Medicine and Biology Society, Honolulu, HI, July 2018
+% 
+% If you use New York head to run simulation, please also cite the following:
+% Huang, Y., Parra, L.C., Haufe, S.,2016. The New York Head - A precise
+% standardized volume conductor model for EEG source localization and tES
+% targeting, NeuroImage,140, 150-162
+% 
+% If you also use the targeting feature (`roast_target`), please cite these:
+% 
+% Dmochowski, J.P., Datta, A., Bikson, M., Su, Y., Parra, L.C., Optimized 
+% multi-electrode stimulation increases focality and intensity at target,
+% Journal of Neural Engineering 8 (4), 046011, 2011
+% 
+% Dmochowski, J.P., Datta, A., Huang, Y., Richardson, J.D., Bikson, M.,
+% Fridriksson, J., Parra, L.C., Targeted transcranial direct current stimulation 
+% for rehabilitation after stroke, NeuroImage, 75, 12-19, 2013
+% 
+% Huang, Y., Thomas, C., Datta, A., Parra, L.C., Optimized tDCS for Targeting
+% Multiple Brain Regions: An Integrated Implementation. Proceedings of the 40th
+% Annual International Conference of the IEEE Engineering in Medicine and Biology
+% Society, Honolulu, HI, July 2018, 3545-3548
+% 
+% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
+% 
+% General Public License version 3 or later. See LICENSE.md for details.
+% 
+% This software uses free packages from the Internet, except Matlab, which
+% is a proprietary software by the MathWorks. You need a valid Matlab license
+% to run this software.
+% 
+% ROAST is considered as an "aggregate" rather than "derived work", based on
+% the definitions in GPL FAQ. The ROAST license only applies to the scripts,
+% documentation and the individual MRI data under example/ folder in this 
+% package and excludes those programs stored in the lib/ directory. The software 
+% under lib/ follow their respective licenses. This software is only intended
+% for non-commercial use.
+% 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% June 2018
-% August 2019 make it compatible with also roast_target()
+% September 2019
 
 fprintf('\n\n');
 disp('=============================================================')
