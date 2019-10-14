@@ -438,7 +438,7 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `roast_target(subj,simTag,targetCoord,varargin)`
 
-`subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#synopsis-of-roast) as the `roast()` function.
+`subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#21-synopsis-of-roast) as the `roast()` function. Make sure that you use the original MRI that you used to run `roast()` for generating the lead field, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` (see [Example 29](#example-29)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
 
 `simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 24](#example-24), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 27](#example-27). Similarly, if you run [Example 25](#example-25) first, you can run [Example 28](#example-28) for targeting on the New York head.
 
