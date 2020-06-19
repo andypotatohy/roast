@@ -1,8 +1,7 @@
-% Maybe fieldtrip has to be updated?
-
 %% Load the roast output and adapt it to brainstorm
 %% load the headmodel
 roast_headmodel = load('MNI152_T1_1mm_MNI152leadField.mat');
+
 figure
 for ind = 1 : 6%length(unique(roast_headmodel.elem(:,5)))
     % figure;
@@ -12,7 +11,7 @@ for ind = 1 : 6%length(unique(roast_headmodel.elem(:,5)))
 end
 
 % here you need to save the electrode position from the function  electrodePlacement.m line 158 
-electrode_coord = load('lf_electrode_coord.mat');
+electrode_coord = load('.example/MNI152_T1_1mm_MNI152_lf_electrode_coord.mat');
 hold on;
 plotmesh(electrode_coord.electrode_coord,'ro')
 

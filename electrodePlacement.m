@@ -160,6 +160,9 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 %     repmat(center_N,size(electrode_coord_N,1),1),repmat(center_C,size(electrode_coord_C,1),1));
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
+%% Save the leadfield electrode coordinate file (to be used in other software such as brainstorm)
+save([dirname filesep baseFilename '_lf_electrode_coord.mat'], 'electrode_coord');
+
 %% placing and model the electrodes
 resolution = mean(pixdim);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
