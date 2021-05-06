@@ -283,14 +283,14 @@ else
 end
 
 if ~exist('elecNum','var')
-    if strcmpi(optType,'max-l1per')
+    if strcmpi(optType,'max-l1per')|| strcmpi(optType,'wls-l1per')
         elecNum = 4;
     else
         elecNum = [];
     end
 else
-    if strcmpi(optType,'max-l1per')
-        if elecNum<4 || mod(elecNum,2)~=0
+    if strcmpi(optType,'max-l1per') || strcmpi(optType,'wls-l1per')
+        if elecNum<4 %|| mod(elecNum,2)~=0 (commented out so it allows for odd number to electrodes)
             error('Unrecognized option value. Please enter positive even number of at least 4 for option ''elecNum''.');
         end
     else
@@ -390,7 +390,7 @@ end
 
 % prepare data
 p.numOfTargets = numOfTargets;
-p.I_max = 2; % 2 mA
+p.I_max = 3; % 2 mA
 p.targetCoord = targetCoord;
 p.optType = lower(optType);
 p.elecNum = elecNum;
@@ -455,13 +455,13 @@ else
     end
     if all(isNew)
         options = writeRoastLog(subj,options,'target');
-    else
-        load([dirname filesep Sopt(find(~isNew)).name],'opt');
-        if ~isempty(options.uniqueTag) && ~strcmp(options.uniqueTag,opt.uniqueTag)
-            warning(['The targeting with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
-        end
-        options.uniqueTag = opt.uniqueTag;
-    end
+%     else
+%         load([dirname filesep Sopt(find(~isNew)).name],'opt');
+%         if ~isempty(options.uniqueTag) && ~strcmp(options.uniqueTag,opt.uniqueTag)
+%             warning(['The targeting with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
+%         end
+%         options.uniqueTag = opt.uniqueTag;
+     end
 end
 uniqueTag = options.uniqueTag;
 
@@ -562,12 +562,23 @@ end
 fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
 elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
 elecPara = struct('capType','1010');
-
-indMonElec = find(abs(mon)>1e-3);
+% Added by Dalton to save the electrodes with the k-highest magnitude currents
+if ~isempty(elecNum)
+MonElec_max = unique(maxk(abs(mon),elecNum));
+for i = 1:length(MonElec_max)
+    indMonElec(i) = find(abs(mon)==MonElec_max(i));
+end
+else 
+   indMonElec = find(abs(mon)>1e-3); 
+end
+%indMonElec = find(abs(mon)>1e-3);
 fprintf('============================\n\n')
 disp('Electrodes used are:')
+%if ~isempty(elecNum)
 for i=1:length(indMonElec), fprintf('%s (%.3f mA)\n',elecName{indMonElec(i)},mon(indMonElec(i))); end, fprintf('\n');
-
+%else 
+    
+%end
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
     
     % compute the optimized E-field
@@ -638,6 +649,7 @@ drawnow
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRasRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
-
+%visualizeRes(subj,subjRasRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+% below fn modified by BV 12/2019 to only output first/last slice (instead of thousands)
+visualizeRes_BV(subj,subjRasRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 disp('==================ALL DONE ROAST-TARGET=======================');
