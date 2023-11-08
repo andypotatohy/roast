@@ -133,6 +133,14 @@ switch fun
         end
         fprintf(fid,'\n');
         
+        fprintf(fid,'multiprior:\t');
+        if opt.multiprior
+            fprintf(fid,'on');
+        else
+            fprintf(fid,'off');
+        end
+        fprintf(fid,'\n');
+
         fprintf(fid,'zeroPadding:\t');
         if opt.zeroPad>0
             fprintf(fid,'%d',opt.zeroPad);

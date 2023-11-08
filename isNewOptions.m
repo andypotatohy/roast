@@ -192,6 +192,11 @@ switch fun
             return
         end
         
+        if optNew.multiprior ~= optOld.multiprior
+            isNewOpt = 1;
+            return
+        end
+
     case 'target'
         
         if ~strcmp(optNew.roastTag,optOld.roastTag)

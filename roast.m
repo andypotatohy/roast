@@ -56,6 +56,11 @@ function roast(subj,recipe,varargin)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % September 2019
+%
+% Update Provided by Andrew Birnbaum 
+% Application and MultiPrior Option
+% MultiPrior Segmentation Provided by Lucas Hirsch 
+% November 2023
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -129,8 +134,11 @@ while indArg <= length(varargin)
         case 'conductivities'
             conductivities = varargin{indArg+1};
             indArg = indArg+2;
+        case 'multiprior'
+            multiprior = varargin{indArg+1};
+            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'',''multiprior'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -602,6 +610,19 @@ if length(conductivities.electrode(:))==1
     conductivities.electrode = repmat(conductivities.electrode,1,length(elecName));
 end
 
+if ~exist('multiprior','var')
+   multiprior = 0;
+else
+    if ~ischar(multiprior), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multiprior''.'); end
+    if strcmpi(multiprior,'off')
+        multiprior = 0;
+    elseif strcmpi(multiprior,'on')
+        multiprior = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multiprior''.');
+    end
+end
+
 % preprocess MRI data
 if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
@@ -710,7 +731,7 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'multiprior',multiprior,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -787,15 +808,45 @@ if ~strcmp(baseFilename,'nyhead')
         disp('======================================================')
     end
     
-    if (isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
+     if (isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
             (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))
+       
+        if multiprior
+        disp('======================================================')
+        disp('     STEP 2 (out of 6): MultiPrior SEGMENTATION...    ')
+        disp('======================================================')
+        MultiPrior(subj);
+
+        else 
         disp('======================================================')
         disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
         disp('======================================================')
         segTouchup(subjRasRSPD,T2);
+        end
+    
+    elseif multiprior && ((~(isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
+        (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))) &&...
+         ~exist([dirname '\' baseFilenameRasRSPD '_T1orT2_masks_MultiPrior_Segmentation.nii'],'file'))
+        
+        disp('======================================================')
+        disp('  STEP 2 (out of 6): MultiPrior SEGMENTATION...       ')
+        disp('======================================================')
+        MultiPrior(subj);
+
+    elseif ~multiprior && (~(isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file'))&&...
+             ~exist([dirname '\' baseFilenameRasRSPD '_T1orT2_masks_Roast_Segmentation.nii'],'file'))||...
+            ((~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file')) && ...
+            ~exist([dirname '\' baseFilenameRasRSPD '_T1andT2_masks_Roast_Segmentation.nii'],'file'))
+     
+        disp('======================================================')
+        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
+        disp('======================================================')
+        segTouchup(subjRasRSPD,T2);
+        
+          
     else
         disp('======================================================')
-        disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
+        disp('    SEGMENTATION ALREADY DONE, SKIP STEP 2            ')
         disp('======================================================')
     end
     
@@ -808,6 +859,8 @@ else
     [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
     
 end
+
+renameFiles(dirname, baseFilenameRasRSPD, multiprior)
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')

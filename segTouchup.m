@@ -327,4 +327,4 @@ white.hdr.dime.scl_slope=1; % so that display of NIFTI will not alter the data
 % in the range of [0 1] % ANDY 2018-06-04
 white.fileprefix = [dirname filesep baseFilename '_masks'];
 white.hdr.hist.descrip = 'tissue masks';
-save_untouch_nii(white,[dirname filesep baseFilename '_masks.nii']);
+save_untouch_nii(white,[dirname filesep baseFilename '_masks_Roast_Segmentation.nii']);
