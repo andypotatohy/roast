@@ -815,7 +815,7 @@ if ~strcmp(baseFilename,'nyhead')
         disp('======================================================')
         disp('     STEP 2 (out of 6): MultiPrior SEGMENTATION...    ')
         disp('======================================================')
-        MultiPrior(subj);
+        MultiPrior(subjRasRSPD);
 
         else 
         disp('======================================================')
@@ -831,7 +831,7 @@ if ~strcmp(baseFilename,'nyhead')
         disp('======================================================')
         disp('  STEP 2 (out of 6): MultiPrior SEGMENTATION...       ')
         disp('======================================================')
-        MultiPrior(subj);
+        MultiPrior(subjRasRSPD);
 
     elseif ~multiprior && (~(isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file'))&&...
              ~exist([dirname '\' baseFilenameRasRSPD '_T1orT2_masks_Roast_Segmentation.nii'],'file'))||...
