@@ -87,8 +87,8 @@ if segmentation_file is not None:
         np.unique(img_ROAST)
 
         nib.save(nib.Nifti1Image(img_ROAST, nii.affine), os.path.join(path, name))
+        os.remove(segmentation_file)
     else:
         print("MultiPriors_Segmentation.nii already exists in the output directory. Skipping processing.")
 else:
     print("No segmentation file with the specified ending found in the directory.")
-
