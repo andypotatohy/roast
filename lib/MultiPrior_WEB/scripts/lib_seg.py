@@ -412,19 +412,9 @@ def segment(configFile,workingDir,subj):
         model = load_model(cfg.path_to_model, custom_objects = my_custom_objects )
 
     elif cfg.output_classes == 7:
-        try:
-    	    from BIG_multiscale_CNN_TPM import Generalised_dice_coef_multilabel7, dice_coef_multilabel0,dice_coef_multilabel1,dice_coef_multilabel2,dice_coef_multilabel3,dice_coef_multilabel4,dice_coef_multilabel5, dice_coef_multilabel6
-    	    my_custom_objects = {'Generalised_dice_coef_multilabel7':Generalised_dice_coef_multilabel7,
-    				     'dice_coef_multilabel0':dice_coef_multilabel0,
-    				     'dice_coef_multilabel1':dice_coef_multilabel1,
-    				     'dice_coef_multilabel2':dice_coef_multilabel2,
-    				     'dice_coef_multilabel3':dice_coef_multilabel3,
-    				     'dice_coef_multilabel4':dice_coef_multilabel4,
-    				     'dice_coef_multilabel5':dice_coef_multilabel5,
-    				     'dice_coef_multilabel6':dice_coef_multilabel6}
-        except:
-    	    from multiscale_CNN_TPM import Generalised_dice_coef_multilabel7, dice_coef_multilabel0,dice_coef_multilabel1,dice_coef_multilabel2,dice_coef_multilabel3,dice_coef_multilabel4,dice_coef_multilabel5, dice_coef_multilabel6
-    	    my_custom_objects = {'Generalised_dice_coef_multilabel7':Generalised_dice_coef_multilabel7,
+
+    	from multiscale_CNN_TPM import Generalised_dice_coef_multilabel7, dice_coef_multilabel0,dice_coef_multilabel1,dice_coef_multilabel2,dice_coef_multilabel3,dice_coef_multilabel4,dice_coef_multilabel5, dice_coef_multilabel6
+    	my_custom_objects = {'Generalised_dice_coef_multilabel7':Generalised_dice_coef_multilabel7,
     				     'dice_coef_multilabel0':dice_coef_multilabel0,
     				     'dice_coef_multilabel1':dice_coef_multilabel1,
     				     'dice_coef_multilabel2':dice_coef_multilabel2,
