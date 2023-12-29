@@ -48,8 +48,8 @@ if segmentation_file is not None:
 
     nii = nib.load(segmentation_file)
 
-    #name = segmentation_file.split('_')[0] + '_1mm_MultiPriors_Segmentation.nii'
-    name = subj.split('.')[0] + '_T1orT2_masks_MultiPrior_Segmentation.nii'
+    base_filename, file_extension = os.path.splitext(subj)
+    name = base_filename + '_T1orT2_masks_MultiPrior_Segmentation.nii'
     print(name)
 
     if not os.path.exists(os.path.join(path, name)):
