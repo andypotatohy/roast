@@ -1,7 +1,5 @@
 function WARP_indiTPM(subj)
 
-    cd 'lib/spm12'  
-
     % Split the path into directory, filename, and extension
     [pth, name, ext] = fileparts(subj);
     pth = strrep(pth, '\', '/');

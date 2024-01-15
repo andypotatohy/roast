@@ -4,17 +4,17 @@ function SEGMENT(subj)
     str = computer('arch');
     switch str
     case 'win64'
-         pythonExecutable = [strrep(pwd, '\', '/') '/lib/MultiPriors_WEB/MultiPriors_env/python.exe'];  % Relative path to the Python executable
+         pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnv/python.exe'];  % Relative path to the Python executable
     case 'glnxa64'
-         pythonExecutable = [strrep(pwd, '\', '/') '/lib/MultiPriors_WEB/MultiPriors_env_Linux/bins/python3'];  % Relative path to the Python executable
+         pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnvLinux/bin/python3'];  % Relative path to the Python executable
     case 'maci64'
-         pythonExecutable = [strrep(pwd, '\', '/') '/lib/MultiPriors_WEB/MultiPriors_env_Mac/bins/python3'];  % Relative path to the Python executable
+         pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnvMac/bin/python3'];  % Relative path to the Python executable
     otherwise
         error('Unsupported operating system!');
     end
    
-    pythonScript = [strrep(pwd, '\', '/') '/lib/MultiPriors_WEB/SEGMENT.py'];  % Relative path to the Python script
-    configFile = [strrep(pwd, '\', '/')  '/lib/MultiPriors_WEB/Segmentation_config.py'];  % Relative path to the config file
+    pythonScript = [strrep(pwd, '\', '/') '/lib/multipriors/SEGMENT.py'];  % Relative path to the Python script
+    configFile = [strrep(pwd, '\', '/')  '/lib/multipriors/Segmentation_config.py'];  % Relative path to the config file
     subj = ['"' subj '"']; % To allow spaces in subject path
 
     % Construct the command to execute the Python script

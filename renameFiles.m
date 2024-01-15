@@ -1,11 +1,11 @@
 function renameFiles(dirname, baseFilenameRasRSPD, multiprior)   
     if multiprior
-        disp('Renaming MultiPrior Segmentation ...')
-        % Check if the MultiPrior segmentation file exists
-        if exist(fullfile(dirname, [baseFilenameRasRSPD '_T1orT2_masks_MultiPrior_Segmentation.nii']), 'file')
+        disp('Renaming MultiPriors Segmentation ...')
+        % Check if the MultiPriors segmentation file exists
+        if exist(fullfile(dirname, [baseFilenameRasRSPD '_T1orT2_masks_MultiPriors_Segmentation.nii']), 'file')
             disp(['File exists. Renamamed as ',[baseFilenameRasRSPD '_T1orT2_masks.nii']])
-            % Copy and rename the MultiPrior segmentation file to T1_orT2_masks.nii
-            copyfile(fullfile(dirname, [baseFilenameRasRSPD '_T1orT2_masks_MultiPrior_Segmentation.nii']), ...
+            % Copy and rename the MultiPriors segmentation file to T1_orT2_masks.nii
+            copyfile(fullfile(dirname, [baseFilenameRasRSPD '_T1orT2_masks_MultiPriors_Segmentation.nii']), ...
                 fullfile(dirname, [baseFilenameRasRSPD '_T1orT2_masks.nii']));
         end
     else

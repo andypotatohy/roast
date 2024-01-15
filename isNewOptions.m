@@ -192,7 +192,7 @@ switch fun
             return
         end
         
-        if optNew.multiprior ~= optOld.multiprior
+        if optNew.multipriors ~= optOld.multipriors
             isNewOpt = 1;
             return
         end

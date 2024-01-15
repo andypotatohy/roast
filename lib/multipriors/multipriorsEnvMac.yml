@@ -1,4 +1,4 @@
-name: MultiPriors_env_Mac
+name: multipriorsEnvMac
 channels:
   - conda-forge
   - defaults

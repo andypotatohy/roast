@@ -1,4 +1,4 @@
-name: MultiPriors_env
+name: multipriorsEnv
 channels:
   - conda-forge
   - defaults

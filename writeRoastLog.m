@@ -133,8 +133,8 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'multiprior:\t');
-        if opt.multiprior
+        fprintf(fid,'multipriors:\t');
+        if opt.multipriors
             fprintf(fid,'on');
         else
             fprintf(fid,'off');
