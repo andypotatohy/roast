@@ -11,11 +11,6 @@ function hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
 [~,baseFilenameRasRSPD] = fileparts(P2);
-if isempty(T2)
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
-else
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
-end
 
 elecPara = options.elecPara;
 

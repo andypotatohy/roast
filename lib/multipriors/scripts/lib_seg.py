@@ -215,7 +215,8 @@ def fullHeadSegmentation(wd,subj, penalty_MATRIX, TPM_channel, dice_compare, dsc
     subID = flairCh.split('/')[-1].split('.')[0]
     #segmentationName = 'predictions/' + subID + '_segmentation_epoch' + str(epoch)
     #output = wd +'/' + segmentationName + '.nii.gz'
-    output = subj + subID + '_segmentation_epoch' + str(epoch)+ '.nii.gz'
+    #output = subj + subID + '_segmentation_epoch' + str(epoch)+ '.nii.gz'
+    output = subj + subID + '_masks.nii.gz'
     if os.path.exists(output):
       print('Segmentation already found in: {}\nSkip..'.format(output))
       return

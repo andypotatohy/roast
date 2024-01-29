@@ -10,7 +10,7 @@ function WARP_indiTPM(subj)
     
     if isfile(outputFileName) == 0
         disp(['warping TPM to ' pth '/' name ext ' ...']);
-        load([pth '/' name '_T1orT2_seg8.mat']);
+        load([pth '/' name '_seg8.mat']);
        
         tpm = spm_load_priors8(tpm);
 

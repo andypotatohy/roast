@@ -330,11 +330,7 @@ end
 if ~exist('tarTag','var'), tarTag = []; end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if isempty(optRoast.T2)
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
-else
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
-end
+
 
 if strcmpi(coordType,'mni') || needOrigin
     mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];

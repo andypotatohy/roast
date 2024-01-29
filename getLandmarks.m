@@ -12,11 +12,6 @@ function landmarks = getLandmarks(P,T2)
 % April 2018
 
 [dirname,baseFilename] = fileparts(P);
-if isempty(T2)
-    baseFilename = [baseFilename '_T1orT2'];
-else
-    baseFilename = [baseFilename '_T1andT2'];
-end
 load([dirname filesep baseFilename '_seg8.mat'],'image','tpm','Affine');
 tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
 % mapping landmarks from TPM to individual MRI % ANDY 2017-05-17

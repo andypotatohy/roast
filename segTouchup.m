@@ -27,12 +27,6 @@ disp('loading data...')
 [dirname,baseFilename] = fileparts(P);
 if isempty(dirname), dirname = pwd; end
 
-if isempty(T2)
-    baseFilename = [baseFilename '_T1orT2'];
-else
-    baseFilename = [baseFilename '_T1andT2'];
-end
-
 gray = load_untouch_nii([dirname filesep 'c1' baseFilename '.nii']);
 white = load_untouch_nii([dirname filesep 'c2' baseFilename '.nii']);
 csf = load_untouch_nii([dirname filesep 'c3' baseFilename '.nii']);
@@ -327,4 +321,4 @@ white.hdr.dime.scl_slope=1; % so that display of NIFTI will not alter the data
 % in the range of [0 1] % ANDY 2018-06-04
 white.fileprefix = [dirname filesep baseFilename '_masks'];
 white.hdr.hist.descrip = 'tissue masks';
-save_untouch_nii(white,[dirname filesep baseFilename '_masks_Roast_Segmentation.nii']);
+save_untouch_nii(white,[dirname filesep baseFilename '_masks.nii']);

@@ -11,11 +11,6 @@ function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
 [~,baseFilenameRasRSPD] = fileparts(P2);
-if isempty(T2)
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
-else
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
-end
 
 mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
 if ~exist(mappingFile,'file')

@@ -54,11 +54,8 @@ if ~isempty(P2) % for roast()
     disp('saving the final results...')
     save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
     
-    if isempty(strfind(P2,'example/nyhead'))
-        template = load_untouch_nii(P2);
-    else
-        template = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii']);
-    end % Load the original MRI to save the results as NIFTI format
+
+    template = load_untouch_nii(P2); % Load the original MRI to save the results as NIFTI format
     
     template.hdr.dime.datatype = 16;
     template.hdr.dime.bitpix = 32;

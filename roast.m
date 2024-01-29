@@ -652,11 +652,32 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     else
         subjRasRSPD = subjRasRS;
     end
-    
+    nii = load_untouch_nii(subjRasRSPD);
+    [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
     if ~isempty(T2)
         T2 = realignT2(T2,subjRasRSPD);
+         mriT2 = [dirname filesep baseFilename '_T1andT2' ext];
+         subjRasRSPD = mriT2;
+    else
+         [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
+         mriT1 = [dirname filesep baseFilename '_T1orT2' ext];
+         subjRasRSPD = mriT1;
     end
     % check if T2 is aligned with T1
+    [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
+    if multipriors 
+        multipriorsMRI = [dirname filesep baseFilename '_multipriors' ext];
+        subjRasRSPD = multipriorsMRI;
+    else
+        spmMRI = [dirname filesep baseFilename '_SPM' ext];
+        subjRasRSPD = spmMRI;
+    end
+    
+    if ~exist(subjRasRSPD, 'file')
+    save_untouch_nii(nii, subjRasRSPD);
+    end
+
+    
     
 else
     
@@ -671,14 +692,14 @@ else
     end
     
     if paddingAmt>0
-        zeroPadding('example/nyhead_T1orT2_masks.nii',paddingAmt);
+        zeroPadding('example/nyhead_masks.nii',paddingAmt);
         subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
-        if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
-            load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
+        if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_seg8.mat'],'file')
+            load('example/nyhead_seg8.mat','image','tpm','Affine');
             origin = inv(image.mat)*[0;0;0;1];
             origin = origin(1:3) + paddingAmt;
             image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
-            save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
+            save(['example/nyhead_padded' num2str(paddingAmt) '_seg8.mat'],'image','tpm','Affine');
         end
     else
         subjRasRSPD = subj;
@@ -792,64 +813,38 @@ if all(strcmpi(recipe,'leadfield'))
     end
 end
 
-if ~strcmp(baseFilename,'nyhead')
+if ~strcmp(baseFilename, 'nyhead')
+    [~, baseFilenameRasRSPD] = fileparts(subjRasRSPD);
+    seg8Exist = exist([dirname filesep baseFilenameRasRSPD '_seg8.mat'], 'file');
     
-    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-    
-    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1orT2.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1andT2.nii'],'file'))
-        disp('======================================================')
-        disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
-        disp('======================================================')
-        start_seg(subjRasRSPD,T2);
-    else
-        disp('======================================================')
-        disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
-        disp('======================================================')
-    end
-    
-     if (isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))
-       
-        if multipriors
-        disp('======================================================')
-        disp('     STEP 2 (out of 6): MultiPriors SEGMENTATION...    ')
-        disp('======================================================')
-        multipriors(subjRasRSPD);
-
-        else 
-        disp('======================================================')
-        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
-        disp('======================================================')
-        segTouchup(subjRasRSPD,T2);
+        if (isempty(T2) && ~seg8Exist) || (~isempty(T2) && ~seg8Exist)
+            disp('======================================================')
+            disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
+            disp('======================================================')
+            start_seg(subjRasRSPD, T2);
+        else
+            disp('======================================================')
+            disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
+            disp('======================================================')
         end
-    
-    elseif multipriors && ((~(isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
-        (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))) &&...
-         ~exist([dirname '\' baseFilenameRasRSPD '_T1orT2_masks_MultiPriors_Segmentation.nii'],'file'))
-        
-        disp('======================================================')
-        disp('  STEP 2 (out of 6): MultiPriors SEGMENTATION...       ')
-        disp('======================================================')
-        multipriors(subjRasRSPD);
-
-    elseif ~multipriors && (~(isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file'))&&...
-             ~exist([dirname '\' baseFilenameRasRSPD '_T1orT2_masks_Roast_Segmentation.nii'],'file'))||...
-            ((~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file')) && ...
-            ~exist([dirname '\' baseFilenameRasRSPD '_T1andT2_masks_Roast_Segmentation.nii'],'file'))
      
-        disp('======================================================')
-        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
-        disp('======================================================')
-        segTouchup(subjRasRSPD,T2);
-        
-          
-    else
-        disp('======================================================')
-        disp('    SEGMENTATION ALREADY DONE, SKIP STEP 2            ')
-        disp('======================================================')
-    end
-    
+        if multipriors
+            disp('======================================================')
+            disp('      STEP 2 (out of 6): MULTIPRIORS SEGMENTATION ... ')
+            disp('======================================================')
+            Multipriors(subjRasRSPD);
+            mri2mni(subjRasRSPD)
+        elseif (~multipriors && ~seg8Exist)
+            disp('======================================================')
+            disp('        STEP 2 (out of 6): SPM SEGMENTATION ...       ')
+            disp('======================================================')
+            segTouchup(subjRasRSPD, T2);
+            mri2mni(subjRasRSPD)
+        else 
+            disp('======================================================')
+            disp('       SEGMENTATION ALREADY DONE, SKIP STEP 2         ')
+            disp('======================================================')
+        end
 else
     
     disp('======================================================')
@@ -857,10 +852,8 @@ else
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
     [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-    
-end
 
-renameFiles(dirname, baseFilenameRasRSPD, multipriors)
+end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
@@ -871,7 +864,7 @@ else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-%     load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
+%   load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
     load([dirname filesep baseFilenameRasRSPD '_header.mat'],'hdrInfo');
 end
 
@@ -956,8 +949,7 @@ else
         disp(['         FOR SUBJECT ' subj])
         disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
-    end
-    
+    end   
 end
 
 disp('==================ALL DONE ROAST=======================');

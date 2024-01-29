@@ -4,7 +4,8 @@ function SEGMENT(subj)
     str = computer('arch');
     switch str
     case 'win64'
-         pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnv/python.exe'];  % Relative path to the Python executable
+         %pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnv/python.exe'];  % Relative path to the Python executable
+         pythonExecutable = 'C:\Users\Andrew\anaconda3\envs\tf-gpu\python.exe';
     case 'glnxa64'
          pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnvLinux/bin/python3'];  % Relative path to the Python executable
     case 'maci64'
@@ -15,6 +16,7 @@ function SEGMENT(subj)
    
     pythonScript = [strrep(pwd, '\', '/') '/lib/multipriors/SEGMENT.py'];  % Relative path to the Python script
     configFile = [strrep(pwd, '\', '/')  '/lib/multipriors/Segmentation_config.py'];  % Relative path to the config file
+   
     subj = ['"' subj '"']; % To allow spaces in subject path
 
     % Construct the command to execute the Python script

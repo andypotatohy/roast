@@ -191,11 +191,8 @@ else
 end
 
 [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-if isempty(optRoast.T2)
-    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_seg8.mat'];
-else
-    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_seg8.mat'];
-end
+mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
+
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -245,12 +242,9 @@ else
     inCurrent = r.mon(indInUsrInput);
     
 end
+    
+masksFile = [dirname filesep baseFilenameRasRSPD '_masks.nii'];
 
-if isempty(optRoast.T2)
-    masksFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'];
-else
-    masksFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'];
-end
 if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
 else

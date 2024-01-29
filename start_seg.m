@@ -49,6 +49,12 @@ end
 Tem = [ptht,filesep,namt,extt];
 spm_jobman('initcfg');
 
+%[dirname, baseFilename, ext] = fileparts(P);
+%parts = strsplit(baseFilename, '_');
+%newParts = parts(1:end-2);
+%resultString = strjoin(newParts, '_');
+%Q = [dirname filesep resultString ext];
+
 for i=1:size(P,1)
     
     ref = deblank(P(i,:));
@@ -128,23 +134,24 @@ for i=1:size(P,1)
     
     spm_jobman('run',matlabbatch);
     
-    if isempty(T2)
-        for t=1:6
-            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
-                [dirname filesep 'c' num2str(t) baseFilename '_T1orT2.nii']);
-        end
-        movefile([dirname filesep baseFilename '_rmask.mat'],...
-            [dirname filesep baseFilename '_T1orT2_rmask.mat']);
-        movefile([dirname filesep baseFilename '_seg8.mat'],...
-            [dirname filesep baseFilename '_T1orT2_seg8.mat']);
-    else
-        for t=1:6
-            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
-                [dirname filesep 'c' num2str(t) baseFilename '_T1andT2.nii']);
-        end
-        movefile([dirname filesep baseFilename '_rmask.mat'],...
-            [dirname filesep baseFilename '_T1andT2_rmask.mat']);
-        movefile([dirname filesep baseFilename '_seg8.mat'],...
-            [dirname filesep baseFilename '_T1andT2_seg8.mat']);
-    end
+    %[dir, baseFile, ~] = fileparts(P);
+    %if isempty(T2)
+    %    for t=1:6
+    %        movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
+    %            [dir filesep 'c' num2str(t) baseFile '.nii']);
+    %    end
+    %    movefile([dirname filesep baseFilename '_rmask.mat'],...
+    %        [dir filesep baseFile '_rmask.mat']);
+    %    movefile([dirname filesep baseFilename '_seg8.mat'],...
+    %        [dir filesep baseFile '_seg8.mat']);
+   % else
+    %    for t=1:6
+    %        movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
+     %           [dir filesep 'c' num2str(t) baseFile '.nii']);
+    %    end
+     %   movefile([dirname filesep baseFilename '_rmask.mat'],...
+     %       [dir filesep baseFile '_rmask.mat']);
+     %   movefile([dirname filesep baseFilename '_seg8.mat'],...
+     %       [dir filesep baseFile '_seg8.mat']);
+    %end
 end % for each image
