@@ -30,7 +30,7 @@ def main():
 def process_segmentation(subj):
     # Extract the name and extension from the subject file
     name, _ = os.path.splitext(subj)
-    segmentation_file = name + '_masks.nii'
+    segmentation_file = name + '_masks.nii.gz'
 
     # Check if the segmentation file exists
     if os.path.exists(segmentation_file):
@@ -50,9 +50,9 @@ def process_segmentation(subj):
         for mp_label, roast_label in mapping.items():
             img_ROAST[img_MP == mp_label] = roast_label
 
-        # Save the modified segmentation file
-        nib.save(nib.Nifti1Image(img_ROAST, nii.affine), segmentation_file)
-        print("Processed segmentation file saved as:", segmentation_file)
+        output_filename = name + '_masks.nii'
+        nib.save(nib.Nifti1Image(img_ROAST, nii.affine), output_filename)
+        print("Processed segmentation file saved as:", output_filename)
     else:
         print("No segmentation file with the specified ending found in the directory.")
 

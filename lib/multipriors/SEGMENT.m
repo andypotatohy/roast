@@ -4,8 +4,8 @@ function SEGMENT(subj)
     str = computer('arch');
     switch str
     case 'win64'
-         %pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnv/python.exe'];  % Relative path to the Python executable
-         pythonExecutable = 'C:\Users\Andrew\anaconda3\envs\tf-gpu\python.exe';
+         pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnv/python.exe'];  % Relative path to the Python executable
+         %pythonExecutable = 'C:\Users\Andrew\anaconda3\envs\tf-gpu\python.exe';
     case 'glnxa64'
          pythonExecutable = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsEnvLinux/bin/python3'];  % Relative path to the Python executable
     case 'maci64'

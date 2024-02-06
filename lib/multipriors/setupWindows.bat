@@ -1,7 +1,7 @@
 @echo off
 set CONDA_INSTALLER=Miniconda3-latest-Windows-x86_64.exe
-set ENV_NAME=multipriors_env
-set YAML_FILE=multipriorsEnv.yml
+set ENV_NAME=%~dp0multipriorsEnv
+set YAML_FILE=%~dp0multipriorsEnv.yml
 
 :: Download and install Miniconda
 curl -O https://repo.anaconda.com/miniconda/%CONDA_INSTALLER%
@@ -13,6 +13,11 @@ call "%USERPROFILE%\miniconda3\Scripts\activate"
 
 :: Create Conda environment
 conda env create -f %YAML_FILE% --prefix .\%ENV_NAME%
+
+:: Get the path of the conda environment
+for /f "tokens=*" %%i in ('conda info --json ^| find "prefix"') do set "CONDA_ENV_PATH=%%i"
+set CONDA_ENV_PATH=%CONDA_ENV_PATH:~14,-1%
+echo Conda environment path: %CONDA_ENV_PATH%
 
 :: Pause to see the output (optional, for debugging)
 pause
