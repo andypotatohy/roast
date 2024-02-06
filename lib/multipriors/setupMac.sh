@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 CONDA_INSTALLER=Miniconda3-latest-MacOSX-x86_64.sh
-ENV_NAME=multipriorsEnvMac
-YAML_FILE=multipriorsEnvMac.yml
+ENV_NAME="/lib/multipriors/multipriorsEnvMac"
+YAML_FILE="$(pwd)/lib/multipriors/multipriorsEnvMac.yml"
 
 # Download and install Miniconda
 curl -O https://repo.anaconda.com/miniconda/${CONDA_INSTALLER}

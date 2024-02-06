@@ -1,8 +1,8 @@
 function mri2mni(subjRasRSPD)
     [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
-    seg8 = load([dirname,'\',baseFilename, '_seg8.mat']);
+    seg8 = load([dirname,'/',baseFilename, '_seg8.mat']);
     seg8Affine = seg8.Affine;
-    if exist(fullfile([dirname,'\',baseFilename,'_MNI',ext]), 'file')
+    if exist(fullfile([dirname,'/',baseFilename,'_MNI',ext]), 'file')
     disp('File exists. Skipping Conversion...')
     else
     disp('Converting MRI to MNI...')
@@ -12,15 +12,15 @@ function mri2mni(subjRasRSPD)
     resultString = strjoin(newParts, '_');
     mri = [dirname filesep resultString ext];
     [Vol,info] = update_affine(mri,seg8Affine);
-    niftiwrite(Vol,[dirname,'\',baseFilename,'_MNI',ext],info)
-    disp([dirname,'\',baseFilename,'_MNI',ext])
+    niftiwrite(Vol,[dirname,'/',baseFilename,'_MNI',ext],info)
+    disp([dirname,'/',baseFilename,'_MNI',ext])
     end
    
-    if (exist(fullfile([dirname,'\',baseFilename,'_masks.nii']), 'file') &&...
-       ~exist(fullfile([dirname,'\',baseFilename,'_masks_MNI.nii']), 'file'))
-        segmentation = [dirname,'\',baseFilename, '_masks.nii'];
+    if (exist(fullfile([dirname,'/',baseFilename,'_masks.nii']), 'file') &&...
+       ~exist(fullfile([dirname,'/',baseFilename,'_masks_MNI.nii']), 'file'))
+        segmentation = [dirname,'/',baseFilename, '_masks.nii'];
         [Vol,info] = update_affine(segmentation,seg8Affine);
-        niftiwrite(Vol,[dirname,'\',baseFilename,'_masks_MNI.nii'],info)
+        niftiwrite(Vol,[dirname,'/',baseFilename,'_masks_MNI.nii'],info)
         disp([dirname,'\',baseFilename,'_masks_MNI.nii'])   
         disp('Converting Segmentation to MNI...')
     else

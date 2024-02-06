@@ -1,8 +1,8 @@
 #!/bin/bash
 
 CONDA_INSTALLER=Miniconda3-latest-Linux-x86_64.sh
-ENV_NAME=multipriorsEnvLinux
-YAML_FILE=multipriorsEnvLinux.yml
+ENV_NAME="/lib/multipriors/multipriorsEnvLinux"
+YAML_FILE="$(pwd)/lib/multipriors/multipriorsEnvLinux.yml"
 
 # Download and install Miniconda
 curl -O https://repo.anaconda.com/miniconda/${CONDA_INSTALLER}
