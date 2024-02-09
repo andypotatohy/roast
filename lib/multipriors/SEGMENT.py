@@ -18,7 +18,7 @@ def main():
     working_dir = os.getcwd().replace('\\', '/')
 
     # Extract subj from command-line arguments
-    subj = sys.argv[2].replace('\\', '/') if len(sys.argv) >= 3 else None
+    subj = sys.argv[2].replace('\\', '/') if len(sys.argv) >= 3 else N
 
     from scripts.lib_seg import segment
     config_file = sys.argv[1].replace('\\', '/')
@@ -50,7 +50,7 @@ def process_segmentation(subj):
         for mp_label, roast_label in mapping.items():
             img_ROAST[img_MP == mp_label] = roast_label
 
-        output_filename = name + '_masks.nii'
+        output_filename = name + '_T1orT2_multipriors_masks.nii'
         nib.save(nib.Nifti1Image(img_ROAST, nii.affine), output_filename)
         print("Processed segmentation file saved as:", output_filename)
     else:

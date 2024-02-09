@@ -1,21 +1,20 @@
-function Multipriors(subj)
+function runMultipriors(subj)
 
-%Installs miniconda and multipriors enviornment
+%Installs miniconda and multipriors enviornment if it doesn't exist
 str = computer('arch');
-
 switch str
     case 'win64'
         if ~exist('multipriorsEnv', 'dir')
             system([strrep(pwd, '\', '/') '/lib/multipriors/setupWindows.bat']);
         else
-            disp('Files already exist on Windows. Skipping setup.');
+            disp('Enviornment already exist on Windows. Skipping setup...');
         end
 
         % Specify the path to libiomp5md.dll (duplicate)
         dllPath = [strrep(pwd, '\', '/') '/lib/multipriors/multipriorsENV/Library/bin/libiomp5md.dll'];
         if exist(dllPath, 'file')
             delete(dllPath);
-            disp('Duplicate libiomp5md.dll has been deleted.');
+            disp('Duplicate libiomp5md.dll has been deleted');
         end
 
     case 'glnxa64'
@@ -27,7 +26,7 @@ switch str
         if ~exist('multipriorsEnvLinux', 'dir')
             system([strrep(pwd, '\', '/') '/lib/multipriors/setupLinux.sh']);
         else
-            disp('Files already exist on Linux. Skipping setup.');
+            disp('Enviornment already exist on Linux. Skipping setup...');
         end
 
     case 'maci64'
@@ -39,22 +38,16 @@ switch str
         if ~exist('multipriorsEnvMac', 'dir')
             system([strrep(pwd, '\', '/') '/lib/multipriors/setupMac.sh']);
         else
-            disp('Files already exist on Mac. Skipping setup.');
+            disp('Enviornment already exist on Mac. Skipping setup...');
         end
 
     otherwise
         error('Unsupported operating system!');
 end
 
-[dirname,baseFilename] = fileparts(subj);
-if ~exist(fullfile(dirname, [baseFilename '_masks.nii']), 'file')
-
+%Warp the TPM
     WARP_indiTPM(subj)
    
-    SEGMENT(subj) 
-else 
-    disp('MultiPriors Segmentation File: ')
-    disp([dirname, [baseFilename '_masks.nii']])
-    disp('Already Exists. Skipping Segmentation...')
-end
+%Segment the MRI
+        SEGMENT(subj) 
 end

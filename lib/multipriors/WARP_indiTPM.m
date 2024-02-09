@@ -11,7 +11,12 @@ function WARP_indiTPM(subj)
     if isfile(outputFileName) == 0
         disp(['warping TPM to ' pth '/' name ext ' ...']);
         load([pth '/' name '_seg8.mat']);
-       
+    
+        % try
+        %     image = image(1);
+        % catch
+        %     image = image;
+        % end
         tpm = spm_load_priors8(tpm);
 
         d1 = size(tpm.dat{1});
@@ -19,8 +24,9 @@ function WARP_indiTPM(subj)
         M1 = tpm.M;
 
         Kb = max(lkp);
-        d = image.dim(1:3);
 
+        d = image.dim(1:3);
+    
         [x1, x2, o] = ndgrid(1:d(1), 1:d(2), 1);
         x3 = 1:d(3);
 

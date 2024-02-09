@@ -1,9 +1,9 @@
-function mri2mni(subjRasRSPD)
+function alignHeader2mni(subjRasRSPD)
     [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
     seg8 = load([dirname,'/',baseFilename, '_seg8.mat']);
     seg8Affine = seg8.Affine;
     if exist(fullfile([dirname,'/',baseFilename,'_MNI',ext]), 'file')
-    disp('File exists. Skipping Conversion...')
+    %disp('File exists. Skipping Conversion...')
     else
     disp('Converting MRI to MNI...')
   
@@ -24,7 +24,7 @@ function mri2mni(subjRasRSPD)
         disp([dirname,'\',baseFilename,'_masks_MNI.nii'])   
         disp('Converting Segmentation to MNI...')
     else
-        disp('File exists. Skipping Conversion...')
+        %disp('File exists. Skipping Conversion...')
     end 
 end
 
