@@ -107,6 +107,11 @@ switch fun
             end
         end
         
+        if optNew.multipriors ~= optOld.multipriors
+            isNewOpt = 1;
+            return
+        end
+
         if optNew.meshOpt.radbound~=optOld.meshOpt.radbound
             isNewOpt = 1;
             return
@@ -192,11 +197,6 @@ switch fun
             return
         end
         
-        if optNew.multipriors ~= optOld.multipriors
-            isNewOpt = 1;
-            return
-        end
-
     case 'target'
         
         if ~strcmp(optNew.roastTag,optOld.roastTag)

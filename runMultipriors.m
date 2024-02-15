@@ -1,4 +1,4 @@
-function runMultipriors(subj)
+function runMultipriors(subj,mri)
 
 %Installs miniconda and multipriors enviornment if it doesn't exist
 str = computer('arch');
@@ -46,8 +46,8 @@ switch str
 end
 
 %Warp the TPM
-    WARP_indiTPM(subj)
+    WARP_indiTPM(subj,mri)
    
 %Segment the MRI
-        SEGMENT(subj) 
+        SEGMENT(mri) 
 end

@@ -1,4 +1,4 @@
-function segTouchup(P,T2,isSmooth,conn)
+function segTouchup(P,P2,isSmooth,conn)
 % segTouchup(P,T2,isSmooth,conn)
 %
 % This function combines mysegment() and autoPatching() in ROAST version
@@ -321,4 +321,5 @@ white.hdr.dime.scl_slope=1; % so that display of NIFTI will not alter the data
 % in the range of [0 1] % ANDY 2018-06-04
 white.fileprefix = [dirname filesep baseFilename '_masks'];
 white.hdr.hist.descrip = 'tissue masks';
+[dirname,baseFilename,~] = fileparts(P2);
 save_untouch_nii(white,[dirname filesep baseFilename '_masks.nii']);

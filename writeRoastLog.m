@@ -111,6 +111,14 @@ switch fun
         end
         fprintf(fid,'\n');
         
+        fprintf(fid,'multipriors:\t');
+        if opt.multipriors
+            fprintf(fid,'on');
+        else
+            fprintf(fid,'off');
+        end
+        fprintf(fid,'\n');
+
         fprintf(fid,'meshOpt:\t');
         fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
             opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
@@ -127,14 +135,6 @@ switch fun
         
         fprintf(fid,'reSampling:\t');
         if opt.resamp
-            fprintf(fid,'on');
-        else
-            fprintf(fid,'off');
-        end
-        fprintf(fid,'\n');
-        
-        fprintf(fid,'multipriors:\t');
-        if opt.multipriors
             fprintf(fid,'on');
         else
             fprintf(fid,'off');

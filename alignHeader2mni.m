@@ -1,5 +1,5 @@
-function alignHeader2mni(subjRasRSPD)
-    [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
+function alignHeader2mni(P1,P2)
+    [dirname,baseFilename,ext] = fileparts(P1);
     seg8 = load([dirname,'/',baseFilename, '_seg8.mat']);
     seg8Affine = seg8.Affine;
     if exist(fullfile([dirname,'/',baseFilename,'_MNI',ext]), 'file')
@@ -15,7 +15,8 @@ function alignHeader2mni(subjRasRSPD)
     niftiwrite(Vol,[dirname,'/',baseFilename,'_MNI',ext],info)
     disp([dirname,'/',baseFilename,'_MNI',ext])
     end
-   
+
+    [dirname,baseFilename,~] = fileparts(P2);
     if (exist(fullfile([dirname,'/',baseFilename,'_masks.nii']), 'file') &&...
        ~exist(fullfile([dirname,'/',baseFilename,'_masks_MNI.nii']), 'file'))
         segmentation = [dirname,'/',baseFilename, '_masks.nii'];

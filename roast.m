@@ -119,6 +119,9 @@ while indArg <= length(varargin)
         case 't2'
             T2 = varargin{indArg+1};
             indArg = indArg+2;
+        case 'multipriors'
+            multipriors = varargin{indArg+1};
+            indArg = indArg+2;
         case 'meshoptions'
             meshOpt = varargin{indArg+1};
             indArg = indArg+2;
@@ -134,11 +137,8 @@ while indArg <= length(varargin)
         case 'conductivities'
             conductivities = varargin{indArg+1};
             indArg = indArg+2;
-        case 'multipriors'
-            multipriors = varargin{indArg+1};
-            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'',''multipriors'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multipriors'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -445,6 +445,21 @@ else
     % check if bad MRI header    
 end
 
+if ~exist('multipriors','var')
+   multipriors = 0;
+elseif  ~isempty(T2)
+    multipriors = 0;
+    warning('Multipriors cannot be run with a T2, Using SPM for Segmentation...')
+else
+    if ~ischar(multipriors), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.'); end
+    if strcmpi(multipriors,'off')
+        multipriors = 0;
+    elseif strcmpi(multipriors,'on')
+        multipriors = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.');
+    end
+end
 % if any(~strcmpi(recipe,'leadfield'))
     
     if ~exist('meshOpt','var')
@@ -610,22 +625,6 @@ if length(conductivities.electrode(:))==1
     conductivities.electrode = repmat(conductivities.electrode,1,length(elecName));
 end
 
-if ~exist('multipriors','var')
-   multipriors = 0;
-elseif exist('T2','var')
-    multipriors = 0;
-    disp('Multipriors cannot be run with a T2, Using SPM for Segmentation...')
-else
-    if ~ischar(multipriors), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.'); end
-    if strcmpi(multipriors,'off')
-        multipriors = 0;
-    elseif strcmpi(multipriors,'on')
-        multipriors = 1;
-    else
-        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.');
-    end
-end
-
 % preprocess MRI data
 if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
@@ -655,32 +654,24 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     else
         subjRasRSPD = subjRasRS;
     end
-    nii = load_untouch_nii(subjRasRSPD);
+
+    % check for T2, and if yes, check if T2 is aligned with T1
     [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
     if ~isempty(T2)
         T2 = realignT2(T2,subjRasRSPD);
-         mriT2 = [dirname filesep baseFilename '_T1andT2' ext];
-         subjRasRSPDseg = mriT2;
+        subjRasRSPDseg1 = [dirname filesep baseFilename '_T1andT2' ext];
     else
-         [dirname,baseFilename,ext] = fileparts(subjRasRSPD);
-         mriT1 = [dirname filesep baseFilename '_T1orT2' ext];
-         subjRasRSPDseg = mriT1;
+        subjRasRSPDseg1  = [dirname filesep baseFilename '_T1orT2' ext];
     end
-    % check if T2 is aligned with T1
-    [dirname,baseFilename,ext] = fileparts(subjRasRSPDseg);
-    if multipriors 
-        multipriorsMRI = [dirname filesep baseFilename '_multipriors' ext];
-        subjRasRSPDseg = multipriorsMRI;
-    else
-        spmMRI = [dirname filesep baseFilename '_SPM' ext];
-        subjRasRSPDseg = spmMRI;
-    end
-    
-    % if ~exist(subjRasRSPD, 'file')
-    % save_untouch_nii(nii, subjRasRSPD);
-    % end
 
-    
+    % check if multipriors is on, and if yes, uses it for segmentation
+    [dirname,baseFilename,ext] = fileparts(subjRasRSPDseg1);
+    if multipriors 
+        subjRasRSPDseg2 = [dirname filesep baseFilename '_multipriors' ext];
+    else
+        %if not, uses SPM for segmentation
+        subjRasRSPDseg2 = [dirname filesep baseFilename '_SPM' ext];
+    end
     
 else
     
@@ -698,7 +689,7 @@ else
         zeroPadding('example/nyhead_masks.nii',paddingAmt);
         subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
         if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_seg8.mat'],'file')
-            load('example/nyhead_seg8.mat','image','tpm','Affine');
+            load('example/nyhead__T1orT2_seg8.mat','image','tpm','Affine');
             origin = inv(image.mat)*[0;0;0;1];
             origin = origin(1:3) + paddingAmt;
             image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
@@ -755,7 +746,7 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'multipriors',multipriors,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multipriors',multipriors,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 [dirname,baseFilename] = fileparts(subj);
@@ -817,36 +808,34 @@ if all(strcmpi(recipe,'leadfield'))
 end
 
 if ~strcmp(baseFilename, 'nyhead')
-    [~, baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-    seg8Exist = exist([dirname filesep baseFilenameRasRSPD '_seg8.mat'], 'file');
+    [~, baseFilename] = fileparts(subjRasRSPDseg1);
+    seg8Exist = exist([dirname filesep baseFilename '_seg8.mat'], 'file');
         if  ~seg8Exist
-        %if (isempty(T2) && ~seg8Exist) || (~isempty(T2) && ~seg8Exist)
             disp('======================================================')
             disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
             disp('======================================================')
-            start_seg(subjRasRSPD, T2);
+            start_seg(subjRasRSPD,T2);
+            seg8Name(subjRasRSPD,subjRasRSPDseg1);
         else
             disp('======================================================')
             disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
             disp('======================================================')
         end
 
-        seg8Name(subjRasRSPD,subjRasRSPDseg,multipriors)
-        [~,baseFilenameRasRSPDseg] = fileparts(subjRasRSPDseg);
-        disp([dirname filesep baseFilenameRasRSPDseg '_masks.nii'])
+        [~,baseFilenameRasRSPDseg] = fileparts(subjRasRSPDseg2);
         maskExist = exist([dirname filesep baseFilenameRasRSPDseg '_masks.nii'], 'file');
         if (multipriors && ~maskExist)
             disp('======================================================')
             disp('      STEP 2 (out of 6): MULTIPRIORS SEGMENTATION ... ')
             disp('======================================================')
-            runMultipriors(subjRasRSPD,T2);
-            alignHeader2mni(subjRasRSPDseg)
+            runMultipriors(subjRasRSPDseg1,subjRasRSPD);
+            alignHeader2mni(subjRasRSPDseg1,subjRasRSPDseg2)
         elseif (~multipriors && ~maskExist)
             disp('======================================================')
             disp('        STEP 2 (out of 6): SPM SEGMENTATION ...       ')
             disp('======================================================')
-            segTouchup(subjRasRSPDseg, T2);
-            alignHeader2mni(subjRasRSPDseg)
+            segTouchup(subjRasRSPDseg1,subjRasRSPDseg2);
+            alignHeader2mni(subjRasRSPDseg1,subjRasRSPDseg2)
         else 
             disp('======================================================')
             disp('       SEGMENTATION ALREADY DONE, SKIP STEP 2         ')
@@ -858,28 +847,28 @@ else
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
+    %[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
 
 end
-
+[~, baseFilename] = fileparts(subj);
 if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    hdrInfo = electrodePlacement(subj,subjRasRSPDseg,T2,elecName,options,uniqueTag);
+    hdrInfo = electrodePlacement(subj,subjRasRSPDseg1,subjRasRSPDseg2,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
 %   load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-    load([dirname filesep baseFilenameRasRSPDseg '_header.mat'],'hdrInfo');
+    load([dirname filesep baseFilename '_header.mat'],'hdrInfo');
 end
 
 if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDseg,T2,meshOpt,hdrInfo,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDseg1,subjRasRSPDseg2,meshOpt,hdrInfo,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -907,14 +896,14 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPD,node,hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRasRSPDseg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDseg2,node,hdrInfo,uniqueTag);
+        visualizeRes(subj,subjRasRSPDseg2,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRasRSPDseg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
+        visualizeRes(subj,subjRasRSPDseg2,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
     
 else

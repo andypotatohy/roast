@@ -35,7 +35,7 @@ output_classes = 7
 model = 'MultiPriors_noDownsampling'
 #dpatch=61
 segmentation_dpatch = 51*3
-path_to_model = (wd +'/lib/multipriors/best_model_tf2_singleGPUepoch100.h5').replace('\\','/')
+path_to_model = (wd +'/lib/multipriors/multipriors_best_model.h5').replace('\\','/')
 session =  'Renamed_Session'
 
 ########################################### TEST PARAMETERS

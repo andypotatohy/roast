@@ -209,14 +209,9 @@ def fullHeadSegmentation(wd,subj, penalty_MATRIX, TPM_channel, dice_compare, dsc
     if len(testLabels) == 0:
         dice_compare = False    
     subjectIndex = [subjectIndex]
-   # flairCh = getSubjectsToSample(testChannels[0], subjectIndex)
     flairCh = testChannels[0]
-    #subID = flairCh[0].split('.')[0].split('/')[-1][:7]
     subID = flairCh.split('/')[-1].split('.')[0]
-    #segmentationName = 'predictions/' + subID + '_segmentation_epoch' + str(epoch)
-    #output = wd +'/' + segmentationName + '.nii.gz'
-    #output = subj + subID + '_segmentation_epoch' + str(epoch)+ '.nii.gz'
-    output = subj + subID + '_masks.nii.gz'
+    output = subj + subID + '_T1orT2_multipriors_masks.nii'
     if os.path.exists(output):
       print('Segmentation already found in: {}\nSkip..'.format(output))
       return

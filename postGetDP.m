@@ -55,7 +55,7 @@ if ~isempty(P2) % for roast()
     save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
     
 
-    template = load_untouch_nii(P2); % Load the original MRI to save the results as NIFTI format
+    template = load_untouch_nii(P1); % Load the original MRI to save the results as NIFTI format
     
     template.hdr.dime.datatype = 16;
     template.hdr.dime.bitpix = 32;

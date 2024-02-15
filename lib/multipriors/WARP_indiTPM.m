@@ -1,22 +1,18 @@
-function WARP_indiTPM(subj)
+function WARP_indiTPM(subj,mri)
 
     % Split the path into directory, filename, and extension
-    [pth, name, ext] = fileparts(subj);
+    [pth, mri_name, ext] = fileparts(mri);
     pth = strrep(pth, '\', '/');
+    [~, name] = fileparts(subj);
     % Check for the existence of the output file
-    outputFileName = [pth '/' name '_indiTPM.nii.gz'];
+    outputFileName = [pth '/' mri_name '_indiTPM.nii'];
     
     % Replace backslashes with forward slashes
     
-    if isfile(outputFileName) == 0
+    if isfile([outputFileName, '.gz']) == 0
         disp(['warping TPM to ' pth '/' name ext ' ...']);
         load([pth '/' name '_seg8.mat']);
-    
-        % try
-        %     image = image(1);
-        % catch
-        %     image = image;
-        % end
+   
         tpm = spm_load_priors8(tpm);
 
         d1 = size(tpm.dat{1});
@@ -56,13 +52,16 @@ function WARP_indiTPM(subj)
         for k1 = 1:Kb
             QQ(:,:,:,k1) = QQ(:,:,:,k1) ./ sQQ;
         end
-
-        hdr = niftiinfo([pth filesep name ext]);
+       
+        parts = strsplit(name, '_');
+        newParts = parts(1:end-1);
+        resultString = strjoin(newParts, '_');
+        hdr = niftiinfo([pth filesep resultString ext]);
         hdr.ImageSize = cat(2, hdr.ImageSize, 6);
         hdr.PixelDimensions = cat(2, hdr.PixelDimensions, 0);
         hdr.Datatype = 'single';
         hdr.BitsPerPixel = 32;
-        niftiwrite(QQ, [pth filesep name '_indiTPM.nii'], hdr, 'compressed', 1);
+        niftiwrite(QQ, outputFileName, hdr, 'compressed', 1);
 
     else
         disp(['File ' outputFileName ' already exists. Warping TPM skipped...']);

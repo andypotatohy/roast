@@ -29,7 +29,7 @@ The multipriors zip file contains the following:
   - `SEGMENT.m`
   - `SEGMENT.py`
   - `Segmentation_config.py`
-  - `best_model_tf2_singleGPUepoch100.h5`
+  - `multipriors_best_model.h5`
   - `scripts` folder 
   -  Create multipriors Enviornment using the batch file specific to your operating system:
 

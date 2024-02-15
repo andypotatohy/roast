@@ -1,4 +1,4 @@
-function landmarks = getLandmarks(P,T2)
+function landmarks = getLandmarks(P)
 % landmarks = getLandmarks(P,T2)
 %
 % Mapping landmarks in the TPM (hard-coded) to the individual head, by

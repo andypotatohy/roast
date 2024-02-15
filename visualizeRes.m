@@ -22,10 +22,10 @@ if isempty(dirname), dirname = pwd; end
 [~,baseFilenameRasRSPD] = fileparts(P2);
 [dir, baseFile, ext] = fileparts(P2);
 parts = strsplit(baseFile, '_');
-newParts = parts(1:end-2);
+newParts = parts(1:end-1);
 resultString = strjoin(newParts, '_');
 P3 = [dir filesep resultString ext];
-mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
+mappingFile = [dirname filesep resultString '_seg8.mat'];
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -37,7 +37,7 @@ end
 if showAll    
     if ~strcmp(baseFilename,'nyhead')
         disp('showing MRI and segmentations...');
-        data = load_untouch_nii(P3); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
+        data = load_untouch_nii(P1); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         
         if ~isempty(T2) %T2 specified
             data = load_untouch_nii(T2);

@@ -1,4 +1,4 @@
-function hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
+function hdrInfo = electrodePlacement(P1,P2,P3,elecNeeded,options,uniTag)
 % hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 %
 % Place electrodes on the scalp surface. options.elecPara contains all the options
@@ -10,7 +10,7 @@ function hdrInfo = electrodePlacement(P1,P2,T2,elecNeeded,options,uniTag)
 
 [dirname,baseFilename] = fileparts(P1);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRasRSPD] = fileparts(P2);
+%[~,baseFilenameRasRSPD] = fileparts(P2);
 
 elecPara = options.elecPara;
 
@@ -23,7 +23,7 @@ indC = elecPara(1).indC;
 % landmarks_original = getLandmarks(P2,T2);
 % 
 % [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
-
+[~,baseFilenameRasRSPD] = fileparts(P3);
 template = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
 % Load the scalp mask; template is used for saving the results with the same header info as the input
 pixdim = template.hdr.dime.pixdim(2:4);
@@ -37,7 +37,7 @@ scalp = template.img==5;
 
 if ~isempty(indP) || ~isempty(indN)
 %     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
-    landmarks = getLandmarks(P2,T2);
+    landmarks = getLandmarks(P2);
 end
 
 if ~isempty(indC)
@@ -187,10 +187,12 @@ for i=1:6
 end % remove the gel that goes into other tissue masks
 
 % disp('saving the results...')
+[~,baseFilename] = fileparts(P1);
 template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_elec'];
 template.hdr.hist.descrip = 'electrode mask';
 % template.img = uint8(volume_elec)*255;
 template.img = uint8(volume_elec_C.*volume_elec);
+
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
 template.fileprefix = [dirname filesep baseFilename '_' uniTag '_mask_gel'];
 template.hdr.hist.descrip = 'gel mask';
@@ -199,7 +201,6 @@ template.img = uint8(volume_gel_C.*volume_gel);
 save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 
 % save([dirname filesep baseFilename '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-[~,baseFilenameRasRSPD] = fileparts(P2);
-if ~exist([dirname filesep baseFilenameRasRSPD '_header.mat'],'file')
-    save([dirname filesep baseFilenameRasRSPD '_header.mat'],'hdrInfo');
+if ~exist([dirname filesep baseFilename '_header.mat'],'file')
+    save([dirname filesep baseFilename '_header.mat'],'hdrInfo');
 end

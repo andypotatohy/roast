@@ -1,4 +1,4 @@
-function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
+function [node,elem,face] = meshByIso2mesh(P1,P2,P3,opt,hdrInfo,uniTag)
 % [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
@@ -21,7 +21,8 @@ else
     % mapping from MRI voxel space to MNI space
 end
 
-data = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
+[~,baseFilename] = fileparts(P3);
+data = load_untouch_nii([dirname filesep baseFilename '_masks.nii']);
 allMask = data.img;
 allMaskShow = data.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
@@ -30,6 +31,7 @@ numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 % data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
 % allMask(data.img==255) = 8;
 
+[dirname,baseFilename] = fileparts(P1);
 data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
 numOfGel = max(data.img(:));
 for i=1:numOfGel
