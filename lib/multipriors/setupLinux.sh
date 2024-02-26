@@ -2,7 +2,7 @@
 
 CONDA_INSTALLER=Miniconda3-latest-Linux-x86_64.sh
 CONDA_INSTALL_PATH="$(pwd)/lib/multipriors/miniconda"
-ENV_NAME="multipriorsEnvLinux"
+ENV_NAME="$(pwd)/lib/multipriors/multipriorsEnvLinux"
 YAML_FILE="$(pwd)/lib/multipriors/multipriorsEnvLinux.yml"
 
 # Download and install Miniconda
@@ -15,7 +15,7 @@ source ${CONDA_INSTALL_PATH}/etc/profile.d/conda.sh
 conda activate base
 
 # Create Conda environment
-conda env create -f ${YAML_FILE} --prefix ${CONDA_INSTALL_PATH}/${ENV_NAME}
+conda env create -f ${YAML_FILE} --prefix ${ENV_NAME}
 
 # Remove Miniconda installation directory
 rm -rf ${CONDA_INSTALL_PATH}
