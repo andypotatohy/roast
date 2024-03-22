@@ -54,9 +54,11 @@ if ~isempty(P2) % for roast()
     disp('saving the final results...')
     save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
     
-
+    if contains(P1,'example/nyhead.nii')
+       disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
+    else
     template = load_untouch_nii(P1); % Load the original MRI to save the results as NIFTI format
-    
+   
     template.hdr.dime.datatype = 16;
     template.hdr.dime.bitpix = 32;
     template.hdr.dime.scl_slope = 1; % so that display of NIFTI will not alter the data
@@ -85,7 +87,7 @@ if ~isempty(P2) % for roast()
     template.hdr.hist.descrip = 'EF';
     template.fileprefix = [dirname filesep baseFilename '_' uniTag '_e'];
     save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_e.nii']);
-    
+    end
     disp('======================================================');
     disp('Results are saved as:');
     disp([dirname filesep baseFilename '_' uniTag '_roastResult.mat']);

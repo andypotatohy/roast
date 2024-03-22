@@ -675,8 +675,8 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
 else
     
-    if ~exist('example/nyhead_T1orT2_masks.nii','file')
-        unzip('example/nyhead_T1orT2_masks.nii.zip','example')
+    if ~exist('example/nyhead_T1orT2_SPM_masks.nii','file')
+        unzip('example/nyhead_T1orT2_SPM_masks.nii.zip','example')
     end
     
     isNonRAS = 0; % New York head is in RAS
@@ -847,7 +847,8 @@ else
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-    %[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
+    subjRasRSPDseg1 = [dirname filesep baseFilename '_T1orT2.nii'];
+    subjRasRSPDseg2 = [dirname filesep baseFilename '_T1orT2_SPM.nii'];
 
 end
 [~, baseFilename] = fileparts(subj);

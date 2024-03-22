@@ -8,7 +8,7 @@ function alignHeader2mni(P1,P2)
     disp('Converting MRI to MNI...')
   
     parts = strsplit(baseFilename, '_');
-    newParts = parts(1:end-2);
+    newParts = parts(1:end-1);
     resultString = strjoin(newParts, '_');
     mri = [dirname filesep resultString ext];
     [Vol,info] = update_affine(mri,seg8Affine);

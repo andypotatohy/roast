@@ -93,10 +93,10 @@ elec_template = elec_template(indFit,:);
 
 [dirname, baseFilename, ext] = fileparts(P2);
 parts = strsplit(baseFilename, '_');
-newParts = parts(1:end-2);
+newParts = parts(1:end-1);
 resultString = strjoin(newParts, '_');
 Q = [dirname filesep resultString ext];
-if isempty(strfind(P2,'example/nyhead'))
+if isempty(strfind(P2,'example\nyhead'))
     data = load_untouch_nii(Q);
     elec_template = elec_template./repmat(data.hdr.dime.pixdim(2:4),length(indFit),1);
     % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
