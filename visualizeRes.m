@@ -1,5 +1,5 @@
-function visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
-% visualizeRes(P1,P2,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
+function visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
+% visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -17,15 +17,11 @@ else
     C = varargin{1}; ef_mag = varargin{2}; ef_all = varargin{3}; targetCoord = varargin{4};
 end
 
-[dirname,baseFilename] = fileparts(P1);
+[dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRasRSPD] = fileparts(P2);
-[dir, baseFile, ext] = fileparts(P2);
-parts = strsplit(baseFile, '_');
-newParts = parts(1:end-1);
-resultString = strjoin(newParts, '_');
-P3 = [dir filesep resultString ext];
-mappingFile = [dirname filesep resultString '_seg8.mat'];
+
+[~,spmOutName] = fileparts(spmOut);
+mappingFile = [dirname filesep spmOutName '_seg8.mat'];
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -35,9 +31,9 @@ else
 end
 
 if showAll    
-    if ~strcmp(baseFilename,'nyhead')
+    if ~strcmp(subjName,'nyhead')
         disp('showing MRI and segmentations...');
-        data = load_untouch_nii(P1); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
+        data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         
         if ~isempty(T2) %T2 specified
             data = load_untouch_nii(T2);
@@ -48,13 +44,14 @@ if showAll
     end    
 end
 
-masks = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
+[~,segOutName] = fileparts(segOut);
+masks = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
 allMask = masks.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 if isRoast
-    gel = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+    gel = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
     numOfGel = max(gel.img(:));
-    elec = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+    elec = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
     % numOfElec = max(elec.img(:));
 else
     numOfGel = length(inCurrent);
@@ -99,7 +96,7 @@ if isRoast
     indNode_elecElm = elem(find(elem(:,5) > numOfTissue+numOfGel),1:4);
     inCurrentRange = [min(inCurrent) max(inCurrent)];
     
-    fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
+    fid = fopen([dirname filesep subjName '_' uniTag '_v.pos']);
     fgetl(fid);
     C = textscan(fid,'%d %f');
     fclose(fid);
@@ -142,7 +139,7 @@ if isRoast
     axes(a1);
     drawnow
     
-    fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
+    fid = fopen([dirname filesep subjName '_' uniTag '_e.pos']);
     fgetl(fid);
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);

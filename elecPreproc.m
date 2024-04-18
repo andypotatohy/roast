@@ -34,9 +34,9 @@ for i=1:length(elec)
     elseif ~isempty(strfind(lower(elec{i}),'custom'))
         doCustom = 1;
         if ~exist('elecPool_C','var')
-            [dirname,baseFilename] = fileparts(subj);
+            [dirname,subjName] = fileparts(subj);
             if isempty(dirname), dirname = pwd; end
-            fid = fopen([dirname filesep baseFilename '_customLocations']);
+            fid = fopen([dirname filesep subjName '_customLocations']);
             if fid==-1
                 error('You specified customized electrode locations but did not provide the location coordinates. Please put together all the coordinates in a text file ''subjectName_customLocations'' and store it under the subject folder.');
             end

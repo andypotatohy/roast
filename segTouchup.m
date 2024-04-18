@@ -1,5 +1,5 @@
-function segTouchup(P,P2,isSmooth,conn)
-% segTouchup(P,T2,isSmooth,conn)
+function segTouchup(spmOut,segOut,isSmooth,conn)
+% segTouchup(spmOut,segOut,isSmooth,conn)
 %
 % This function combines mysegment() and autoPatching() in ROAST version
 % 2.1 and earlier. It performs automated clean up on the output of SPM12 
@@ -23,16 +23,16 @@ if nargin < 4
 end
 
 disp('loading data...')
-% cd(dirname)
-[dirname,baseFilename] = fileparts(P);
+[dirname,spmOutName] = fileparts(spmOut);
 if isempty(dirname), dirname = pwd; end
+[~,segOutName] = fileparts(segOut);
 
-gray = load_untouch_nii([dirname filesep 'c1' baseFilename '.nii']);
-white = load_untouch_nii([dirname filesep 'c2' baseFilename '.nii']);
-csf = load_untouch_nii([dirname filesep 'c3' baseFilename '.nii']);
-bone = load_untouch_nii([dirname filesep 'c4' baseFilename '.nii']);
-skin = load_untouch_nii([dirname filesep 'c5' baseFilename '.nii']);
-air = load_untouch_nii([dirname filesep 'c6' baseFilename '.nii']);
+gray = load_untouch_nii([dirname filesep 'c1' spmOutName '.nii']);
+white = load_untouch_nii([dirname filesep 'c2' spmOutName '.nii']);
+csf = load_untouch_nii([dirname filesep 'c3' spmOutName '.nii']);
+bone = load_untouch_nii([dirname filesep 'c4' spmOutName '.nii']);
+skin = load_untouch_nii([dirname filesep 'c5' spmOutName '.nii']);
+air = load_untouch_nii([dirname filesep 'c6' spmOutName '.nii']);
 % load the masks
 
 gray_temp = gray.img; white_temp = white.img; csf_temp = csf.img;
@@ -209,7 +209,7 @@ air_temp = air_temp & temp;
 % available) used for segmentation does not have empty space (e.g. Dixon
 % image from stroke data has empty space) % ANDY 2017-05-17
 
-load([dirname filesep baseFilename '_rmask.mat'],'holes_vol','eyes_vol','WMexclude_vol');
+load([dirname filesep spmOutName '_rmask.mat'],'holes_vol','eyes_vol','WMexclude_vol');
 % for exceptions in auto touchup
 
 % assign labels to tissues in this order: white,gray,csf,bone,skin,air
@@ -319,7 +319,6 @@ white.img = uint8(allMask);
 white.hdr.dime.scl_slope=1; % so that display of NIFTI will not alter the data
 % In SPM results, this is 1/255, then all uint8 data will be displayed
 % in the range of [0 1] % ANDY 2018-06-04
-white.fileprefix = [dirname filesep baseFilename '_masks'];
+white.fileprefix = [dirname filesep segOutName '_masks'];
 white.hdr.hist.descrip = 'tissue masks';
-[dirname,baseFilename,~] = fileparts(P2);
-save_untouch_nii(white,[dirname filesep baseFilename '_masks.nii']);
+save_untouch_nii(white,[dirname filesep segOutName '_masks.nii']);

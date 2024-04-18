@@ -1,5 +1,5 @@
-function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indNeed,isBiosemi,isEGI)
-% [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,P2,capInfo,indNeed,isBiosemi,isEGI)
+function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indNeed,isBiosemi,isEGI)
+% [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indNeed,isBiosemi,isEGI)
 %
 % Place the electrodes with pre-defined coordinates in the standard EEG
 % system (e.g., 10/05, BioSemi, or EGI system).
@@ -90,19 +90,8 @@ end
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
 elec_template = cell2mat(capInfo(2:4));
 elec_template = elec_template(indFit,:);
-
-[dirname, baseFilename, ext] = fileparts(P2);
-parts = strsplit(baseFilename, '_');
-newParts = parts(1:end-1);
-resultString = strjoin(newParts, '_');
-Q = [dirname filesep resultString ext];
-if isempty(strfind(P2,'example\nyhead'))
-    data = load_untouch_nii(Q);
-    elec_template = elec_template./repmat(data.hdr.dime.pixdim(2:4),length(indFit),1);
-    % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
-else
-    elec_template = elec_template./repmat([0.5 0.5 0.5],length(indFit),1);
-end
+elec_template = elec_template./repmat(hdrInfo.pixdim,length(indFit),1);
+% account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
 
 theta = 23;
 alpha = ((360-10*theta)/2)*(pi/180);

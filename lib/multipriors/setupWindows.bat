@@ -12,7 +12,7 @@ del %CONDA_INSTALLER%
 call "%USERPROFILE%\miniconda3\Scripts\activate"
 
 :: Create Conda environment
-conda env create -f %YAML_FILE% --prefix .\%ENV_NAME%
+conda env create -f %YAML_FILE% --prefix %ENV_NAME%
 
 :: Get the path of the conda environment
 for /f "tokens=*" %%i in ('conda info --json ^| find "prefix"') do set "CONDA_ENV_PATH=%%i"

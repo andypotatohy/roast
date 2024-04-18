@@ -23,6 +23,7 @@ if isRS
     else
         
         [dirname,baseFilename,ext] = fileparts(mri);
+        if isempty(dirname), dirname = pwd; end
         mriRS = [dirname filesep baseFilename '_1mm' ext];
         
         if exist(mriRS,'file')

@@ -36,6 +36,7 @@ flipTag = [sign(M_orient(oriInd(1),1)) sign(M_orient(oriInd(2),2)) sign(M_orient
 % detect if the head is flipped in each direction compared to RAS system
 
 [dirname,baseFilename,ext] = fileparts(mri);
+if isempty(dirname), dirname = pwd; end
 if any(permOrder~=[1 2 3]) || any(flipTag<0)
     
     isNonRAS = 1;

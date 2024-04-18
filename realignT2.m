@@ -17,6 +17,7 @@ if any(refData.hdr.dime.dim(1:5)~=srcData.hdr.dime.dim(1:5)) || ...
     
     [~,nam] = fileparts(ref);
     [pth,~,ext] = fileparts(src);
+    if isempty(pth), pth = pwd; end
         
     srcR = [pth filesep nam '_T2_aligned' ext];
 

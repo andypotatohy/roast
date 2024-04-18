@@ -1,5 +1,5 @@
-function landmarks = getLandmarks(P)
-% landmarks = getLandmarks(P,T2)
+function landmarks = getLandmarks(spmOut)
+% landmarks = getLandmarks(spmOut)
 %
 % Mapping landmarks in the TPM (hard-coded) to the individual head, by
 % using the mapping computed during the segmentation process in SPM.
@@ -11,8 +11,9 @@ function landmarks = getLandmarks(P)
 % yhuang16@citymail.cuny.edu
 % April 2018
 
-[dirname,baseFilename] = fileparts(P);
-load([dirname filesep baseFilename '_seg8.mat'],'image','tpm','Affine');
+[dirname,spmOutName] = fileparts(spmOut);
+if isempty(dirname), dirname = pwd; end
+load([dirname filesep spmOutName '_seg8.mat'],'image','tpm','Affine');
 tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
 % mapping landmarks from TPM to individual MRI % ANDY 2017-05-17
 
