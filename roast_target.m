@@ -37,7 +37,14 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% option, please cite this:
+% 
+% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
+% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
+% Vol. 8, Issue 3, 034001 (June 2021).
+% 
+% ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
 % 
 % General Public License version 3 or later. See LICENSE.md for details.
@@ -56,6 +63,10 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % September 2019
+% 
+% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% ROAST by Andrew Birnbaum
+% April 2024
 
 fprintf('\n\n');
 disp('=============================================================')
