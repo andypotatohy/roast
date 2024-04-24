@@ -32,7 +32,8 @@ hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 % keep the header info for use later
 % scalp_original = template.img==5;
 % scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
-scalp = template.img==5;
+% scalp = template.img==5;
+scalp=template.img>0; % fill in scalp first to avoid complication % ANDY 2024-03-12
 
 if ~isempty(indP) || ~isempty(indN)
 %     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));

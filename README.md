@@ -590,6 +590,8 @@ E-field: `"subjName_simulationTag_e.nii"`, unit in V/m.
 
 E-field magnitude: `"subjName_simulationTag_emag.nii"`, unit in V/m.
 
+Starting from Version 3.5, ROAST also ouputs the MRI and segmentation mask with their headers aligned to the MNI space, i.e., their voxel-to-world mapping directly maps to the MNI space. These two files end with `"_MNI.nii"` in their file names.
+
 #### Outputs in text files
 
 Voltage: `"subjName_simulationTag_v.pos"`, unit in mV.

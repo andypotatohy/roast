@@ -132,7 +132,10 @@ for n = 1:length(factor)
     [cosineAngle,indOnScalpSurf] = project2ClosestSurfacePoints(elec_transformed,scalp_surface,center);
     for i = 1:length(idx)
 %         testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) > max(cosineAngle(:,i))*0.99993,i),:);
-        testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) > prctile(cosineAngle(:,i),99.99),i),:);
+%         testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) > prctile(cosineAngle(:,i),99.99),i),:);
+        testPts = scalp_surface(indOnScalpSurf(cosineAngle(:,i) == max(cosineAngle(:,i)),i),:);
+        % max seems to work better than 99.99 prctile in placing
+        % high-density layouts (eg 10-05, biosemi) % ANDY 2024-03-12
         [~,indFarthestOnTestPts] = map2Points(center,testPts,'farthest');
         idx(i) = indOnScalpSurf(indFarthestOnTestPts,i);
         % Find the only point on the outer surface of the scalp for each electrode,
