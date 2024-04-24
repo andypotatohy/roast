@@ -7,7 +7,7 @@
 3. [How to use `roast_target`](#3-how-to-use-roast_target)
    - [3.1 Synopsis of `roast_target`](#31-synopsis-of-roast_target)
    - [3.2 Examples on `roast_target`](#32-examples-on-roast_target)
-4. [More notes on the `capInfo.xls` file](#4-more-notes-on-the-capInfoxls-file)
+4. [More notes on the `capInfo.xlsx` file](#4-more-notes-on-the-capInfoxlsx-file)
 5. [Outputs of ROAST software](#5-outputs-of-roast-software)
    - [5.1 Outputs of `roast`](#51-outputs-of-roast)
    - [5.2 Outputs of `roast_target`](#52-outputs-of-roast_target)
@@ -45,7 +45,7 @@ to run ROAST for a general result, you can use the default subject the
 `recipe`: how you want to ROAST the subject you specified above. Default
 recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
 any recipe you want in the format of `electrodeName-injectedCurrent` pair
-(see [Example 3](#example-3)). You can pick any electrode from the 10/20, 10/10, 10/05, BioSemi-256, or EGI HCGSN-256 EEG system (see the Microsoft Excel file `capInfo.xls` under the root directory of ROAST). The unit of the injected current is in milliampere (mA). Make sure
+(see [Example 3](#example-3)). You can pick any electrode from the 10/20, 10/10, 10/05, BioSemi-256, or EGI HCGSN-256 EEG system (see the Microsoft Excel file `capInfo.xlsx` under the root directory of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
 on the scalp. See [Example 5](#example-5) for details. You can also use a special recipe called "leadField", so that ROAST will automatically generate all the data that will allow you to call `roast_target()` later to perform targeted TES. See [Example 25](#example-25) and [How to use `roast_target`](#3-how-to-use-roast_target).
 
@@ -213,7 +213,7 @@ in the 2nd argument, with `electrodeName-injectedCurrent` pair. Electrodes are
 modeled by default as small disc electrodes. You can pick any electrode
 from the 10/20, 10/10, 10/05, BioSemi-256, or EGI HCGSN-256 EEG system. You can find all
 the info on electrodes (names, locations, coordinates) in the Microsoft
-Excel file `capInfo.xls` under the root directory of ROAST. Note the unit of
+Excel file `capInfo.xlsx` under the root directory of ROAST. Note the unit of
 the injected current is milliampere (mA). Make sure they sum up to 0.
 
 #### Example 4
@@ -221,7 +221,7 @@ the injected current is milliampere (mA). Make sure they sum up to 0.
     roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')
 
 Run simulation on subject1 with anode on G12 (1 mA) and cathode on J7 (-1
-mA) from the extended BioSemi-256 system (see `capInfo.xls` under the root
+mA) from the extended BioSemi-256 system (see `capInfo.xlsx` under the root
 directory of ROAST).
  
 #### Example 5
@@ -229,7 +229,7 @@ directory of ROAST).
     roast('example/subject1.nii',{'E12',0.25,'E7',-0.25,'Nk1',0.5,'Nk3',-0.5,'custom1',0.25,'custom3',-0.25},'captype','egi')
 
 Run simulation on subject1 with recipe that includes: EGI electrodes
-E12 and E7; neck electrodes Nk1 and Nk3 (see `capInfo.xls`); and
+E12 and E7; neck electrodes Nk1 and Nk3 (see `capInfo.xlsx`); and
 user-provided electrodes custom1 and custom3. You can use a free program
 called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
 the MRI first (note do NOT use MRIcron for this as MRIcron will not give you
@@ -554,9 +554,9 @@ In [Example 33](#example-33), you can also leave the `'orient'` option blank, so
 Run targeting on the MNI152 head at the default target location (left primary motor cortex) with maximal intensity (`'max-l1per'` algorithm used) along the `'radial-in'` direction. Besides the L1-norm constraint on the total injected current (4 mA), additional L1-norm constraint on each individual electrode is also enforced. 8 electrodes are specified in the optimal montage, so that the injected current at each individual electrode will not exceed 4 mA / 8 = 0.5 mA. Note by adding the L1-norm constraint on each individual electrode, you may lose electric field intensity at the target.
 
 
-## 4. More notes on the `capInfo.xls` file
+## 4. More notes on the `capInfo.xlsx` file
 
-A lot of info are hidden in the fancy `capInfo.xls` file under the ROAST root directory. There you can find the comprehensive layouts of the [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6), [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg), and [EGI HCGSN](https://www.egi.com/images/stories/manuals/Second%20Batch%20of%20IFUs%20with%20new%20Notified%20Body%20Jan%202019/GSN_tman_8105171-51_20181231.pdf) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
+A lot of info are hidden in the fancy `capInfo.xlsx` file under the ROAST root directory. There you can find the comprehensive layouts of the [10-05](https://www.sciencedirect.com/science/article/pii/S1053811906009724?via%3Dihub#fig6), [BioSemi](https://www.biosemi.com/pics/cap_256_layout_medium.jpg), and [EGI HCGSN](https://www.egi.com/images/stories/manuals/Second%20Batch%20of%20IFUs%20with%20new%20Notified%20Body%20Jan%202019/GSN_tman_8105171-51_20181231.pdf) systems (with my personal drawings), and also visually-striking 3D renderings of the New York head with these electrodes placed on. So make sure to check it out.
 
 
 ## 5. Outputs of ROAST software
@@ -675,7 +675,7 @@ Review the results from running targeting `'mixed_orient'` in [Example 33](#exam
 
 ## 7. How to ask questions
 
-Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 24](#example-24) and [Example 33](#example-33) for quick references. Do not forget to check out the fancy [`capInfo.xls`](#4-more-notes-on-the-capInfoxls-file) file.
+Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 24](#example-24) and [Example 33](#example-33) for quick references. Do not forget to check out the fancy [`capInfo.xlsx`](#4-more-notes-on-the-capInfoxlsx-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
