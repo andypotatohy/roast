@@ -21,4 +21,4 @@ conda env create -f ${YAML_FILE} --prefix ${ENV_NAME}
 rm -rf ${CONDA_INSTALL_PATH}
 
 # Display activation instructions for the new environment
-echo "To activate the environment, run: conda activate ${CONDA_INSTALL_PATH}/${ENV_NAME}"
+echo "To activate the environment, run: conda activate ${ENV_NAME}"

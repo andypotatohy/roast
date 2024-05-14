@@ -715,7 +715,25 @@ ROAST is NOT backwards compatible in the generated simulation data.
 
 Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
 
-Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum).
+Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). This model requires a Python Enviornment which should automatically be installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
+
+```
+Creating Multipriors Enviornment
+
+Create your own conda enviornment with the proper OS tag.
+-Windows: multipriorsEnv 
+-Linux:  multipriorsEnvLinux 
+-Mac:  multipriorsEnvMac
+
+Download the proper dependencies by using Conda or Pip Install:
+-tensorflow
+-scikit-image
+-nibabel
+
+Place the enviornment into your lib/multipriors folder.
+```
+
+ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only intel will work. An update will be added in the future. 
 
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
 
