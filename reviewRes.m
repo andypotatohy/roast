@@ -40,7 +40,14 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% option, please cite this:
+% 
+% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
+% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
+% Vol. 8, Issue 3, 034001 (June 2021).
+% 
+% ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
 % 
 % General Public License version 3 or later. See LICENSE.md for details.
@@ -59,6 +66,10 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % September 2019
+% 
+% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% ROAST by Andrew Birnbaum
+% April 2024
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -122,8 +133,10 @@ if nargin<4 || isempty(fastRender)
     fastRender = 1; % no smoothing on surface
 end
 
-[dirname,baseFilename,ext] = fileparts(subj);
-optionFile = [dirname filesep baseFilename '_' simTag '_roastOptions.mat'];
+[dirname,subjName,ext] = fileparts(subj);
+if isempty(dirname), dirname = pwd; end
+
+optionFile = [dirname filesep subjName '_' simTag '_roastOptions.mat'];
 if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
@@ -149,7 +162,7 @@ else
         error(['Simulation ' simTag ' was run for generating the lead field for subject ' subj '. reviewRes() will visualize the results from roast_target(), but no targeting tag was provided.']);
     end
     
-    optionFile = [dirname filesep baseFilename '_' tarTag '_targetOptions.mat'];
+    optionFile = [dirname filesep subjName '_' tarTag '_targetOptions.mat'];
     if ~exist(optionFile,'file')
         error(['Option file not found. Targeting ' tarTag ' may never be run. Please run it first.']);
     else
@@ -159,7 +172,7 @@ else
     
     disp(['Showing results for Targeting ' tarTag ' ...']);
     
-    resFile = [dirname filesep baseFilename '_' tarTag '_targetResult.mat'];
+    resFile = [dirname filesep subjName '_' tarTag '_targetResult.mat'];
     if ~exist(resFile,'file')
         error(['Result file ' resFile ' not found. Check if you run through targeting under tag ' tarTag '.']);
     else
@@ -170,32 +183,42 @@ end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
 if optRoast.isNonRAS
-    subjRas = [dirname filesep baseFilename '_ras' ext];
+    subjRas = [dirname filesep subjName '_ras' ext];
 else
     subjRas = subj;
 end
+[~,subjRasName] = fileparts(subjRas);
 
 if optRoast.resamp
-    [dirname2,baseFilename2,ext2] = fileparts(subjRas);
-    subjRasRS = [dirname filesep baseFilename2 '_1mm' ext];
+    subjRasRS = [dirname filesep subjRasName '_1mm' ext];
 else
     subjRasRS = subjRas;
 end
+[~,subjRasRsName] = fileparts(subjRasRS);
 
 if optRoast.zeroPad>0
-    [dirname2,baseFilename2,ext2] = fileparts(subjRasRS);
-    subjRasRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
+    subjRasRSPD = [dirname filesep subjRasRsName '_padded' num2str(optRoast.zeroPad) ext];
     %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
     subjRasRSPD = subjRasRS;
 end
+[~,subjModelName] = fileparts(subjRasRSPD);
 
-[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-if isempty(optRoast.T2)
-    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_seg8.mat'];
+if ~isempty(optRoast.T2)
+    subjRasRSPDspm = [dirname filesep subjModelName '_T1andT2' ext];
 else
-    mappingFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_seg8.mat'];
+    subjRasRSPDspm  = [dirname filesep subjModelName '_T1orT2' ext];
 end
+[~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
+
+if optRoast.multipriors
+    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+else
+    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
+end
+[~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
+
+mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -214,7 +237,7 @@ if isRoast
         inCurrent(i) = str2num(optRoast.configTxt(lp(i)+1:rp(i)-4));
     end
     
-    if ~strcmp(baseFilename,'nyhead')
+    if ~strcmp(subjName,'nyhead')
         
         disp('showing MRI and segmentations...');
         if ~exist(subjRasRSPD,'file')
@@ -245,12 +268,8 @@ else
     inCurrent = r.mon(indInUsrInput);
     
 end
-
-if isempty(optRoast.T2)
-    masksFile = [dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'];
-else
-    masksFile = [dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'];
-end
+    
+masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
 if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
 else
@@ -261,14 +280,14 @@ numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 
 if isRoast
     
-    gelMask = [dirname filesep baseFilename '_' simTag '_mask_gel.nii'];
+    gelMask = [dirname filesep subjName '_' simTag '_mask_gel.nii'];
     if ~exist(gelMask,'file')
         error(['Gel mask ' gelMask ' not found. Check if you run through electrode placement.']);
     else
         gel = load_untouch_nii(gelMask);
         numOfGel = max(gel.img(:));
     end
-    elecMask = [dirname filesep baseFilename '_' simTag '_mask_elec.nii'];
+    elecMask = [dirname filesep subjName '_' simTag '_mask_elec.nii'];
     if ~exist(elecMask,'file')
         error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
     else
@@ -307,7 +326,7 @@ end
 
 disp('generating 3D renderings...')
 
-meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
+meshFile = [dirname filesep subjName '_' simTag '.mat'];
 if ~exist(meshFile,'file')
     error(['Mesh file ' meshFile ' not found. Check if you run through meshing.']);
 else
@@ -323,7 +342,7 @@ if ~fastRender
     % very slow if mesh is big
 end
 
-hdrFile = [dirname filesep baseFilenameRasRSPD '_header.mat'];
+hdrFile = [dirname filesep subjModelName '_header.mat'];
 if ~exist(hdrFile,'file')
     error(['Header file ' hdrFile ' not found. Check if you run through electrode placement.']);
 else
@@ -346,7 +365,7 @@ if isRoast
     
     inCurrentRange = [min(inCurrent) max(inCurrent)];
     
-    volFile = [dirname filesep baseFilename '_' simTag '_v.pos'];
+    volFile = [dirname filesep subjName '_' simTag '_v.pos'];
     if ~exist(volFile,'file')
         error(['Solution file ' volFile ' not found. Check if you run through solving.']);
     else
@@ -394,7 +413,7 @@ if isRoast
     axes(a1);
     drawnow
     
-    efFile = [dirname filesep baseFilename '_' simTag '_e.pos'];
+    efFile = [dirname filesep subjName '_' simTag '_e.pos'];
     if ~exist(efFile,'file')
         error(['Solution file ' efFile ' not found. Check if you run through solving.']);
     else
@@ -501,7 +520,7 @@ cm = colormap(jet(2^11)); cm = [1 1 1;cm];
 
 if isRoast
     
-    resFile = [dirname filesep baseFilename '_' simTag '_roastResult.mat'];
+    resFile = [dirname filesep subjName '_' simTag '_roastResult.mat'];
     if ~exist(resFile,'file')
         error(['Result file ' resFile ' not found. Check if you run through post processing after solving.']);
     else

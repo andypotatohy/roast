@@ -1,5 +1,5 @@
-function prepareForGetDP(P,node,elem,elecNeeded,uniTag)
-% prepareForGetDP(P,node,elem,elecNeeded,uniTag)
+function prepareForGetDP(subj,node,elem,elecNeeded,uniTag)
+% prepareForGetDP(subj,node,elem,elecNeeded,uniTag)
 %
 % Prepare to solve in getDP
 %
@@ -7,7 +7,7 @@ function prepareForGetDP(P,node,elem,elecNeeded,uniTag)
 % yhuang16@citymail.cuny.edu
 % October 2017
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
@@ -36,7 +36,7 @@ if isempty(dirname), dirname = pwd; end
 % [~,indOnGood] = map2Points(X(indBad,:),X(indGood,:),'closest'); % using nearest neighbor to fix bad labeling
 % label_gel(indBad) = label_gel(indGood(indOnGood));
 % 
-% save([dirname filesep baseFilename '_' uniTag '_elecMeshLabels.mat'],'label_elec','label_gel');
+% save([dirname filesep subjName '_' uniTag '_elecMeshLabels.mat'],'label_elec','label_gel');
 
 numOfTissue = 6; % hard coded across ROAST.
 numOfElec = length(elecNeeded);
@@ -86,16 +86,16 @@ for i=1:numOfElec
     area_elecNeeded(i) = sum(0.5*sqrt(sum(c.^2, 2)));
     
 end
-if ~exist([dirname filesep baseFilename '_' uniTag '_usedElecArea.mat'],'file')
-    save([dirname filesep baseFilename '_' uniTag '_usedElecArea.mat'],'area_elecNeeded');
+if ~exist([dirname filesep subjName '_' uniTag '_usedElecArea.mat'],'file')
+    save([dirname filesep subjName '_' uniTag '_usedElecArea.mat'],'area_elecNeeded');
 end
 
-if ~exist([dirname filesep baseFilename '_' uniTag '_ready.msh'],'file')
+if ~exist([dirname filesep subjName '_' uniTag '_ready.msh'],'file')
     
     disp('setting up boundary conditions...');
     
-    fid_in = fopen([dirname filesep baseFilename '_' uniTag '.msh']);
-    fid_out = fopen([dirname filesep baseFilename '_' uniTag '_ready.msh'],'w');
+    fid_in = fopen([dirname filesep subjName '_' uniTag '.msh']);
+    fid_out = fopen([dirname filesep subjName '_' uniTag '_ready.msh'],'w');
     
     numOfPart = length(unique(elem(:,5)));
     while ~feof(fid_in)

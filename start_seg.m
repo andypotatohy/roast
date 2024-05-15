@@ -1,15 +1,15 @@
-function start_seg(P,T2,Template,norm)
-% start_seg(P,T2,Template,norm)
+function start_seg(T1,T2,Template,norm)
+% start_seg(T1,T2,Template,norm)
 %
 % Gateway script to start running the SPM12 segment function.
 %
-% P: input image. If you have a bunch of images to segment, just put the
+% T1: input image. If you have a bunch of images to segment, just put the
 % image file names vertically using strvcat(), e.g.:
-% P = strvcat('/home/user/segProject/img1.nii','/home/user/segProject/img2.nii');
+% T1 = strvcat('/home/user/segProject/img1.nii','/home/user/segProject/img2.nii');
 % T2: [optional] another input image, usually a T2 image. To segment multiple images,
-% put the file names vertically as in P, make sure each T2 corresponds to
-% its corresponding T1 in P.
-% If you provide multiple images in P and T2, the program will process them
+% put the file names vertically as in T1, make sure each T2 corresponds to
+% its corresponding T1 in T1.
+% If you provide multiple images in T1 and T2, the program will process them
 % one by one, all segmented by the same Template. If you want them to be processed
 % by different Template, call this function for each image separately, each time
 % using a different Template.
@@ -21,8 +21,8 @@ function start_seg(P,T2,Template,norm)
 % Yu (Andy) Huang, 2018.09 adapted to SPM12
 % yhuang16@citymail.cuny.edu
 
-if nargin <1 || isempty(P) %no files
-    P = spm_select(inf,'image','Select images for new segment');
+if nargin <1 || isempty(T1) %no files
+    T1 = spm_select(inf,'image','Select images for new segment');
 end
 
 if nargin <2 || isempty(T2) %no T2 specified
@@ -49,17 +49,17 @@ end
 Tem = [ptht,filesep,namt,extt];
 spm_jobman('initcfg');
 
-for i=1:size(P,1)
+for i=1:size(T1,1)
     
-    ref = deblank(P(i,:));
+    ref = deblank(T1(i,:));
     if strcmp(ref(1),'~') && strcmp(computer('arch'),'glnxa64')
         error('SPM does not recognize ''~'' symbol for Linux home directory. Please provide the full path.');
     end
 %     [pth,nam,ext] = spm_fileparts(ref);
-    [dirname,baseFilename,ext] = fileparts(ref);
+    [dirname,t1name,ext] = fileparts(ref);
     if isempty(dirname), dirname = pwd; end
     
-    if strcmp(ext,'.hdr'), ref = [dirname filesep baseFilename '.img']; end
+    if strcmp(ext,'.hdr'), ref = [dirname filesep t1name '.img']; end
     
     t1Data = load_untouch_nii(ref);
     sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
@@ -74,10 +74,10 @@ for i=1:size(P,1)
             error('SPM does not recognize ''~'' symbol for Linux home directory. Please provide the full path.');
         end
 %         [pth2,nam2,ext2] = spm_fileparts(ref2);
-        [dirname2,baseFilename2,ext2] = fileparts(ref2);
+        [dirname2,t2name,ext2] = fileparts(ref2);
         if isempty(dirname2), dirname2 = pwd; end
 
-        if strcmp(ext2,'.hdr'), ref2 = [dirname2 filesep baseFilename2 '.img']; end
+        if strcmp(ext2,'.hdr'), ref2 = [dirname2 filesep t2name '.img']; end
 %         fprintf('Using %s to segment T1 and T2 images: %s %s\n', Template, ref, ref2);
 
         t2Data = load_untouch_nii(ref2);
@@ -127,24 +127,5 @@ for i=1:size(P,1)
     matlabbatch{1}.spm.spatial.preproc.warp.fwhm = 0;
     
     spm_jobman('run',matlabbatch);
-    
-    if isempty(T2)
-        for t=1:6
-            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
-                [dirname filesep 'c' num2str(t) baseFilename '_T1orT2.nii']);
-        end
-        movefile([dirname filesep baseFilename '_rmask.mat'],...
-            [dirname filesep baseFilename '_T1orT2_rmask.mat']);
-        movefile([dirname filesep baseFilename '_seg8.mat'],...
-            [dirname filesep baseFilename '_T1orT2_seg8.mat']);
-    else
-        for t=1:6
-            movefile([dirname filesep 'c' num2str(t) baseFilename '.nii'],...
-                [dirname filesep 'c' num2str(t) baseFilename '_T1andT2.nii']);
-        end
-        movefile([dirname filesep baseFilename '_rmask.mat'],...
-            [dirname filesep baseFilename '_T1andT2_rmask.mat']);
-        movefile([dirname filesep baseFilename '_seg8.mat'],...
-            [dirname filesep baseFilename '_T1andT2_seg8.mat']);
-    end
+
 end % for each image

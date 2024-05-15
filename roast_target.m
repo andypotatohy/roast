@@ -37,7 +37,14 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% option, please cite this:
+% 
+% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
+% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
+% Vol. 8, Issue 3, 034001 (June 2021).
+% 
+% ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
 % 
 % General Public License version 3 or later. See LICENSE.md for details.
@@ -56,6 +63,10 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % September 2019
+% 
+% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% ROAST by Andrew Birnbaum
+% April 2024
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -93,8 +104,10 @@ if nargin<2 || isempty(simTag)
     error(['Please provide a valid simulation tag for Subject ' subj ', so that roast_target() can locate the corresponding lead field.']);
 end
 
-[dirname,baseFilename,ext] = fileparts(subj);
-optionFile = [dirname filesep baseFilename '_' simTag '_roastOptions.mat'];
+[dirname,subjName,ext] = fileparts(subj);
+if isempty(dirname), dirname = pwd; end
+
+optionFile = [dirname filesep subjName '_' simTag '_roastOptions.mat'];
 if ~exist(optionFile,'file')
     error(['Option file not found. Simulation ' simTag ' may never be run. Please run it first.']);
 else
@@ -108,35 +121,49 @@ end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
 if optRoast.isNonRAS
-    subjRas = [dirname filesep baseFilename '_ras' ext];
+    subjRas = [dirname filesep subjName '_ras' ext];
 else
     subjRas = subj;
 end
+[~,subjRasName] = fileparts(subjRas);
 
 if optRoast.resamp
-    [dirname2,baseFilename2,ext2] = fileparts(subjRas);
-    subjRasRS = [dirname filesep baseFilename2 '_1mm' ext];
+    subjRasRS = [dirname filesep subjRasName '_1mm' ext];
 else
     subjRasRS = subjRas;
 end
+[~,subjRasRsName] = fileparts(subjRasRS);
 
 if optRoast.zeroPad>0
-    [dirname2,baseFilename2,ext2] = fileparts(subjRasRS);
-    subjRasRSPD = [dirname2 filesep baseFilename2 '_padded' num2str(optRoast.zeroPad) ext2];
+    subjRasRSPD = [dirname filesep subjRasRsName '_padded' num2str(optRoast.zeroPad) ext];
     %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
 else
     subjRasRSPD = subjRasRS;
 end
+[~,subjModelName] = fileparts(subjRasRSPD);
 
-meshFile = [dirname filesep baseFilename '_' simTag '.mat'];
+if ~isempty(optRoast.T2)
+    subjRasRSPDspm = [dirname filesep subjModelName '_T1andT2' ext];
+else
+    subjRasRSPDspm  = [dirname filesep subjModelName '_T1orT2' ext];
+end
+[~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
+
+if optRoast.multipriors
+    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+else
+    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
+end
+[~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
+
+meshFile = [dirname filesep subjName '_' simTag '.mat'];
 if ~exist(meshFile,'file')
     error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
 else
     load(meshFile,'node','elem','face');
 end
 
-[~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-hdrFile = [dirname filesep baseFilenameRasRSPD '_header.mat'];
+hdrFile = [dirname filesep subjModelName '_header.mat'];
 if ~exist(hdrFile,'file')
     error(['Header file ' hdrFile ' not found. Check if you run through electrode placement in ROAST.']);
 else
@@ -330,14 +357,9 @@ end
 if ~exist('tarTag','var'), tarTag = []; end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if isempty(optRoast.T2)
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
-else
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
-end
 
 if strcmpi(coordType,'mni') || needOrigin
-    mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
+    mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
     if ~exist(mappingFile,'file')
         error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
     else
@@ -444,7 +466,7 @@ options = struct('targetCoordMNI',targetCoordMNI,'targetCoordOriginal',targetCoo
 options.orient = orient; % make sure options is a 1x1 struct
 
 % log tracking here
-Sopt = dir([dirname filesep baseFilename '_*_targetOptions.mat']);
+Sopt = dir([dirname filesep subjName '_*_targetOptions.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options,'target');
 else
@@ -467,7 +489,7 @@ uniqueTag = options.uniqueTag;
 
 fprintf('\n');
 disp('======================================================')
-if ~strcmp(baseFilename,'nyhead')
+if ~strcmp(subjName,'nyhead')
     disp(['ROAST-TARGET ' subj])
 else
     disp('ROAST-TARGET New York head')
@@ -480,14 +502,14 @@ else
     for i=1:numOfTargets, fprintf('[%d %d %d]\n',targetCoordOriginal(i,1),targetCoordOriginal(i,2),targetCoordOriginal(i,3)); end
 end
 disp('...using targeting options saved in:')
-disp([dirname filesep baseFilename '_targetLog,'])
+disp([dirname filesep subjName '_targetLog,'])
 disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
+if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     
-    leadFieldFile = [dirname filesep baseFilename '_' simTag '_roastResult.mat'];
+    leadFieldFile = [dirname filesep subjName '_' simTag '_roastResult.mat'];
     if ~exist(leadFieldFile,'file')
         error(['Lead field not found for subject ' subj ' under simulation tag ' simTag '. Please check if you ran ROAST with ''leadField'' as the recipe first.']);
     else
@@ -543,18 +565,18 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file
     disp('Optimization DONE!');
     disp('======================================================');
     disp('Results are saved as:');
-    disp([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat']);
+    disp([dirname filesep subjName '_' uniqueTag '_targetResult.mat']);
     disp('======================================================');
     disp('Stats at target locations are also saved in the log file: ');
-    disp([dirname filesep baseFilename '_targetLog,']);
+    disp([dirname filesep subjName '_targetLog,']);
     disp(['under tag: ' uniqueTag]);
         
 else
     
     disp(['The targeting under tag ''' uniqueTag ''' has been run before']);
-    disp([' and saved in ' dirname filesep baseFilename '_' uniqueTag '_targetResult.mat']);
+    disp([' and saved in ' dirname filesep subjName '_' uniqueTag '_targetResult.mat']);
     disp('Loading the results for visualization...');
-    load([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'r');
+    load([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'r');
     mon = r.mon;
     
 end
@@ -568,7 +590,7 @@ fprintf('============================\n\n')
 disp('Electrodes used are:')
 for i=1:length(indMonElec), fprintf('%s (%.3f mA)\n',elecName{indMonElec(i)},mon(indMonElec(i))); end, fprintf('\n');
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file')
+if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     
     % compute the optimized E-field
     disp('Computing the optimized electric field (this may take a while) ...');
@@ -588,7 +610,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file
     r.ef_mag = sqrt(sum(r.ef_all.^2,4));
     
     % output intensities and focalities at targets
-    masksFile = [dirname filesep baseFilenameRasRSPD '_masks.nii'];
+    masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
     if ~exist(masksFile,'file')
         error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
     else
@@ -617,7 +639,7 @@ if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'file
     writeRoastLog(subj,r,'target-results');
     
     % save r
-    save([dirname filesep baseFilename '_' uniqueTag '_targetResult.mat'],'r','-v7.3');
+    save([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'r','-v7.3');
     
 end
 
@@ -638,6 +660,6 @@ drawnow
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRasRSPD,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
 disp('==================ALL DONE ROAST-TARGET=======================');

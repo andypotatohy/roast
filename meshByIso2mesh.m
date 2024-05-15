@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
-% [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
+function [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
+% [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -8,16 +8,11 @@ function [node,elem,face] = meshByIso2mesh(P1,P2,T2,opt,hdrInfo,uniTag)
 % yhuang16@citymail.cuny.edu
 % October 2017
 
-[dirname,baseFilename] = fileparts(P1);
+[dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
-[~,baseFilenameRasRSPD] = fileparts(P2);
-if isempty(T2)
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1orT2'];
-else
-    baseFilenameRasRSPD = [baseFilenameRasRSPD '_T1andT2'];
-end
 
-mappingFile = [dirname filesep baseFilenameRasRSPD '_seg8.mat'];
+[~,spmOutName] = fileparts(spmOut);
+mappingFile = [dirname filesep spmOutName '_seg8.mat'];
 if ~exist(mappingFile,'file')
     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
 else
@@ -26,22 +21,23 @@ else
     % mapping from MRI voxel space to MNI space
 end
 
-data = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_masks.nii']);
+[~,segOutName] = fileparts(segOut);
+data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
 allMask = data.img;
 allMaskShow = data.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
-% data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+% data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 % allMask(data.img==255) = 7;
-% data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+% data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
 % allMask(data.img==255) = 8;
 
-data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_gel.nii']);
+data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 numOfGel = max(data.img(:));
 for i=1:numOfGel
     allMask(data.img==i) = numOfTissue + i;
 end
 allMaskShow(data.img>0) = numOfTissue + 1;
-data = load_untouch_nii([dirname filesep baseFilename '_' uniTag '_mask_elec.nii']);
+data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
 numOfElec = max(data.img(:));
 for i=1:numOfElec
     allMask(data.img==i) = numOfTissue + numOfGel + i;
@@ -90,5 +86,5 @@ maskName = cell(1,numOfTissue+numOfGel+numOfElec);
 maskName(1:numOfTissue) = {'WHITE','GRAY','CSF','BONE','SKIN','AIR'};
 for i=1:numOfGel, maskName{numOfTissue+i} = ['GEL' num2str(i)]; end
 for i=1:numOfElec, maskName{numOfTissue+numOfGel+i} = ['ELEC' num2str(i)]; end
-savemsh(node(:,1:3),elem,[dirname filesep baseFilename '_' uniTag '.msh'],maskName);
-save([dirname filesep baseFilename '_' uniTag '.mat'],'node','elem','face');
+savemsh(node(:,1:3),elem,[dirname filesep subjName '_' uniTag '.msh'],maskName);
+save([dirname filesep subjName '_' uniTag '.mat'],'node','elem','face');

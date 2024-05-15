@@ -10,14 +10,14 @@ function opt = writeRoastLog(subject,opt,fun)
 % April 2018
 % August 2019 callable by roast_target()
 
-[dirname,baseFilename] = fileparts(subject);
+[dirname,subjName] = fileparts(subject);
 if isempty(dirname), dirname = pwd; end
 
 switch fun
     
     case 'roast'
         
-        fid = fopen([dirname filesep baseFilename '_roastLog'],'a');
+        fid = fopen([dirname filesep subjName '_roastLog'],'a');
         
         if ~isempty(opt.uniqueTag)
             uniqueTag = opt.uniqueTag;
@@ -27,8 +27,8 @@ switch fun
             opt.uniqueTag = uniqueTag;
         end
         
-        if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastOptions.mat'],'file')
-            save([dirname filesep baseFilename '_' uniqueTag '_roastOptions.mat'],'opt');
+        if ~exist([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'file')
+            save([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'opt');
         else
             error('You''re about to run a simulation using options that you never used before, but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
         end
@@ -111,6 +111,14 @@ switch fun
         end
         fprintf(fid,'\n');
         
+        fprintf(fid,'multipriors:\t');
+        if opt.multipriors
+            fprintf(fid,'on');
+        else
+            fprintf(fid,'off');
+        end
+        fprintf(fid,'\n');
+
         fprintf(fid,'meshOpt:\t');
         fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
             opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
@@ -132,7 +140,7 @@ switch fun
             fprintf(fid,'off');
         end
         fprintf(fid,'\n');
-        
+
         fprintf(fid,'zeroPadding:\t');
         if opt.zeroPad>0
             fprintf(fid,'%d',opt.zeroPad);
@@ -153,7 +161,7 @@ switch fun
         
     case 'target'
         
-        fid = fopen([dirname filesep baseFilename '_targetLog'],'a');
+        fid = fopen([dirname filesep subjName '_targetLog'],'a');
         
         if ~isempty(opt.uniqueTag)
             uniqueTag = opt.uniqueTag;
@@ -163,8 +171,8 @@ switch fun
             opt.uniqueTag = uniqueTag;
         end
         
-        if ~exist([dirname filesep baseFilename '_' uniqueTag '_targetOptions.mat'],'file')
-            save([dirname filesep baseFilename '_' uniqueTag '_targetOptions.mat'],'opt');
+        if ~exist([dirname filesep subjName '_' uniqueTag '_targetOptions.mat'],'file')
+            save([dirname filesep subjName '_' uniqueTag '_targetOptions.mat'],'opt');
         else
             error('You''re about to run a targeting using options that you never used before, but forgot to use a new tag for it. ROAST-TARGET will get confused when managing different targetings with the same tag. Please use a new tag.');
         end
@@ -276,7 +284,7 @@ switch fun
         
     case 'target-results'
         
-        fid = fopen([dirname filesep baseFilename '_targetLog'],'a');
+        fid = fopen([dirname filesep subjName '_targetLog'],'a');
         
         fprintf(fid,'optimal montage:\t%s\n',opt.montageTxt);
         

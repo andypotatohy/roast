@@ -1,5 +1,5 @@
-function solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
-% solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
+function solveByGetDP(subj,current,sigma,indUse,uniTag,LFtag)
+% solveByGetDP(subj,current,sigma,indUse,uniTag,LFtag)
 % 
 % Solve in getDP, a free FEM solver available at 
 % http://getdp.info/
@@ -9,15 +9,15 @@ function solveByGetDP(P,current,sigma,indUse,uniTag,LFtag)
 % October 2017
 % August 2019 adding lead field
 
-[dirname,baseFilename] = fileparts(P);
+[dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-load([dirname filesep baseFilename '_' uniTag '_usedElecArea.mat'],'area_elecNeeded');
+load([dirname filesep subjName '_' uniTag '_usedElecArea.mat'],'area_elecNeeded');
 
 numOfTissue = 6; % hard coded across ROAST.
 numOfElec = length(area_elecNeeded);
 
-fid = fopen([dirname filesep baseFilename '_' uniTag '.pro'],'w');
+fid = fopen([dirname filesep subjName '_' uniTag '.pro'],'w');
 
 fprintf(fid,'%s\n\n','Group {');
 fprintf(fid,'%s\n','white = Region[1];');
@@ -175,9 +175,9 @@ fprintf(fid,'%s\n\n','PostOperation {');
 fprintf(fid,'%s\n','{ Name Map; NameOfPostProcessing EleSta_v;');
 fprintf(fid,'%s\n','   Operation {');
 if isempty(LFtag)
-    fprintf(fid,'%s\n',['     Print [ v, OnElementsOf DomainC, File "' baseFilename '_' uniTag '_v.pos", Format NodeTable ];']);
+    fprintf(fid,'%s\n',['     Print [ v, OnElementsOf DomainC, File "' subjName '_' uniTag '_v.pos", Format NodeTable ];']);
 end
-fprintf(fid,'%s\n',['     Print [ e, OnElementsOf DomainC, Smoothing, File "' baseFilename '_' uniTag '_e' LFtag '.pos", Format NodeTable ];']);
+fprintf(fid,'%s\n',['     Print [ e, OnElementsOf DomainC, Smoothing, File "' subjName '_' uniTag '_e' LFtag '.pos", Format NodeTable ];']);
 fprintf(fid,'%s\n','   }');
 fprintf(fid,'%s\n\n','}');
 fprintf(fid,'%s\n','}');
@@ -187,19 +187,19 @@ fclose(fid);
 str = computer('arch');
 switch str
     case 'win64'
-        solverPath = 'lib\getdp-3.2.0\bin\getdp.exe';
+        solverPath = [pwd '\lib\getdp-3.2.0\bin\getdp.exe'];
     case 'glnxa64'
-        solverPath = 'lib/getdp-3.2.0/bin/getdp';
+        solverPath = [pwd '/lib/getdp-3.2.0/bin/getdp'];
     case 'maci64'
-        solverPath = 'lib/getdp-3.2.0/bin/getdpMac';
+        solverPath = [pwd '/lib/getdp-3.2.0/bin/getdpMac'];
     otherwise
         error('Unsupported operating system!');
 end
 
 % cmd = [fileparts(which(mfilename)) filesep solverPath ' '...
-%     fileparts(which(mfilename)) filesep dirname filesep baseFilename '_' uniTag '.pro -solve EleSta_v -msh '...
-%     fileparts(which(mfilename)) filesep dirname filesep baseFilename '_' uniTag '_ready.msh -pos Map'];
-cmd = [solverPath ' "' dirname filesep baseFilename '_' uniTag '.pro" -solve EleSta_v -msh "' dirname filesep baseFilename '_' uniTag '_ready.msh" -pos Map'];
+%     fileparts(which(mfilename)) filesep dirname filesep subjName '_' uniTag '.pro -solve EleSta_v -msh '...
+%     fileparts(which(mfilename)) filesep dirname filesep subjName '_' uniTag '_ready.msh -pos Map'];
+cmd = [solverPath ' "' dirname filesep subjName '_' uniTag '.pro" -solve EleSta_v -msh "' dirname filesep subjName '_' uniTag '_ready.msh" -pos Map'];
 try
     status = system(cmd);
 catch
@@ -208,6 +208,6 @@ end
 if status
     error('getDP solver cannot work properly on your system. Please check any error message you got.');
 else % after solving, delete intermediate files
-    delete([dirname filesep baseFilename '_' uniTag '.pre']);
-    delete([dirname filesep baseFilename '_' uniTag '.res']);
+    delete([dirname filesep subjName '_' uniTag '.pre']);
+    delete([dirname filesep subjName '_' uniTag '.res']);
 end

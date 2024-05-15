@@ -1,5 +1,5 @@
-function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag,indSolved,indInCore)
-% [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag,indSolved,indInCore)
+function [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,hdrInfo,uniTag,indSolved,indInCore)
+% [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,hdrInfo,uniTag,indSolved,indInCore)
 %
 % Post processing after solving the model / generating the lead field.
 % Save the result in Matlab format in the MRI voxel space. For the lead
@@ -10,23 +10,21 @@ function [vol_all,ef_mag,ef_all] = postGetDP(P1,P2,node,hdrInfo,uniTag,indSolved
 % October 2017
 % August 2019 adding lead field
 
-[dirname,baseFilename] = fileparts(P1);
+[dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
 % node = node + 0.5; already done right after mesh
 
-if ~isempty(P2) % for roast()
+if ~isempty(segOut) % for roast()
     
     % convert pseudo-world coordinates back to voxel coordinates for
     % interpolation into regular grid in the voxel space
     for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
 
-    [~,baseFilenameRasRSPD] = fileparts(P2);
-    
     [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
     
     disp('converting the results into Matlab format...');
-    fid = fopen([dirname filesep baseFilename '_' uniTag '_v.pos']);
+    fid = fopen([dirname filesep subjName '_' uniTag '_v.pos']);
     fgetl(fid);
     C = textscan(fid,'%d %f');
     fclose(fid);
@@ -36,7 +34,7 @@ if ~isempty(P2) % for roast()
     F = TriScatteredInterp(node(C{1},1:3), C{2});
     vol_all = F(xi,yi,zi);
     
-    fid = fopen([dirname filesep baseFilename '_' uniTag '_e.pos']);
+    fid = fopen([dirname filesep subjName '_' uniTag '_e.pos']);
     fgetl(fid);
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);
@@ -52,14 +50,12 @@ if ~isempty(P2) % for roast()
     ef_mag = sqrt(sum(ef_all.^2,4));
     
     disp('saving the final results...')
-    save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
+    save([dirname filesep subjName '_' uniTag '_roastResult.mat'],'vol_all','ef_all','ef_mag','-v7.3');
     
-    if isempty(strfind(P2,'example/nyhead'))
-        template = load_untouch_nii(P2);
-    else
-        template = load_untouch_nii([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii']);
-    end % Load the original MRI to save the results as NIFTI format
-    
+    [~,segOutName] = fileparts(segOut);
+    template = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
+    % Load the segmentation to save the results as NIFTI format
+   
     template.hdr.dime.datatype = 16;
     template.hdr.dime.bitpix = 32;
     template.hdr.dime.scl_slope = 1; % so that display of NIFTI will not alter the data
@@ -70,15 +66,15 @@ if ~isempty(P2) % for roast()
     template.hdr.dime.glmax = max(vol_all(:));
     template.hdr.dime.glmin = min(vol_all(:));
     template.hdr.hist.descrip = 'voltage';
-    template.fileprefix = [dirname filesep baseFilename '_' uniTag '_v'];
-    save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_v.nii']);
+    template.fileprefix = [dirname filesep subjName '_' uniTag '_v'];
+    save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_v.nii']);
     
     template.img = single(ef_mag);
     template.hdr.dime.glmax = max(ef_mag(:));
     template.hdr.dime.glmin = min(ef_mag(:));
     template.hdr.hist.descrip = 'EF mag';
-    template.fileprefix = [dirname filesep baseFilename '_' uniTag '_emag'];
-    save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_emag.nii']);
+    template.fileprefix = [dirname filesep subjName '_' uniTag '_emag'];
+    save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_emag.nii']);
     
     template.hdr.dime.dim(1) = 4;
     template.hdr.dime.dim(5) = 3;
@@ -86,23 +82,23 @@ if ~isempty(P2) % for roast()
     template.hdr.dime.glmax = max(ef_all(:));
     template.hdr.dime.glmin = min(ef_all(:));
     template.hdr.hist.descrip = 'EF';
-    template.fileprefix = [dirname filesep baseFilename '_' uniTag '_e'];
-    save_untouch_nii(template,[dirname filesep baseFilename '_' uniTag '_e.nii']);
-    
+    template.fileprefix = [dirname filesep subjName '_' uniTag '_e'];
+    save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_e.nii']);
+
     disp('======================================================');
     disp('Results are saved as:');
-    disp([dirname filesep baseFilename '_' uniTag '_roastResult.mat']);
+    disp([dirname filesep subjName '_' uniTag '_roastResult.mat']);
     disp('...and also saved as NIFTI files:');
-    disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.nii']);
-    disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.nii']);
-    disp(['E-field magnitude: ' dirname filesep baseFilename '_' uniTag '_emag.nii']);
+    disp(['Voltage: ' dirname filesep subjName '_' uniTag '_v.nii']);
+    disp(['E-field: ' dirname filesep subjName '_' uniTag '_e.nii']);
+    disp(['E-field magnitude: ' dirname filesep subjName '_' uniTag '_emag.nii']);
     disp('======================================================');
     disp('You can also find all the results in the following two text files: ');
-    disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.pos']);
-    disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.pos']);
+    disp(['Voltage: ' dirname filesep subjName '_' uniTag '_v.pos']);
+    disp(['E-field: ' dirname filesep subjName '_' uniTag '_e.pos']);
     disp('======================================================');
     disp('Look up the detailed info for this simulation in the log file: ');
-    disp([dirname filesep baseFilename '_roastLog']);
+    disp([dirname filesep subjName '_roastLog']);
     disp(['under the simulation tag "' uniTag '".']);
     disp('======================================================');
     
@@ -120,7 +116,7 @@ else % for roast_target()
     for i=1:length(indSolved)
         
         disp(['packing electrode ' num2str(i) ' out of ' num2str(length(indSolved)) ' ...']);
-        fid = fopen([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
+        fid = fopen([dirname filesep subjName '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
         fgetl(fid);
         C = textscan(fid,'%d %f %f %f');
         fclose(fid);
@@ -132,7 +128,7 @@ else % for roast_target()
         A_all(C{1},:,i) = cell2mat(C(2:4));
         
         % to save disk space
-        delete([dirname filesep baseFilename '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
+        delete([dirname filesep subjName '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
     end
     
 %     indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A
@@ -148,19 +144,19 @@ else % for roast_target()
     A_all = A_all(:,:,indInCore);
     
     disp('saving the final results...')
-%     save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'A','locs','-v7.3');
-    save([dirname filesep baseFilename '_' uniTag '_roastResult.mat'],'A_all','-v7.3');
+%     save([dirname filesep subjName '_' uniTag '_roastResult.mat'],'A','locs','-v7.3');
+    save([dirname filesep subjName '_' uniTag '_roastResult.mat'],'A_all','-v7.3');
     
     disp('======================================================');
     disp('The lead field matrix is saved as:');
-    disp([dirname filesep baseFilename '_' uniTag '_roastResult.mat']);
+    disp([dirname filesep subjName '_' uniTag '_roastResult.mat']);
     disp('======================================================');
     % disp('You can also find all the results in the following two text files: ');
-    % disp(['Voltage: ' dirname filesep baseFilename '_' uniTag '_v.pos']);
-    % disp(['E-field: ' dirname filesep baseFilename '_' uniTag '_e.pos']);
+    % disp(['Voltage: ' dirname filesep subjName '_' uniTag '_v.pos']);
+    % disp(['E-field: ' dirname filesep subjName '_' uniTag '_e.pos']);
     disp('======================================================');
     disp('Look up the detailed info for this simulation in the log file: ');
-    disp([dirname filesep baseFilename '_roastLog']);
+    disp([dirname filesep subjName '_roastLog']);
     disp(['under the simulation tag "' uniTag '".']);
     disp('======================================================');
     disp('======================================================');

@@ -37,7 +37,14 @@ function roast(subj,recipe,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% ROAST was supported by NIH through grants R01MH111896, R01MH111439, 
+% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% option, please cite this:
+% 
+% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
+% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
+% Vol. 8, Issue 3, 034001 (June 2021).
+% 
+% ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
 % 
 % General Public License version 3 or later. See LICENSE.md for details.
@@ -56,6 +63,10 @@ function roast(subj,recipe,varargin)
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
 % September 2019
+%
+% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% ROAST by Andrew Birnbaum
+% April 2024
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -114,8 +125,14 @@ while indArg <= length(varargin)
         case 't2'
             T2 = varargin{indArg+1};
             indArg = indArg+2;
+        case 'multipriors'
+            multipriors = varargin{indArg+1};
+            indArg = indArg+2;
         case 'meshoptions'
             meshOpt = varargin{indArg+1};
+            indArg = indArg+2;
+        case 'conductivities'
+            conductivities = varargin{indArg+1};
             indArg = indArg+2;
         case 'simulationtag'
             simTag = varargin{indArg+1};
@@ -126,11 +143,8 @@ while indArg <= length(varargin)
         case 'zeropadding'
             paddingAmt = varargin{indArg+1};
             indArg = indArg+2;
-        case 'conductivities'
-            conductivities = varargin{indArg+1};
-            indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''meshOptions'', ''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multipriors'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -437,82 +451,70 @@ else
     % check if bad MRI header    
 end
 
-% if any(~strcmpi(recipe,'leadfield'))
-    
-    if ~exist('meshOpt','var')
-%         meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
-          meshOpt = struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10);
-          % mesh option defaults changed for higher-resolution mesh in version 3
-%         meshOpt = struct('radbound',3,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',5);
-    else
-        if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
-        meshOptNam = fieldnames(meshOpt);
-        if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
-            error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
-        end
-        if ~isfield(meshOpt,'radbound')
-            meshOpt.radbound = 5;
-        else
-            if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
-                error('Please enter a positive number for the mesh option ''radbound''.');
-            end
-        end
-        if ~isfield(meshOpt,'angbound')
-            meshOpt.angbound = 30;
-        else
-            if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
-                error('Please enter a positive number for the mesh option ''angbound''.');
-            end
-        end
-        if ~isfield(meshOpt,'distbound')
-            meshOpt.distbound = 0.3;
-        else
-            if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
-                error('Please enter a positive number for the mesh option ''distbound''.');
-            end
-        end
-        if ~isfield(meshOpt,'reratio')
-            meshOpt.reratio = 3;
-        else
-            if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
-                error('Please enter a positive number for the mesh option ''reratio''.');
-            end
-        end
-        if ~isfield(meshOpt,'maxvol')
-            meshOpt.maxvol = 10;
-        else
-            if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
-                error('Please enter a positive number for the mesh option ''maxvol''.');
-            end
-        end
-        warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
-    end
-    
-% else
-%     
-% end
-
-if ~exist('simTag','var'), simTag = []; end
-
-if ~exist('doResamp','var')
-    doResamp = 0;
+if ~exist('multipriors','var')
+    multipriors = 0;
 else
-    if ~ischar(doResamp), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.'); end
-    if strcmpi(doResamp,'off')
-        doResamp = 0;
-    elseif strcmpi(doResamp,'on')
-        doResamp = 1;
+    if ~ischar(multipriors), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.'); end
+    if strcmpi(multipriors,'off')
+        multipriors = 0;
+    elseif strcmpi(multipriors,'on')
+        multipriors = 1;
     else
-        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.');
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.');
     end
 end
 
-if ~exist('paddingAmt','var')
-    paddingAmt = 0;
+if multipriors && ~isempty(T2)
+    error('MultiPriors cannot be run with both T1 and T2 images. If you meant to use MultiPriors, please only provide T1 image with option ''multipriors'' turned on.');
+end
+
+if ~exist('meshOpt','var')
+    % meshOpt = struct('radbound',5,'angbound',30,'distbound',0.4,'reratio',3,'maxvol',10);
+    meshOpt = struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10);
+    % mesh option defaults changed for higher-resolution mesh in version 3
+    % meshOpt = struct('radbound',3,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',5);
 else
-    if paddingAmt<=0 || mod(paddingAmt,1)~=0
-        error('Unrecognized option value. Please enter positive integer value for option ''zeroPadding''. A recommended value is 10.');
+    if ~isstruct(meshOpt), error('Unrecognized format of mesh options. Please enter as a structure, with field names as ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.'); end
+    meshOptNam = fieldnames(meshOpt);
+    if isempty(meshOptNam) || ~all(ismember(meshOptNam,{'radbound';'angbound';'distbound';'reratio';'maxvol'}))
+        error('Unrecognized mesh options detected. Supported mesh options are ''radbound'', ''angbound'', ''distbound'', ''reratio'', and ''maxvol''. Please refer to the iso2mesh documentation for more details.');
     end
+    if ~isfield(meshOpt,'radbound')
+        meshOpt.radbound = 5;
+    else
+        if ~isnumeric(meshOpt.radbound) || meshOpt.radbound<=0
+            error('Please enter a positive number for the mesh option ''radbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'angbound')
+        meshOpt.angbound = 30;
+    else
+        if ~isnumeric(meshOpt.angbound) || meshOpt.angbound<=0
+            error('Please enter a positive number for the mesh option ''angbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'distbound')
+        meshOpt.distbound = 0.3;
+    else
+        if ~isnumeric(meshOpt.distbound) || meshOpt.distbound<=0
+            error('Please enter a positive number for the mesh option ''distbound''.');
+        end
+    end
+    if ~isfield(meshOpt,'reratio')
+        meshOpt.reratio = 3;
+    else
+        if ~isnumeric(meshOpt.reratio) || meshOpt.reratio<=0
+            error('Please enter a positive number for the mesh option ''reratio''.');
+        end
+    end
+    if ~isfield(meshOpt,'maxvol')
+        meshOpt.maxvol = 10;
+    else
+        if ~isnumeric(meshOpt.maxvol) || meshOpt.maxvol<=0
+            error('Please enter a positive number for the mesh option ''maxvol''.');
+        end
+    end
+    warning('You''re changing the advanced options of ROAST. Unless you know what you''re doing, please keep mesh options default.');
 end
 
 if ~exist('conductivities','var')
@@ -602,7 +604,33 @@ if length(conductivities.electrode(:))==1
     conductivities.electrode = repmat(conductivities.electrode,1,length(elecName));
 end
 
+if ~exist('simTag','var'), simTag = []; end
+
+if ~exist('doResamp','var')
+    doResamp = 0;
+else
+    if ~ischar(doResamp), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.'); end
+    if strcmpi(doResamp,'off')
+        doResamp = 0;
+    elseif strcmpi(doResamp,'on')
+        doResamp = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''resampling''.');
+    end
+end
+
+if ~exist('paddingAmt','var')
+    paddingAmt = 0;
+else
+    if paddingAmt<=0 || mod(paddingAmt,1)~=0
+        error('Unrecognized option value. Please enter positive integer value for option ''zeroPadding''. A recommended value is 10.');
+    end
+end
+
 % preprocess MRI data
+[dirname,subjName,ext] = fileparts(subj);
+if isempty(dirname), dirname = pwd; end
+
 if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     
     t1Data = load_untouch_nii(subj);
@@ -631,16 +659,30 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     else
         subjRasRSPD = subjRasRS;
     end
-    
+    [~,subjModelName] = fileparts(subjRasRSPD);
+
+    % check for T2, and if yes, check if T2 is aligned with T1
     if ~isempty(T2)
         T2 = realignT2(T2,subjRasRSPD);
+        subjRasRSPDspm = [dirname filesep subjModelName '_T1andT2' ext];
+    else
+        subjRasRSPDspm  = [dirname filesep subjModelName '_T1orT2' ext];
     end
-    % check if T2 is aligned with T1
-    
+    [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
+
+    % check if multipriors is on, and if yes, uses it for segmentation
+    if multipriors 
+        subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+    else
+        %if not, uses SPM for segmentation
+        subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
+    end
+    [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
+
 else
     
-    if ~exist('example/nyhead_T1orT2_masks.nii','file')
-        unzip('example/nyhead_T1orT2_masks.nii.zip','example')
+    if ~exist('example/nyhead_T1orT2_SPM_masks.nii','file')
+        unzip('example/nyhead_T1orT2_SPM_masks.nii.zip','example')
     end
     
     isNonRAS = 0; % New York head is in RAS
@@ -650,7 +692,7 @@ else
     end
     
     if paddingAmt>0
-        zeroPadding('example/nyhead_T1orT2_masks.nii',paddingAmt);
+        zeroPadding('example/nyhead_T1orT2_SPM_masks.nii',paddingAmt);
         subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
         if ~exist(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'file')
             load('example/nyhead_T1orT2_seg8.mat','image','tpm','Affine');
@@ -662,12 +704,21 @@ else
     else
         subjRasRSPD = subj;
     end
-    
+    [~,subjModelName] = fileparts(subjRasRSPD);
+
     if ~isempty(T2)
        warning('New York head selected. Any specified T2 image will be ignored.');
        T2 = [];
     end
-        
+
+    if multipriors
+       warning('New York head selected. Multipriors option will be ignored.');
+       multipriors = 0;
+    end
+
+    subjRasRSPDspm = 'example/nyhead_T1orT2.nii';
+    subjRasRSPDSeg = 'example/nyhead_T1orT2_SPM.nii';
+
 end
 
 % preprocess electrodes
@@ -710,13 +761,10 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multipriors',multipriors,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
-[dirname,baseFilename] = fileparts(subj);
-if isempty(dirname), dirname = pwd; end
-
-Sopt = dir([dirname filesep baseFilename '_*_roastOptions.mat']);
+Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);
 if isempty(Sopt)
     options = writeRoastLog(subj,options,'roast');
 else
@@ -739,7 +787,7 @@ uniqueTag = options.uniqueTag;
 
 fprintf('\n');
 disp('======================================================')
-if ~strcmp(baseFilename,'nyhead')
+if ~strcmp(subjName,'nyhead')
     disp(['ROAST ' subj])
 else
     disp('ROAST New York head')
@@ -747,7 +795,7 @@ end
 disp('USING RECIPE:')
 disp(configTxt)
 disp('...and simulation options saved in:')
-disp([dirname filesep baseFilename '_roastLog,'])
+disp([dirname filesep subjName '_roastLog,'])
 disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
@@ -759,84 +807,84 @@ if all(strcmpi(recipe,'leadfield'))
     [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
     isSolved = zeros(length(indStimElec),1);
     for i=1:length(indStimElec)
-        if exist([dirname filesep baseFilename '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
+        if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
             isSolved(i) = 1;
         end
     end
     % only warn users the first time they run for this subject
-    if all(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
+    if all(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
         doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
         if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
     end
 end
 
-if ~strcmp(baseFilename,'nyhead')
-    
-    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-    
-    if (isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1orT2.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep 'c1' baseFilenameRasRSPD '_T1andT2.nii'],'file'))
+if ~strcmp(subjName,'nyhead')
+    if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
         disp('======================================================')
-        disp('       STEP 1 (out of 6): SEGMENT THE MRI...          ')
+        disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
         disp('======================================================')
         start_seg(subjRasRSPD,T2);
+        renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
     else
         disp('======================================================')
-        disp('          MRI ALREADY SEGMENTED, SKIP STEP 1          ')
+        disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
         disp('======================================================')
     end
-    
-    if (isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1orT2_masks.nii'],'file')) ||...
-            (~isempty(T2) && ~exist([dirname filesep baseFilenameRasRSPD '_T1andT2_masks.nii'],'file'))
-        disp('======================================================')
-        disp('     STEP 2 (out of 6): SEGMENTATION TOUCHUP...       ')
-        disp('======================================================')
-        segTouchup(subjRasRSPD,T2);
+
+    if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
+        if multipriors
+            disp('======================================================')
+            disp('    STEP 2 (out of 6): MULTIPRIORS SEGMENTATION ...   ')
+            disp('======================================================')
+            runMultipriors(subjRasRSPD,subjRasRSPDspm);
+        else
+            disp('======================================================')
+            disp('    STEP 2 (out of 6): SPM SEGMENTATION TOUCHUP ...   ')
+            disp('======================================================')
+            segTouchup(subjRasRSPDspm,subjRasRSPDSeg);
+        end
     else
         disp('======================================================')
-        disp('    SEGMENTATION TOUCHUP ALREADY DONE, SKIP STEP 2    ')
+        disp('       SEGMENTATION ALREADY DONE, SKIP STEP 2         ')
         disp('======================================================')
     end
-    
+    alignHeader2mni(subjRasRSPD,T2,subjRasRSPDspm,subjRasRSPDSeg);
 else
-    
     disp('======================================================')
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-    [~,baseFilenameRasRSPD] = fileparts(subjRasRSPD);
-    
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '_mask_elec.nii'],'file')
+if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    hdrInfo = electrodePlacement(subj,subjRasRSPD,T2,elecName,options,uniqueTag);
+    hdrInfo = electrodePlacement(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-%     load([dirname filesep baseFilename '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-    load([dirname filesep baseFilenameRasRSPD '_header.mat'],'hdrInfo');
+%   load([dirname filesep subjName '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
+    load([dirname filesep subjModelName '_header.mat'],'hdrInfo');
 end
 
-if ~exist([dirname filesep baseFilename '_' uniqueTag '.mat'],'file')
+if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPD,T2,meshOpt,hdrInfo,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDspm,subjRasRSPDSeg,meshOpt,hdrInfo,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
     disp('======================================================')
-    load([dirname filesep baseFilename '_' uniqueTag '.mat'],'node','elem','face');
+    load([dirname filesep subjName '_' uniqueTag '.mat'],'node','elem','face');
 end
 
 if any(~strcmpi(recipe,'leadfield'))
     
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_v.pos'],'file')
+    if ~exist([dirname filesep subjName '_' uniqueTag '_v.pos'],'file')
         disp('======================================================')
         disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
         disp('======================================================')
@@ -847,26 +895,26 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
         disp('======================================================')
-        %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+        %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
     
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
+    if ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPD,node,hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRasRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,hdrInfo,uniqueTag);
+        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
-        load([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRasRSPD,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
+        load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
+        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
     
 else
     
-    if any(~isSolved) && ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
+    if any(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
         disp('           NOTE THIS WILL TAKE SOME TIME...           ')
@@ -889,10 +937,10 @@ else
         disp('======================================================')
         disp('       LEAD FIELD ALREADY GENERATED, SKIP STEP 5      ')
         disp('======================================================')
-        %     load([dirname filesep baseFilename '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
+        %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
     
-    if ~exist([dirname filesep baseFilename '_' uniqueTag '_roastResult.mat'],'file')
+    if ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
@@ -903,8 +951,7 @@ else
         disp(['         FOR SUBJECT ' subj])
         disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
-    end
-    
+    end   
 end
 
 disp('==================ALL DONE ROAST=======================');
