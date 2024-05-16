@@ -8,6 +8,8 @@ function visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+%
+% (c) May 2024 Gavin Hsu and Andrew Birnbaum
 
 if ndims(varargin{1})==3
     isRoast = 1;
@@ -33,11 +35,11 @@ end
 if showAll    
     if ~strcmp(subjName,'nyhead')
         disp('showing MRI and segmentations...');
-        data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
+        data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni,[]); drawnow
         
         if ~isempty(T2) %T2 specified
             data = load_untouch_nii(T2);
-            sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
+            sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni,[]); drawnow
         end
     else
         disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
@@ -62,7 +64,7 @@ if showAll
     allMaskShow = masks.img;
     allMaskShow(gel.img>0) = numOfTissue + 1;
     allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
+    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni,[])
     drawnow
 end
 
@@ -232,10 +234,11 @@ nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
+bbox = brainCrop(segOut);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];
-    sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni); drawnow
+    sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
 end
 
 for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
@@ -243,11 +246,11 @@ ef_mag = ef_mag.*nan_mask_brain;
 dataShowVal = ef_mag(~isnan(ef_mag(:)));
 if isRoast
     figName = ['Electric field in Simulation: ' uniTag];
-    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
 else
     
     for i=1:size(targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' uniTag];
-        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     end
 end

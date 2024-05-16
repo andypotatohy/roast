@@ -45,7 +45,7 @@ end
 allMaskShow(data.img>0) = numOfTissue + 2;
 
 % sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
-sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
+sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni,[])
 drawnow
 
 % allMask = uint8(allMask);
