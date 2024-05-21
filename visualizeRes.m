@@ -8,6 +8,8 @@ function visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+%
+% (c) May 2024, sliceshow improved by Gavin Hsu and Andrew Birnbaum
 
 if ndims(varargin{1})==3
     isRoast = 1;
@@ -232,10 +234,11 @@ nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
+bbox = brainCrop(segOut);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];
-    sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni); drawnow
+    sliceshow(vol_all.*nan_mask_brain,round(mean(bbox)),cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
 end
 
 for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
@@ -243,11 +246,11 @@ ef_mag = ef_mag.*nan_mask_brain;
 dataShowVal = ef_mag(~isnan(ef_mag(:)));
 if isRoast
     figName = ['Electric field in Simulation: ' uniTag];
-    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+    sliceshow(ef_mag,round(mean(bbox)),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
 else
     
     for i=1:size(targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' uniTag];
-        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     end
 end

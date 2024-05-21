@@ -70,6 +70,8 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
 % ROAST by Andrew Birnbaum
 % April 2024
+%
+% (c) May 2024, sliceshow improved by Gavin Hsu and Andrew Birnbaum
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -517,6 +519,13 @@ nan_mask = nan(size(mask));
 nan_mask(find(mask)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
+if strcmp(tissue,'white') || strcmp(tissue,'gray') || strcmp(tissue,'brain')
+    bbox = brainCrop(subjRasRSPDSeg);
+    pos = round(mean(bbox));
+else
+    bbox = [];
+    pos = [];
+end
 
 if isRoast
     
@@ -528,13 +537,13 @@ if isRoast
     end
     
     figName = ['Voltage in Simulation: ' simTag];
-    sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni); drawnow
+    sliceshow(vol_all.*nan_mask,pos,cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
     
     figName = ['Electric field in Simulation: ' simTag];
     for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
     ef_mag = ef_mag.*nan_mask;
     dataShowVal = ef_mag(~isnan(ef_mag(:)));
-    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+    sliceshow(ef_mag,pos,cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     
 else
     
@@ -543,6 +552,6 @@ else
     dataShowVal = r.ef_mag(~isnan(r.ef_mag(:)));
     for i=1:size(r.targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' tarTag];
-        sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all,mri2mni); drawnow
+        sliceshow(r.ef_mag,r.targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],r.ef_all,mri2mni,bbox); drawnow
     end
 end

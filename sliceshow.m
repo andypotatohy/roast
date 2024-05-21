@@ -1,6 +1,4 @@
-function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
-% sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
-%
+function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni,bbox)
 % sliceshow displays a 3D volume allowing the user to click on different
 % slices. If the variable "vecImg" is specified, sliceshow will also
 % overlay a 3D vectorial field represented by arrows on the slices.
@@ -8,6 +6,9 @@ function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
 % If pos is given as input, then the function will start the display with
 % the slices intersecting this position. Defaults to the middle of the
 % volume.
+% 
+% Coordinates are editable. Enter the desired voxel or MNI coordinates to
+% navigate to the desired position.
 %
 % color is the colormap the display will use. Defaults to 'jet'.
 %
@@ -19,24 +20,25 @@ function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni)
 % 
 % vecImg is the 3D vectorial field, e.g. an electric field.
 % 
-% mri2mni is the mapping from MRI voxel space to the MNI space, so
+% mri2mni is the mapping from MRI voxel space to the MNI space.
+%
+% bbox is the output of brainCrop(). Use this to display only the brain.
+%
 % sliceshow can display both the voxel and MNI coordinates.
 %
 % (c) Nov 02, 2017, Lucas C Parra
 % (c) June 29, 2018, Yu (Andy) Huang
 % (c) August 2019, Yu (Andy) Huang
+% (c) 2024, Gavin Hsu and Andrew Birnbaum
 
 if nargin<1 || isempty(img)
-    error('At least give us a volume to display')
+    error('At least give us a volume to display');
 else
     [Nx,Ny,Nz] = size(img);
-    mydata.img = img;
 end
 
 if nargin<2 || isempty(pos)
-    mydata.pos = round(size(img)/2);
-else
-    mydata.pos=pos;
+    pos = round(size(img)/2);
 end
 
 if nargin<3 || isempty(color)
@@ -68,15 +70,12 @@ if nargin<6 || isempty(figName)
 end
 
 if nargin<7 || isempty(vecImg)
-    mydata.vecImg = [];
+    vecImg = [];
 else
     temp = size(vecImg);
     if any(temp(1:3)~=[Nx,Ny,Nz]) || temp(4)~=3
         error('Vector field does not have correct size.');
     end
-    mydata.vecImg = vecImg;
-    [xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
-    mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
 end
 
 if nargin<8 || isempty(mri2mni)
@@ -88,20 +87,46 @@ else
     mydata.mri2mni = mri2mni;
 end
 
-% link the calback function to new figure
-fh = figure('WindowButtonDownFcn',@myCallback,'Name',figName,'NumberTitle','off');
-
-% store data as figure property
-set(fh,'UserData',mydata);
-
-% first display
-showimages
-
-
+if nargin<9 || isempty(bbox)
+    minR = 1; minA = 1; minS = 1;
+    maxR = Nx; maxA = Ny; maxS = Nz;
+else
+    minR = bbox(1,1);
+    maxR = bbox(2,1);
+    minA = bbox(1,2);
+    maxA = bbox(2,2);
+    minS = bbox(1,3);
+    maxS = bbox(2,3);    
 end
 
-function myCallback(fh,~)
-% This selects new position depending on which subplot a button is clicked.
+% adjustment for bbox
+img = img(minR:maxR, minA:maxA, minS:maxS); mydata.img = img;
+temp = pos-[minR-1,minA-1,minS-1];
+if any(temp<=0), error('Voxel selected falls outside of the bounding box.'); end
+mydata.pos = temp;
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
+if ~isempty(vecImg), vecImg = vecImg(minR:maxR, minA:maxA, minS:maxS,:); end 
+mydata.vecImg = vecImg;
+[Nx,Ny,Nz] = size(img);
+[xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
+mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
+if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
+
+whratio = 1.0187; %Width-to-height ratio
+w = 8.5; %Width in inches
+% link the callback function to new figure
+fh = uifigure('WindowButtonDownFcn',@(src, event) myCallback(src, event, minR, minA, minS),'Name',figName,'NumberTitle','off','Units','inches','Position',[0,0,w,w/whratio],'AutoResizeChildren','off','SizeChangedFcn',@(src,event) figResize(src,event,minR,minA,minS));
+movegui(fh,'center')
+% store data as figure property
+set(fh,'UserData',mydata);
+set(fh,'HandleVisibility','on')
+
+% initial display
+showimages(minR,minA,minS,fh)
+end
+
+function myCallback(fh,~,minR, minA, minS)
+% Selects new position depending on which subplot is clicked on.
 % Updates display information in mydata.
 
 mydata = get(fh,'UserData');
@@ -112,78 +137,183 @@ switch gca
     case mydata.h(2); mydata.pos([2 3]) = pos;
     case mydata.h(3); mydata.pos([1 2]) = pos;
 end
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
+if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
 
 % if new position is valid, update mydata as figure property and display
 % otherwise do nothing
 if ~sum( mydata.pos<1 | mydata.pos>size(mydata.img) )
     set(fh,'UserData',mydata);
-    showimages
+    showimages(minR,minA,minS,fh)
+end
 end
 
-end
-
-function showimages
-% Displays the image based on current mydata.
+function showimages(minR,minA,minS,fh)
+% Displays the image based on current UserData.
 
 % grab the stuff to display from figure
-mydata  = get(gcf,'UserData');
+mydata  = get(fh,'UserData');
 
-% show the images and keep track of the axes that are generated
-h(1)=subplot(2,2,1);
-imagesc(squeeze(mydata.img(:,mydata.pos(2),:))'); d(1,:)=[1 3];
+% Show the images and keep track of the axes that are generated
+mytile = tiledlayout(fh,2,2,'Padding','tight','TileSpacing','none');
+
+h(1) = nexttile(mytile,1); 
+imagesc(h(1),squeeze(mydata.img(:,mydata.pos(2),:))'); d(1,:)=[1 3];
 if ~isempty(mydata.vecImg)
-    hold on;
+    hold(h(1),'on');
     rngx=1:5:size(mydata.xi,1); rngy=mydata.pos(2); rngz=1:5:size(mydata.xi,3);
-    quiver3(mydata.xi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,2),2,'color','k'); %,0.08,'nointerp');
-    hold off;
+    quiver3(h(1),mydata.xi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,2),2,'color','k');
+    hold(h(1),'off');
 end
-h(2)=subplot(2,2,2);
-imagesc(squeeze(mydata.img(mydata.pos(1),:,:))'); d(2,:)=[2 3];
+axtoolbar(h(1),{});
+
+h(2) = nexttile(mytile,2); 
+imagesc(h(2),squeeze(mydata.img(mydata.pos(1),:,:))'); d(2,:)=[2 3];
 if ~isempty(mydata.vecImg)
-    hold on;
+    hold(h(2),'on');
     rngx=mydata.pos(1); rngy=1:5:size(mydata.xi,2); rngz=1:5:size(mydata.xi,3);
-    quiver3(mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.xi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,1),2,'color','k'); %,0.08,'nointerp');
-    hold off;
+    quiver3(h(2),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),mydata.xi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),mydata.vecImg(rngx,rngy,rngz,1),2,'color','k');
+    hold(h(2),'off');
 end
-h(3)=subplot(2,2,3);
-imagesc(squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1 2];
+axtoolbar(h(2),{});
+
+h(3) = nexttile(mytile,3); 
+imagesc(h(3),squeeze(mydata.img(:,:,mydata.pos(3)))'); d(3,:)=[1 2];
 if ~isempty(mydata.vecImg)
-    hold on;
+    hold(h(3),'on');
     rngx=1:5:size(mydata.xi,1); rngy=1:5:size(mydata.xi,2); rngz=mydata.pos(3);
-    quiver3(mydata.xi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),...
-        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),2,'color','k'); %,0.08,'nointerp');
-    hold off;
+    quiver3(h(3),mydata.xi(rngx,rngy,rngz),mydata.yi(rngx,rngy,rngz),mydata.zi(rngx,rngy,rngz),...
+        mydata.vecImg(rngx,rngy,rngz,1),mydata.vecImg(rngx,rngy,rngz,2),mydata.vecImg(rngx,rngy,rngz,3),2,'color','k');
+    hold(h(3),'off');
 end
+axtoolbar(h(3),{});
 
-% some aesthetics
-val = mydata.img(mydata.pos(1),mydata.pos(2),mydata.pos(3));
+% Aesthetics
+val = mydata.img(mydata.pos(1),mydata.pos(2),mydata.pos(3)); %EF value
 for i=1:3
-    subplot(2,2,i);
-    hold on; plot(mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color',ones(1,3)*0.4,'linewidth',3,'markersize',12); hold off;
-    axis xy; axis equal; axis tight; axis off; caxis(mydata.clim);
-    title([num2str(mydata.pos(d(i,:))) ': ' num2str(val,'%.2f')])
+    han = nexttile(mytile,i);
+    % Place position marker
+    hold(han,'on'); plot(han,mydata.pos(d(i,1)),mydata.pos(d(i,2)),'o','color','m','linewidth',3,'markersize',12); hold(han,'off');
+    axis(han,'xy'); axis(han,'equal'); axis(han,'tight'); axis(han,'off'); clim(han,mydata.clim);
+    stackorder = get(h(i),'Children');
+    if size(stackorder,1)>2
+        set(h(i),'Children',[stackorder(1),stackorder(2),stackorder(3)]);
+    end
+    % Show crosshairs
+    xline(han,mydata.pos(d(i,1))); yline(han,mydata.pos(d(i,2)));
 end
 
+% Set x- and y-lims equal in all views (for uniform scaling)
+xlim(h,[0,max(size(mydata.img))])
+ylim(h,[0,max(size(mydata.img))])
+
+h(4) = nexttile(mytile,4); axis(h(4),'off'); box(h(4),'off'); clim(h(4),mydata.clim); axtoolbar(h(4),{});
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
+
+% Arrange user input and coordinates in a UI Panel
+ip = uipanel(fh,'BackgroundColor','white','AutoResizeChildren','off');
+ip.Units = 'normalized';
+ip.Position = [0.5,0,0.5,0.3];
+ip.BorderType = 'none';
+ip.Units = 'pixels';
+panelsize = ip.Position;
+ip.Units = 'normalized';
+l = 0.28*panelsize(3); %left reference point
+b = 0.59*panelsize(4); %bottom reference point
+FSEF = 24; %Font size for displaying EF
+FSc = 20; %Font size for coordinates
+padding = 10;
+%Display value:
+uilabel(ip,'Position',[l-3.4*FSc,b-3*FSc,FSEF*12,FSEF+padding],'Text',strcat(mydata.label),'FontSize',FSEF,'FontWeight','bold','HorizontalAlignment','center');
+uilabel(ip,'Position',[l-3.4*FSc,b-4.5*FSc,FSEF*12,FSEF+padding],'Text',num2str(val,'%.2f'),'FontSize',FSEF,'FontWeight','bold','HorizontalAlignment','center');
+%Display voxel coordinates (callback below):
+uilabel(ip,'Position',[l-3.4*FSc,b+2*FSc,3.1*FSc,FSc+padding],'Text','Voxel','FontSize',FSc,'FontWeight','bold');
+efx = uieditfield(ip,'Position',[l+FSc,b+2*FSc,2.5*FSc,FSc+padding],'Tag','x','FontSize',FSc,'ValueChangedFcn',@(src,event) updateX(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+efx.Value = num2str(mydata.pos_crop(1));
+uilabel(ip,'Position',[l,b+2*FSc,1.25*FSc,FSc+padding],'Text','X','FontSize',FSc);
+efy = uieditfield(ip,'Position',[l+5.25*FSc,b+2*FSc,2.5*FSc,FSc+padding],'Tag','y','FontSize',FSc,'ValueChangedFcn',@(src,event) updateX(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+efy.Value = num2str(mydata.pos_crop(2));
+uilabel(ip,'Position',[l+4.25*FSc,b+2*FSc,1.25*FSc,FSc+padding],'Text','Y','FontSize',FSc);
+efz = uieditfield(ip,'Position',[l+9.5*FSc,b+2*FSc,2.5*FSc,FSc+padding],'Tag','z','FontSize',FSc,'ValueChangedFcn',@(src,event) updateX(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+efz.Value = num2str(mydata.pos_crop(3));
+uilabel(ip,'Position',[l+8.5*FSc,b+2*FSc,1.25*FSc,FSc+padding],'Text','Z','FontSize',FSc);
+
+%Display MNI coordinates (callback below):
 if ~isempty(mydata.mri2mni)
-    h(4) = subplot(2,2,4); axis off; caxis(mydata.clim);
-    mniCoord = round(mydata.mri2mni*[mydata.pos 1]');
-    coordInfo = {['Voxel: ' num2str(mydata.pos(1)) ',' num2str(mydata.pos(2)) ',' num2str(mydata.pos(3))],...
-        ['MNI: ' num2str(mniCoord(1)) ',' num2str(mniCoord(2)) ',' num2str(mniCoord(3))]};
-    title(h(4), coordInfo,'FontSize',16);
+    uilabel(ip,'Position',[l-3.4*FSc,b,3.1*FSc,FSc+padding],'Text','MNI','FontSize',FSc,'FontWeight','bold');
+    efxm = uieditfield(ip,'Position',[l+FSc,b,2.5*FSc,FSc+padding],'Tag','x','FontSize',FSc,'ValueChangedFcn',@(src,event) updateXMNI(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+    efxm.Value = num2str(mydata.mnipos(1));
+    uilabel(ip,'Position',[l,b,1.25*FSc,FSc+padding],'Text','X','FontSize',FSc);
+    efym = uieditfield(ip,'Position',[l+5.25*FSc,b,2.5*FSc,FSc+padding],'Tag','y','FontSize',FSc,'ValueChangedFcn',@(src,event) updateXMNI(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+    efym.Value = num2str(mydata.mnipos(2));
+    uilabel(ip,'Position',[l+4.25*FSc,b,1.25*FSc,FSc+padding],'Text','Y','FontSize',FSc);
+    efzm = uieditfield(ip,'Position',[l+9.5*FSc,b,2.5*FSc,FSc+padding],'Tag','z','FontSize',FSc,'ValueChangedFcn',@(src,event) updateXMNI(src,event,minR,minA,minS,fh),'HorizontalAlignment','right','FontWeight','bold');
+    efzm.Value = num2str(mydata.mnipos(3));
+    uilabel(ip,'Position',[l+8.5*FSc,b,1.25*FSc,FSc+padding],'Text','Z','FontSize',FSc);
 end
 
-if ~isempty(mydata.label)
-    h(4) = subplot(2,2,4); axis off; caxis(mydata.clim);
-    h(5) = colorbar('west');
-    set(h(5),'YAxisLocation','right','FontSize',18);
-    title(h(5), mydata.label,'FontSize',18);
-end
+% Display colorbar
+h(5) = colorbar(nexttile(mytile,2),'southoutside');
+set(h(5),'YAxisLocation','bottom','FontSize',16);
+h(5).Label.String = mydata.label;
 
-colormap(mydata.color);
+colormap(fh,mydata.color);
+set(fh,'color','w')
 
 mydata.h=h;
-set(gcf,'UserData',mydata);
+set(fh,'UserData',mydata);
+end
 
+function updateX(src,event,minR, minA, minS,fh)
+% Update figure to display location specified by voxel coordinate input
+mydata = get(fh,'UserData');
+if ~isempty(str2double(event.Value))
+    switch src.Tag
+        case 'x'
+            mydata.pos(1) = round(str2double(event.Value))-(minR-1);
+            mydata.pos_crop(1) = str2double(event.Value);
+        case 'y'
+            mydata.pos(2) = round(str2double(event.Value))-(minA-1);
+            mydata.pos_crop(2) = str2double(event.Value);
+        case 'z'
+            mydata.pos(3) = round(str2double(event.Value))-(minS-1);
+            mydata.pos_crop(3) = str2double(event.Value);
+    end
+    if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
+end
+if ~sum( mydata.pos<1 | mydata.pos>size(mydata.img) )
+    set(fh,'UserData',mydata);
+    showimages(minR,minA,minS,fh)
+end
+end
+
+function updateXMNI(src,event,minR, minA, minS,fh)
+% Update figure to display location specified by MNI coordinate input
+mydata = get(fh,'UserData');
+if ~isempty(str2double(event.Value))
+    switch src.Tag
+        case 'x'
+            mydata.mnipos(1) = round(str2double(event.Value));
+        case 'y'
+            mydata.mnipos(2) = round(str2double(event.Value));
+        case 'z'
+            mydata.mnipos(3) = round(str2double(event.Value));
+    end
+    mydata.pos_crop = round(mydata.mri2mni\mydata.mnipos);
+    mydata.pos(1) = mydata.pos_crop(1)-(minR-1);
+    mydata.pos(2) = mydata.pos_crop(2)-(minA-1);
+    mydata.pos(3) = mydata.pos_crop(3)-(minS-1);
+end
+if ~sum( mydata.pos<1 | mydata.pos>size(mydata.img) )
+    set(fh,'UserData',mydata);
+    showimages(minR,minA,minS,fh)
+end
+end
+
+function figResize(fh,~,minR,minA,minS)
+    if ~isempty(fh.Children)
+        showimages(minR,minA,minS,fh)
+    end
 end
