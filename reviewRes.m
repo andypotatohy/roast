@@ -519,7 +519,7 @@ nan_mask = nan(size(mask));
 nan_mask(find(mask)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
-if strcmp(tissue,'white') | strcmp(tissue,'gray') | strcmp(tissue,'brain')
+if strcmp(tissue,'white') || strcmp(tissue,'gray') || strcmp(tissue,'brain')
     bbox = brainCrop(subjRasRSPDSeg);
     pos = round(mean(bbox));
 else
