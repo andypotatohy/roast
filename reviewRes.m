@@ -71,7 +71,7 @@ function reviewRes(subj,simTag,tissue,fastRender,tarTag)
 % ROAST by Andrew Birnbaum
 % April 2024
 %
-% (c) May 2024 Gavin Hsu
+% (c) May 2024, sliceshow improved by Gavin Hsu and Andrew Birnbaum
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -245,7 +245,7 @@ if isRoast
         if ~exist(subjRasRSPD,'file')
             error(['The subject MRI you provided ' subjRasRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
         else
-            data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni,[]); drawnow
+            data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         end
         
         if ~isempty(optRoast.T2) %T2 specified
@@ -253,7 +253,7 @@ if isRoast
                 error(['T2 file ' optRoast.T2 ' does not exist. You used that to run ROAST but maybe later deleted it.']);
             else
                 data = load_untouch_nii(optRoast.T2);
-                sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni,[]); drawnow
+                sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
             end
         end
     else
@@ -300,7 +300,7 @@ if isRoast
     allMaskShow = masks.img;
     allMaskShow(gel.img>0) = numOfTissue + 1;
     allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni,[])
+    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
     drawnow
     
 else
@@ -519,7 +519,13 @@ nan_mask = nan(size(mask));
 nan_mask(find(mask)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
-bbox = brainCrop(subjRasRSPD);
+if strcmp(tissue,'white') | strcmp(tissue,'gray') | strcmp(tissue,'brain')
+    bbox = brainCrop(subjRasRSPDSeg);
+    pos = round(mean(bbox));
+else
+    bbox = [];
+    pos = [];
+end
 
 if isRoast
     
@@ -531,13 +537,13 @@ if isRoast
     end
     
     figName = ['Voltage in Simulation: ' simTag];
-    sliceshow(vol_all.*nan_mask,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
+    sliceshow(vol_all.*nan_mask,pos,cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
     
     figName = ['Electric field in Simulation: ' simTag];
     for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
     ef_mag = ef_mag.*nan_mask;
     dataShowVal = ef_mag(~isnan(ef_mag(:)));
-    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
+    sliceshow(ef_mag,pos,cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     
 else
     

@@ -16,6 +16,8 @@ Added a function to set the headers of the MRI and segmentation masks so that th
 
 Added code to handle MRIs with nonzero qform in their header.
 
+Upgraded the sliceshow() function for better visualization of slices in a 3D volume.
+
 
 ROAST V3.0 (codename: Hell's Kitchen) -- 2019/09/02:
 

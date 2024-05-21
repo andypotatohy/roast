@@ -4,8 +4,8 @@
 % (c) 2024 Gavin Hsu and Andrew Birnbaum
 
 function bbox = brainCrop(subj)       
-    [dirname,baseFilename,ext] = fileparts(subj);
-    seg = [dirname,'\',baseFilename,'_masks',ext];
+    [dirname,baseFilename] = fileparts(subj);
+    seg = [dirname filesep baseFilename,'_masks.nii'];
     data = load_untouch_nii(seg);
     wm = data.img == 1;
     thresh = [0,0,100];

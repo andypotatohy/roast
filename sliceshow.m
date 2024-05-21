@@ -20,7 +20,7 @@ function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni,bbox)
 % 
 % vecImg is the 3D vectorial field, e.g. an electric field.
 % 
-% mri2mni is the mapping from MRI voxel space to the MNI space, so
+% mri2mni is the mapping from MRI voxel space to the MNI space.
 %
 % bbox is the output of brainCrop(). Use this to display only the brain.
 %
@@ -31,33 +31,14 @@ function sliceshow(img,pos,color,clim,label,figName,vecImg,mri2mni,bbox)
 % (c) August 2019, Yu (Andy) Huang
 % (c) 2024, Gavin Hsu and Andrew Birnbaum
 
-if nargin >= 2 && ~isempty(bbox)
-    minR = bbox(1,1);
-    maxR = bbox(2,1);
-    minA = bbox(1,2);
-    maxA = bbox(2,2);
-    minS = bbox(1,3);
-    maxS = bbox(2,3);    
-    img = img(minR:maxR, minA:maxA, minS:maxS);
-else
-    minR = 0;
-    minA = 0;
-    minS = 0;
-end
-
 if nargin<1 || isempty(img)
-    error('At least give us a volume to display')
+    error('At least give us a volume to display');
 else
     [Nx,Ny,Nz] = size(img);
-    mydata.img = img;
 end
 
 if nargin<2 || isempty(pos)
-    mydata.pos = round(size(img)/2);
-    mydata.pos_crop = mydata.pos + [minR,minA,minS];
-else
-     mydata.pos=pos-[minR,minA,minS];
-     mydata.pos_crop = mydata.pos + [minR,minA,minS];
+    pos = round(size(img)/2);
 end
 
 if nargin<3 || isempty(color)
@@ -89,18 +70,12 @@ if nargin<6 || isempty(figName)
 end
 
 if nargin<7 || isempty(vecImg)
-    mydata.vecImg = [];
+    vecImg = [];
 else
-    if nargin >= 2 && ~isempty(bbox)
-        vecImg = vecImg(minR:maxR, minA:maxA, minS:maxS,:);
-    end
     temp = size(vecImg);
     if any(temp(1:3)~=[Nx,Ny,Nz]) || temp(4)~=3
         error('Vector field does not have correct size.');
     end
-    mydata.vecImg = vecImg;
-    [xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
-    mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
 end
 
 if nargin<8 || isempty(mri2mni)
@@ -110,8 +85,32 @@ else
         error('Unrecognized format of the voxel-to-MNI mapping.');
     end
     mydata.mri2mni = mri2mni;
-    mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]');
 end
+
+if nargin<9 || isempty(bbox)
+    minR = 1; minA = 1; minS = 1;
+    maxR = Nx; maxA = Ny; maxS = Nz;
+else
+    minR = bbox(1,1);
+    maxR = bbox(2,1);
+    minA = bbox(1,2);
+    maxA = bbox(2,2);
+    minS = bbox(1,3);
+    maxS = bbox(2,3);    
+end
+
+% adjustment for bbox
+img = img(minR:maxR, minA:maxA, minS:maxS); mydata.img = img;
+temp = pos-[minR-1,minA-1,minS-1];
+if any(temp<=0), error('Voxel selected falls outside of the bounding box.'); end
+mydata.pos = temp;
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
+if ~isempty(vecImg), vecImg = vecImg(minR:maxR, minA:maxA, minS:maxS,:); end 
+mydata.vecImg = vecImg;
+[Nx,Ny,Nz] = size(img);
+[xi,yi,zi] = ndgrid(1:Nx,1:Ny,1:Nz);
+mydata.xi = xi; mydata.yi = yi; mydata.zi = zi;
+if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
 
 whratio = 1.0187; %Width-to-height ratio
 w = 8.5; %Width in inches
@@ -138,8 +137,8 @@ switch gca
     case mydata.h(2); mydata.pos([2 3]) = pos;
     case mydata.h(3); mydata.pos([1 2]) = pos;
 end
-mydata.pos_crop = mydata.pos + [minR,minA,minS];
-mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]');
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
+if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
 
 % if new position is valid, update mydata as figure property and display
 % otherwise do nothing
@@ -211,7 +210,7 @@ xlim(h,[0,max(size(mydata.img))])
 ylim(h,[0,max(size(mydata.img))])
 
 h(4) = nexttile(mytile,4); axis(h(4),'off'); box(h(4),'off'); clim(h(4),mydata.clim); axtoolbar(h(4),{});
-mydata.pos_crop = mydata.pos + [minR,minA,minS];
+mydata.pos_crop = mydata.pos + [minR-1,minA-1,minS-1];
 
 % Arrange user input and coordinates in a UI Panel
 ip = uipanel(fh,'BackgroundColor','white','AutoResizeChildren','off');
@@ -273,16 +272,16 @@ mydata = get(fh,'UserData');
 if ~isempty(str2double(event.Value))
     switch src.Tag
         case 'x'
-            mydata.pos(1) = round(str2double(event.Value))-minR;
+            mydata.pos(1) = round(str2double(event.Value))-(minR-1);
             mydata.pos_crop(1) = str2double(event.Value);
         case 'y'
-            mydata.pos(2) = round(str2double(event.Value))-minA;
+            mydata.pos(2) = round(str2double(event.Value))-(minA-1);
             mydata.pos_crop(2) = str2double(event.Value);
         case 'z'
-            mydata.pos(3) = round(str2double(event.Value))-minS;
+            mydata.pos(3) = round(str2double(event.Value))-(minS-1);
             mydata.pos_crop(3) = str2double(event.Value);
     end
-    mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]');
+    if ~isempty(mydata.mri2mni), mydata.mnipos = round(mydata.mri2mni*[mydata.pos_crop 1]'); end
 end
 if ~sum( mydata.pos<1 | mydata.pos>size(mydata.img) )
     set(fh,'UserData',mydata);
@@ -303,9 +302,9 @@ if ~isempty(str2double(event.Value))
             mydata.mnipos(3) = round(str2double(event.Value));
     end
     mydata.pos_crop = round(mydata.mri2mni\mydata.mnipos);
-    mydata.pos(1) = mydata.pos_crop(1)-minR;
-    mydata.pos(2) = mydata.pos_crop(2)-minA;
-    mydata.pos(3) = mydata.pos_crop(3)-minS;
+    mydata.pos(1) = mydata.pos_crop(1)-(minR-1);
+    mydata.pos(2) = mydata.pos_crop(2)-(minA-1);
+    mydata.pos(3) = mydata.pos_crop(3)-(minS-1);
 end
 if ~sum( mydata.pos<1 | mydata.pos>size(mydata.img) )
     set(fh,'UserData',mydata);
