@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CONDA_INSTALLER=Miniconda3-latest-MacOSX-x86_64.sh
+CONDA_INSTALL_PATH="$(pwd)/lib/multiaxial/miniconda"
+ENV_NAME="$(pwd)/lib/multiaxial/multiaxialEnvMac"
+YAML_FILE="$(pwd)/lib/multiaxial/multiaxialEnvMac.yml"
+
+# Download and install Miniconda
+curl -O https://repo.anaconda.com/miniconda/${CONDA_INSTALLER}
+bash ${CONDA_INSTALLER} -b -p ${CONDA_INSTALL_PATH}
+rm ${CONDA_INSTALLER}
+
+# Activate conda base environment (this is required for conda command to work)
+source ${CONDA_INSTALL_PATH}/etc/profile.d/conda.sh
+conda activate base
+
+# Create Conda environment
+conda env create -f ${YAML_FILE} --prefix ${ENV_NAME}
+
+# Remove Miniconda installation directory
+rm -rf ${CONDA_INSTALL_PATH}
+
+# Display activation instructions for the new environment
+echo "To activate the environment, run: conda activate ${ENV_NAME}"

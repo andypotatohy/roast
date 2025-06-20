@@ -1,0 +1,138 @@
+ROAST V3.5 (codename: Dumbo) -- 2024/04/25:
+
+Added the Multiaxial (a deep CNN) as the segmentation engine, so that users can model heads with abnormal anatomies (e.g. lesions).
+
+Changed some variable names related to segmentation for better readability.
+
+Fixed a glitch in the code of electrode placement.
+
+Adjusted the locations of the additional two rows of electrodes in the 10-05 layout.
+
+Removed 10 electrodes in the EGI layout that fall on the ears and eyes.
+
+capInfo.xls was saved as capInfo.xlsx.
+
+Added a function to set the headers of the MRI and segmentation masks so that their voxel-to-world mapping directly maps to the MNI space.
+
+Added code to handle MRIs with nonzero qform in their header.
+
+Upgraded the sliceshow() function for better visualization of slices in a 3D volume.
+
+
+ROAST V3.0 (codename: Hell's Kitchen) -- 2019/09/02:
+
+Added a feature in ROAST main function roast() so that users can generate the data (lead field) for running targeted TES.
+
+Introduced a new main function roast_target() for doing targeted TES. Users can also use the MNI coordinates for targeting.
+
+Enforce the RAS rule for all the input data to roast(). This prevents a potential bug in the orientation option ('elecOri') for pad electrodes in roast(), which was not paid attention to previously if NON-RAS head is modeled. This rule also makes the orientation option ('orient') for roast_target() to work well.
+
+Make sliceshow() be able to show both the voxel and MNI coordinates when users click at different locations.
+
+Changed the default mesh options to generate slightly higher-resolution mesh.
+
+Updated the free solver getDP from version 2.11.2 to version 3.2.0.
+
+Fixed a potential bug if users want to place BioSemi electrodes (the four 10/10 electrodes in BioSemi layout that aid to place BioSemi electrodes have the same names as those in 10/10 system, which may cause complication in data management). Fixed a bug in data management when users are using only the neck electrodes and/or the customized electrodes.
+
+Added the EGI HCGSN 256-channel system as another option for 'capType'. Now users can place any electrodes following the EGI layout by specifying 'capType','egi' (thanks to github user iPsych).
+
+Fixed a bug when calling getDP solver when data are stored in folders with spaces in the folder name (thanks to github user bartkrekelberg).
+
+Made outputs from ROAST compatible with Soterix software HD-Explore and HD-Targets (purchased separately).
+
+
+ROAST V2.7.1 (codename: Hamilton Heights update 2) -- 2019/03/13:
+Fixed a glitch. It's only related to running simulations on MRIs that are not in 1 mm isotropic resolution.
+
+
+ROAST V2.7 (codename: Hamilton Heights update 1)-- 2018/09/10:
+Upgraded SPM8 to SPM12, with all customized code in SPM8 transferred into SPM12. Now Mac users will not have any problems when running ROAST under Matlab version 2017 and later.
+
+
+ROAST V2.6 (codename: Hamilton Heights) -- 2018/07/05:
+
+Improved disc and ring placement so that for large electrodes, gel can be fully filled between scalp surface and the electrodes.
+
+Memory improvement when placing big electrodes.
+
+Allow zero-padding on New York head, but prevent users from resampling New York head to 1 mm resolution.
+
+Fixed the problem that iso2mesh will crash on 64-bit Windows for large models.
+
+Fixed a bug on removing connected objects in segmentation touch-up routine.
+
+Combined 6 mask files into one single color file, so that users can save disk space, and also New York head can be uploaded to github.
+
+Added function of saving all the results in the NIFTI format.
+
+Improved the logic for labeling different electrodes, so that some electrode montages can now be simulated (cannot be done under the old labeling logic).
+
+Model each electrode/gel as a separate mask, so that they can be assigned to different conductivity values (e.g. different conductivities for pad vs. disc).
+
+Added logic to detect if neighboring electrodes are overlapping each other. Throw out errors if they overlap.
+
+Introduced a new function (reviewRes.m) with simpler interface to review ROAST results, and it allows users to choose which tissue to display.
+
+Added display of flow of electric field by small arrows in the slice show.
+
+Opened conductivities as user options.
+
+Can output a 3D rendering of electrode placement result, before building the FEM model.
+
+
+ROAST V2.1 (codename: Manhattanville update) -- 2018/05/16:
+
+Fixed a bug on placing electrodes on non-1mm data
+
+Added resampling and zero-padding options
+
+Can align T2 automatically if it's not aligned with T1
+
+
+ROAST V2.0 (codename: Manhattanville) -- 2018/05/01:
+
+Major feature added: costumized electrode placement. Users can specify any electrode from EEG 10/20, 10/10, 10/05 and BioSemi-256 system, and even electrodes at customized locations. They can customize the shape, size and orientation (only for pad electrode) of each electrode individually.
+
+Can use T2 to help segmentation.
+
+Can control mesh options of iso2mesh.
+
+Can give each simulation a customized tag.
+
+The New York head is added.
+
+Can handle non-1mm resolution MRI and non-RAS MRI.
+
+Improved the visualization function.
+
+
+ROAST V1.1 (codename: Chelsea update) -- 2017/12/11:
+
+Fixed a bug in the 3D rendering using iso2mesh functions.
+
+Added visualization of stimulation electrodes in the 3D rendering.
+
+
+ROAST V1.0 (codename: Chelsea) -- 2017/11/10:
+
+Users now can do customized montage instead of just bipolar configurations.
+
+Added mechanisms to detect if each step is done and start from the first undone step.
+
+Added a solution to name the files properly for the convenience of managing different simulations.
+
+
+ROAST V0.3 (codename: NoHo) -- 2017/11/10:
+
+Added individual head as another example; added drawnow; fixed an issue when calling solver if directory name has space character; fixed an issue in visualizeRes() about converting world coord to voxel coord; completely changed the method for generating 3D rendering (use plotmesh in iso2mesh toolbox instead of GIFTI object, which is buggy).
+
+
+ROAST V0.2 (codename: SoHo) -- 2017/11/06:
+
+Only supports bipolar config, and only place the user-specified electrodes; improved visualization functions; suppressed some warning messages.
+
+
+ROAST V0.1 (codename: Nolita) -- 2017/11/01:
+
+Placing all the 74 electrodes at once and then solve the user-specified bipolar config.
