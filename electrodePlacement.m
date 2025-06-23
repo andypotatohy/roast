@@ -6,7 +6,7 @@ function hdrInfo = electrodePlacement(subj,subjRasRSPD,spmOut,segOut,elecNeeded,
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% April 2018
+% April 2018d
 
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
@@ -28,17 +28,31 @@ template = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
 pixdim = template.hdr.dime.pixdim(2:4);
 dim = size(template.img);
 v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
-hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
+% hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 % keep the header info for use later
 % scalp_original = template.img==5;
 % scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
 % scalp = template.img==5;
 scalp=template.img>0; % fill in scalp first to avoid complication % ANDY 2024-03-12
 
+
 if ~isempty(indP) || ~isempty(indN)
 %     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
-    landmarks = getLandmarks(spmOut);
+    [landmarks,mri2mni] = getLandmarks(subjRasRSPD,options.multiaxial);
+    alignHeader2mni(subjRasRSPD,[],options.multiaxial)
 end
+
+% Add if manual is on, maybe by the spm part too
+if options.manual_gui
+[landmarks,updated] = checkLandmarks([dirname filesep segOutName '_masks.nii'],landmarks,[],[]);
+else
+updated = 0;
+end
+% mri2mni is put in the header, it is the affine needed from mni alignmnet
+% maybe find different location to save so we dont need to overwrite 
+% hdr file each run
+hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w,'mri2mni',mri2mni);
+% hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
 
 if ~isempty(indC)
     fid = fopen([dirname filesep subjName '_customLocations']);
@@ -83,10 +97,20 @@ if ~isempty(indP)
            isBiosemi = 0;
            isEGI = 1;
    end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indP,isBiosemi,isEGI);
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indP,isBiosemi,isEGI,false);
 else
     electrode_coord_P = []; center_P = [];
 end
+
+if updated
+
+[electrode_coord_P1,center_P1]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indP,isBiosemi,isEGI,true);
+new_landmarks = [landmarks',round(center_P1)',round(electrode_coord_P1)']';
+[Affine,mri2mni] = getAffine(subjRasRSPD,new_landmarks);
+hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w,'mri2mni',mri2mni);
+alignHeader2mni(subjRasRSPD,[],1,Affine);
+end
+
 
 if ~isempty(indN)
     if any(landmarks(5:6,3)<=0)
@@ -193,14 +217,24 @@ template.hdr.hist.descrip = 'electrode mask';
 template.img = uint8(volume_elec_C.*volume_elec);
 
 save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_elec.nii']);
+elec = template.img;
 template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_gel'];
 template.hdr.hist.descrip = 'gel mask';
 % template.img = uint8(volume_gel)*255;
 template.img = uint8(volume_gel_C.*volume_gel);
 save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_gel.nii']);
+gel = template.img;
 
+if options.manual_gui
+viewElectrodes(segOut,elec, gel, new_landmarks)
+else
+% dont show landmarks unless manual GUI is on
+viewElectrodes(segOut,elec, gel)
+end
 % save([dirname filesep subjName '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
 [~,subjModelName] = fileparts(subjRasRSPD);
-if ~exist([dirname filesep subjModelName '_header.mat'],'file')
-    save([dirname filesep subjModelName '_header.mat'],'hdrInfo');
-end
+% if ~exist([dirname filesep subjModelName '_header.mat'],'file')
+% header info must be updated based on mri2mni alignmnet will cause errors
+% if old run is redone
+save([dirname filesep subjModelName '_header.mat'],'hdrInfo');
+% end

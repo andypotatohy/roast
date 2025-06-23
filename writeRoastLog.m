@@ -111,14 +111,22 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'multipriors:\t');
-        if opt.multipriors
+        fprintf(fid,'multiaxial:\t');
+        if opt.multiaxial
             fprintf(fid,'on');
         else
             fprintf(fid,'off');
         end
         fprintf(fid,'\n');
-
+        
+        fprintf(fid,'manual_gui:\t');
+        if opt.manual_gui
+            fprintf(fid,'on');
+        else
+            fprintf(fid,'off');
+        end
+        
+        fprintf(fid,'\n');
         fprintf(fid,'meshOpt:\t');
         fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
             opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);

@@ -1,4 +1,4 @@
-function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indNeed,isBiosemi,isEGI)
+function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indNeed,isBiosemi,isEGI,central_electrodes)
 % [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indNeed,isBiosemi,isEGI)
 %
 % Place the electrodes with pre-defined coordinates in the standard EEG
@@ -43,10 +43,27 @@ if ~isEGI
         im_test = imfill(imclose(img_c,ones(se,se)),'holes');
         isFilled = im_test(centroid(1),centroid(2));
     end
-    bw_c = edge(imopen(im_test,ones(3,3)));
+
+   
+    % % Fixes problem with nose behind the head    
+    % Use a morphological opening to break thin connections (like between nose and head)
+    se = strel('disk', 10);  % Disk radius can be tuned
+    im_broken = imopen(im_test, se);
+
+    % Keep only the largest connected component (should now be the main head)
+    im_clean = bwareafilt(im_broken, 1);
+
+    % Optional: restore shape after cleaning
+    im_clean = imfill(im_clean, 'holes');
+
+    % Extract the edge from the cleaned-up image
+    bw_c = edge(im_clean);
+
+    % % The old code doesnt take into account floating nose
+    % bw_c = edge(imopen(im_test,ones(3,3)));
     % Get the edge of the central sagittal slice
     [r_c,c_c] = find(bw_c==1);
-    
+    % 
     indxinion = find(inion(3)==c_c,1,'first');
     indxnasion = find(nasion(3)==c_c,1,'last');
     [~,I] = max(c_c);
@@ -87,7 +104,13 @@ else
     indCentralElec = [];
 end
 
+
+if ~central_electrodes
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
+else
+% Find central elec for mni alignmnet
+indFit = cat(1,indCentralElec,indCentralElec); % central electrodes
+end
 elec_template = cell2mat(capInfo(2:4));
 elec_template = elec_template(indFit,:);
 elec_template = elec_template./repmat(hdrInfo.pixdim,length(indFit),1);

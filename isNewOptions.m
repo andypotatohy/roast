@@ -107,7 +107,12 @@ switch fun
             end
         end
         
-        if optNew.multipriors ~= optOld.multipriors
+        if optNew.multiaxial ~= optOld.multiaxial
+            isNewOpt = 1;
+            return
+        end
+
+        if optNew.manual_gui ~= optOld.manual_gui
             isNewOpt = 1;
             return
         end

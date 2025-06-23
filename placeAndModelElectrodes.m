@@ -44,13 +44,14 @@ end
 [Nx, Ny, Nz] = size(scalpFilled); % size of head in RAS orientation
 scalpFilled(:,:,1) = 0; scalpFilled(:,:,Nz) = 0; scalpFilled(:,1,:) = 0; scalpFilled(:,Ny,:) = 0; scalpFilled(1,:,:) = 0; scalpFilled(Nx,:,:) = 0;
 
-if isDebug
-    figName = ['Electrode placement in Simulation: ' uniTag];
-    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-    set(gcf,'color','w');
-    plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
-    hold on;
-end
+%yellow head code
+% if isDebug
+%     figName = ['Electrode placement in Simulation: ' uniTag];
+%     figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
+%     set(gcf,'color','w');
+%     plot3(scalpCleanSurf(:,1),scalpCleanSurf(:,2),scalpCleanSurf(:,3),'y.');
+%     hold on;
+% end
 elec_allCoord = cell(size(elecLoc,1),1); gel_allCoord = cell(size(elecLoc,1),1);
 % buffer for coordinates of each electrode and gel point
 for i = 1:length(elecPara) % size(elecLoc,1)    
@@ -112,10 +113,10 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_coor = intersect(pad_coor,gel_layer{ind2allPH(i)},'rows');
             elec_coor = intersect(pad_coor,elec_layer{ind2allPH(i)},'rows');
-            
+            %plot gel and elec
             if isDebug
-                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                % plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                % plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
@@ -143,10 +144,10 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_coor = unique(round(gel_coor),'rows');
             elec_coor = unique(round(elec_coor),'rows'); % clean-up of the coordinates
-            
+            %plot gel and elec
             if isDebug
-                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                % plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                % plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
@@ -175,16 +176,16 @@ for i = 1:length(elecPara) % size(elecLoc,1)
             
             gel_coor = unique(round(gel_coor),'rows');
             elec_coor = unique(round(elec_coor),'rows'); % clean-up of the coordinates
-            
+            %plot gel and elec
             if isDebug
-                plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
-                plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
+                % plot3(elec_coor(:,1),elec_coor(:,2),elec_coor(:,3),'.b');
+                % plot3(gel_coor(:,1),gel_coor(:,2),gel_coor(:,3),'.m');
             end
             
             gel_allCoord{i} = gel_coor; elec_allCoord{i} = elec_coor; % buffer for coordinates of each electrode and gel point
     end
 end
 if isDebug
-    xlabel('x');ylabel('y');zlabel('z'); axis equal;
-    hold off; rotate3d on; % Place electrodes and visualize the results
+    % xlabel('x');ylabel('y');zlabel('z'); axis equal;
+    % hold off; rotate3d on; % Place electrodes and visualize the results
 end

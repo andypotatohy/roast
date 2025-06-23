@@ -114,13 +114,21 @@ directory.
 If you ONLY have a T2 MRI, put the T2 file in the first argument `'subj'`
 when you call roast, just like what you would do when you only have a T1.
 
-`'multipriors'` -- use MultiPriors (a deep convolutional neural network) for segmentation.  
+`'multiaxial'` -- use Multiaxial (a deep convolutional neural network) for segmentation.  
 `'on' | 'off' (default)`  
 For heads with abnormal anatomies such as a lesion, SPM usually cannot output a correct segmentation 
-that captures the lesions. You can use a pre-trained deep convolutional neural network known as the MultiPriors 
-for modeling these abnormal anatomies. To use MultiPriors instead of SPM for segmentation, simply turn on 
-this option. See [Example 17](#example-17). Note if you turn on `'multipriors'`, please do not provide any T2 image
- (just providing T1 is enough), as MultiPriors only works with T1 images.
+that captures the lesions. You can use a pre-trained deep convolutional neural network known as the Multiaxial 
+for modeling these abnormal anatomies. To use Multiaxial instead of SPM for segmentation, simply turn on 
+this option. See [Example 17](#example-17). Note if you turn on `'multiaxial'`, please do not provide any T2 image
+ (just providing T1 is enough), as Multiaxial only works with T1 images.
+
+`'manual_gui'` — Manually select anatomical landmarks and guide electrode placement using a 3D GUI.
+`'on' | 'off' (default)` When set to 'on', this option opens an interactive 3D graphical user interface that allows you to 
+manually select anatomical landmarks such as the nasion, inion, and ears for accurate affine alignment to MNI space. In 
+addition to helping with landmark selection, the GUI also enables you to visualize and adjust electrode placement to ensure 
+proper positioning, which is especially useful for subjects with abnormal anatomies or lesions where automated methods may 
+fail. This manual approach provides full control over the alignment and electrode setup process and should be used in place
+of automatic methods like SPM or Multiaxial when precise manual intervention is needed.
 
 `'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
 (see [Example 18](#example-18)).  
@@ -338,10 +346,10 @@ for segmentation as well.
 
 #### Example 17
 
-    roast('example/subject1.nii',[],'multipriors','on')
+    roast('example/subject1.nii',[],'multiaxial','on')
 
 Run simulation on subject1 with default recipe. Segmentaion will be done by 
-a deep convolutional neural network known as the MultiPriors.
+a deep convolutional neural network known as the Multiaxial.
 
 #### Example 18
 
@@ -432,7 +440,7 @@ From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling t
 
 This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message the first time you run this asking you for confirmation, so be patient to get the lead field for targeting.
 
-Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multipriors`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
+Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multiaxial`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
 
 You can also generate the lead field for the New York head, which will take even more time as the solving of the New York head (0.5 mm resolution) takes twice the time of solving a 1-mm head model.
 
@@ -703,7 +711,7 @@ Dmochowski, J.P., Datta, A., Huang, Y., Richardson, J.D., Bikson, M., Fridriksso
 
 Huang, Y., Thomas, C., Datta, A., Parra, L.C., [Optimized tDCS for Targeting Multiple Brain Regions: An Integrated Implementation](https://ieeexplore.ieee.org/abstract/document/8513034). Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018, 3545-3548
 
-If you also use the MultiPriors for segmentation by turning on the `multipriors` option, please cite this:
+If you also use the Multiaxial for segmentation by turning on the `multiaxial` option, please cite this:
 
 Hirsch, L., Huang, Y., Parra, L.C., [Segmentation of MRI head anatomy using deep volumetric networks and multiple spatial priors](https://www.spiedigitallibrary.org/journals/journal-of-medical-imaging/volume-8/issue-3/034001/Segmentation-of-MRI-head-anatomy-using-deep-volumetric-networks-and/10.1117/1.JMI.8.3.034001.short). Journal of Medical Imaging, Vol. 8, Issue 3, 034001 (June 2021).
 
@@ -715,22 +723,22 @@ ROAST is NOT backwards compatible in the generated simulation data.
 
 Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
 
-Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). This model requires a Python Enviornment which should automatically be installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
+Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multiaxial` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). This model requires a Python Enviornment which should automatically be installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
 
 ```
-Creating Multipriors Enviornment
+Creating Multiaxial Enviornment
 
 Create your own conda enviornment with the proper OS tag.
--Windows: multipriorsEnv 
--Linux:  multipriorsEnvLinux 
--Mac:  multipriorsEnvMac
+-Windows: multiaxialEnv 
+-Linux:  multiaxialEnvLinux 
+-Mac:  multiaxialEnvMac
 
 Download the proper dependencies by using Conda or Pip Install:
 -tensorflow
 -scikit-image
 -nibabel
 
-Place the enviornment into your lib/multipriors folder.
+Place the enviornment into your lib/multiaxial folder.
 ```
 
 ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only intel will work. An update will be added in the future. 

@@ -1,6 +1,6 @@
 ROAST V3.5 (codename: Dumbo) -- 2024/04/25:
 
-Added the MultiPriors (a deep CNN) as the segmentation engine, so that users can model heads with abnormal anatomies (e.g. lesions).
+Added the Multiaxial (a deep CNN) as the segmentation engine, so that users can model heads with abnormal anatomies (e.g. lesions).
 
 Changed some variable names related to segmentation for better readability.
 
@@ -15,6 +15,8 @@ capInfo.xls was saved as capInfo.xlsx.
 Added a function to set the headers of the MRI and segmentation masks so that their voxel-to-world mapping directly maps to the MNI space.
 
 Added code to handle MRIs with nonzero qform in their header.
+
+Upgraded the sliceshow() function for better visualization of slices in a 3D volume.
 
 
 ROAST V3.0 (codename: Hell's Kitchen) -- 2019/09/02:

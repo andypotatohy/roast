@@ -37,12 +37,12 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% If you also use the Multiaxial for segmentation by turning on the `multiaxial`
 % option, please cite this:
 % 
-% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
-% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
-% Vol. 8, Issue 3, 034001 (June 2021).
+% Full-Head Segmentation of MRI with Abnormal Brain Anatomy: Model and Data Release
+% Andrew M Birnbaum, Adam Buchwald, Peter Turkeltaub, Adam Jacks, Yu Huang, Abhisheck Datta, Lucas C Parra, Lukas A Hirsch
+% https://arxiv.org/abs/2501.18716 (Jan 2025).
 % 
 % ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
@@ -64,7 +64,7 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % yhuang16@citymail.cuny.edu
 % September 2019
 % 
-% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% (c) Multiaxial segmentation developed by Lukas Hirsch, and integrated into
 % ROAST by Andrew Birnbaum
 % April 2024
 
@@ -149,8 +149,8 @@ else
 end
 [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
 
-if optRoast.multipriors
-    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+if optRoast.multiaxial
+    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multiaxial' ext];
 else
     subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
 end
@@ -358,17 +358,20 @@ if ~exist('tarTag','var'), tarTag = []; end
 
 % to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
 
+% if strcmpi(coordType,'mni') || needOrigin
+    % mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
+    % if ~exist(mappingFile,'file')
+    %     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
+    % else
+    %     load(mappingFile,'image','Affine');
+    %     mni2mri = inv(image(1).mat)*inv(Affine);
+    %     % mapping from MNI space to individual MRI
+    % end
+% end
 if strcmpi(coordType,'mni') || needOrigin
-    mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
-    if ~exist(mappingFile,'file')
-        error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-    else
-        load(mappingFile,'image','Affine');
-        mni2mri = inv(image(1).mat)*inv(Affine);
-        % mapping from MNI space to individual MRI
-    end
+    mni2mri = inv(hdrInfo.mri2mni);
 end
-
+% to do: figure out mni2mri
 if strcmpi(coordType,'mni')
     targetCoordMNI = targetCoord;
     targetCoordOriginal = [];
@@ -405,7 +408,12 @@ if any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
     error('Voxel coordinates should not go beyond image boundary. Please check if you entered voxel coordinates but specified MNI coordinates, or the other way around.');
 end
 
+% if needOrigin
+%     temp = mni2mri*[0 0 0 1]';
+%     origin = round(temp(1:3)'); % model voxel coord
+% end
 if needOrigin
+    mni2mri = inv(hdrInfo.mri2mni);
     temp = mni2mri*[0 0 0 1]';
     origin = round(temp(1:3)'); % model voxel coord
 end

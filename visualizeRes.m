@@ -8,6 +8,8 @@ function visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+%
+% (c) May 2024, sliceshow improved by Gavin Hsu and Andrew Birnbaum
 
 if ndims(varargin{1})==3
     isRoast = 1;
@@ -20,16 +22,16 @@ end
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,spmOutName] = fileparts(spmOut);
-mappingFile = [dirname filesep spmOutName '_seg8.mat'];
-if ~exist(mappingFile,'file')
-    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-else
-    load(mappingFile,'image','Affine');
-    mri2mni = Affine*image(1).mat;
-    % mapping from MRI voxel space to MNI space
-end
-
+% [~,spmOutName] = fileparts(spmOut);
+% mappingFile = [dirname filesep spmOutName '_seg8.mat'];
+% if ~exist(mappingFile,'file')
+%     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
+% else
+%     load(mappingFile,'image','Affine');
+%     mri2mni = Affine*image(1).mat;
+%     % mapping from MRI voxel space to MNI space
+% end
+mri2mni = hdrInfo.mri2mni;
 if showAll    
     if ~strcmp(subjName,'nyhead')
         disp('showing MRI and segmentations...');
@@ -58,11 +60,24 @@ else
     indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
 end
 
+% More anatomical looking colormap
+color_map = [
+    0, 0, 0;                   % label 0 -> index 1 (black)
+    1, 1, 1;                   % label 1 -> index 2 (white)
+    0.7, 0.7, 0.7;             % label 2 -> index 3 (gray)
+    105/255, 175/255, 255/255; % label 3 -> index 4 (blue)
+    241/255, 214/255, 145/255; % label 4 -> index 5 (bone)
+    177/255, 122/255, 101/255; % label 5 -> index 6 (skin)
+    0.6863, 0.8824, 0.6863;    % label 6 -> index 7 (green)
+];
+
 if showAll
-    allMaskShow = masks.img;
+    % allMaskShow = masks.img; 
+    % added one for new colormap
+    allMaskShow = masks.img+1;
     allMaskShow(gel.img>0) = numOfTissue + 1;
     allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
+    sliceshow(allMaskShow,[],color_map,[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
     drawnow
 end
 
@@ -232,10 +247,11 @@ nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
+bbox = brainCrop(segOut);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];
-    sliceshow(vol_all.*nan_mask_brain,[],cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni); drawnow
+    sliceshow(vol_all.*nan_mask_brain,round(mean(bbox)),cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
 end
 
 for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask_brain; end
@@ -243,11 +259,14 @@ ef_mag = ef_mag.*nan_mask_brain;
 dataShowVal = ef_mag(~isnan(ef_mag(:)));
 if isRoast
     figName = ['Electric field in Simulation: ' uniTag];
-    sliceshow(ef_mag,[],cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+    sliceshow(ef_mag,round(mean(bbox)),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
 else
     
     for i=1:size(targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' uniTag];
-        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni); drawnow
+        sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     end
 end
+
+% Load 3D head with electrodes
+openfig(fullfile(dirname, [segOutName '_3DView.fig']));

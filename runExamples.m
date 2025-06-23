@@ -12,7 +12,7 @@ end
 close all
 
 try
-    roast('','','multipriors','on')
+    roast('','','multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 2:\n');
@@ -56,7 +56,7 @@ end
 close all
 
 try
-    roast([],{'Exx19',1,'C4',-1},'zeropadding',20,'multipriors','on')
+    roast([],{'Exx19',1,'C4',-1},'zeropadding',20,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 6:\n');
@@ -78,7 +78,7 @@ end
 close all
 
 try
-    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'multipriors','on')
+    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 8:\n');
@@ -100,7 +100,7 @@ end
 close all
 
 try
-    roast('example/subject1.nii',[],'T2','example/subject1_T2.nii','multipriors','on')
+    roast('example/subject1.nii',[],'T2','example/subject1_T2.nii','multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 10:\n');
@@ -122,7 +122,7 @@ end
 close all
 
 try
-    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'resampling','on','zeropadding',20,'multipriors','on')
+    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'resampling','on','zeropadding',20,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 12:\n');
@@ -302,7 +302,7 @@ end
 close all
 
 try
-    roast('nyhead',[],'multipriors','on')
+    roast('nyhead',[],'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 27:\n');
@@ -324,7 +324,7 @@ end
 close all
 
 try
-    roast('nyhead',[],'resampling','on','zeropadding',25,'multipriors','on')
+    roast('nyhead',[],'resampling','on','zeropadding',25,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 29:\n');
@@ -335,7 +335,7 @@ end
 close all
 
 try
-    roast('nyhead',[],'electype','ring','elecsize',[7 10 3],'multipriors','on')
+    roast('nyhead',[],'electype','ring','elecsize',[7 10 3],'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 30:\n');
@@ -358,7 +358,7 @@ close all
 
 % test on leadfield and roast_target, reviewRes
 try
-    roast([],'leadfield','multipriors','on','zeropadding',10,'electype','ring','simulationtag','LFwithMP')
+    roast([],'leadfield','multiaxial','on','zeropadding',10,'electype','ring','simulationtag','LFwithMP')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 32:\n');
@@ -369,7 +369,7 @@ end
 close all
 
 try
-    roast('nyhead','leadfield','multipriors','on','zeropadding',10,'electype','ring','simulationtag','nyLFwithMP')
+    roast('nyhead','leadfield','multiaxial','on','zeropadding',10,'electype','ring','simulationtag','nyLFwithMP')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 33:\n');

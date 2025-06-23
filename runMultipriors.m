@@ -1,7 +1,7 @@
-function runMultipriors(T1,spmOut)
-% runMultipriors(T1,spmOut)
+function runMultiaxial(T1,spmOut)
+% runMultiaxial(T1,spmOut)
 % 
-% This calls MultiPriors segmentation that is based on a deep CNN.
+% This calls Multiaxial segmentation that is based on a deep CNN.
 % 
 % See Hirsch et al 2021 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8209627/)
 % for details.
@@ -71,60 +71,60 @@ else
     disp(['File ' outputFileName '.gz already exists. Warping TPM skipped...']);
 end
 
-% Install miniconda and MultiPriors enviornment if it doesn't exist
-% And prepare to run MultiPriors python script
+% Install miniconda and Multiaxial enviornment if it doesn't exist
+% And prepare to run Multiaxial python script
 str = computer('arch');
 switch str
     case 'win64'
-        if ~exist('multipriorsEnv', 'dir')
-            system([pwd '\lib\multipriors\setupWindows.bat']);
+        if ~exist('multiaxialEnv', 'dir')
+            system([pwd '\lib\multiaxial\setupWindows.bat']);
         else
             disp('Enviornment already exist on Windows. Skipping setup...');
         end
 
         % Specify the path to libiomp5md.dll (duplicate)
-        dllPath = [pwd '\lib\multipriors\multipriorsENV\Library\bin\libiomp5md.dll'];
+        dllPath = [pwd '\lib\multiaxial\multiaxialENV\Library\bin\libiomp5md.dll'];
         if exist(dllPath, 'file')
             delete(dllPath);
             disp('Duplicate libiomp5md.dll has been deleted');
         end
 
-        pythonExecutable = [pwd '\lib\multipriors\multipriorsEnv\python.exe'];
+        pythonExecutable = [pwd '\lib\multiaxial\multiaxialEnv\python.exe'];
 
     case 'glnxa64'
-        setupScript = [pwd '/lib/multipriors/setupLinux.sh'];
+        setupScript = [pwd '/lib/multiaxial/setupLinux.sh'];
 
         % Grant execute permissions to the script
         system(['chmod +x ' setupScript]);
 
-        if ~exist('multipriorsEnvLinux', 'dir')
-            system([pwd '/lib/multipriors/setupLinux.sh']);
+        if ~exist('multiaxialEnvLinux', 'dir')
+            system([pwd '/lib/multiaxial/setupLinux.sh']);
         else
             disp('Enviornment already exist on Linux. Skipping setup...');
         end
 
-        pythonExecutable = [pwd '/lib/multipriors/multipriorsEnvLinux/bin/python3'];
+        pythonExecutable = [pwd '/lib/multiaxial/multiaxialEnvLinux/bin/python3'];
 
     case 'maci64'
-        setupScript = [pwd '/lib/multipriors/setupMac.sh'];
+        setupScript = [pwd '/lib/multiaxial/setupMac.sh'];
 
         % Grant execute permissions to the script
         system(['chmod +x ' setupScript]);
 
-        if ~exist('multipriorsEnvMac', 'dir')
-            system([pwd '/lib/multipriors/setupMac.sh']);
+        if ~exist('multiaxialEnvMac', 'dir')
+            system([pwd '/lib/multiaxial/setupMac.sh']);
         else
             disp('Enviornment already exist on Mac. Skipping setup...');
         end
 
-        pythonExecutable = [pwd '/lib/multipriors/multipriorsEnvMac/bin/python3'];
+        pythonExecutable = [pwd '/lib/multiaxial/multiaxialEnvMac/bin/python3'];
 
     otherwise
         error('Unsupported operating system!');
 end
 
-pythonScript = [pwd '/lib/multipriors/SEGMENT.py'];
-configFile = [pwd '/lib/multipriors/Segmentation_config.py'];
+pythonScript = [pwd '/lib/multiaxial/SEGMENT.py'];
+configFile = [pwd '/lib/multiaxial/Segmentation_config.py'];
 
 T1 = ['"' T1 '"']; % To allow spaces in subject path
 
