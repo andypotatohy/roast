@@ -955,13 +955,21 @@ def segment_MRI(img, coords, model_sagittal=None, model_axial=None, model_corona
         yhat_axial = model_axial.predict([np.expand_dims(img_axial, -1), coords_axial], batch_size=1) if coords is not None else model_axial.predict(np.expand_dims(img_axial, -1), batch_size=1)
         yhat_axial = np.swapaxes(np.swapaxes(yhat_axial, 0, 1), 1, 2)  # Align to original orientation
         
+    #print('done 3 views!')
     # Prepare input data for the new model using probability maps
-    if model_layer is not None:
-        X_test = np.concatenate([np.expand_dims(img / np.percentile(img, 95), -1), yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
-        #X_test = np.concatenate([yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
-        yhat_new_model = model_layer.predict(np.expand_dims(X_test, 0))
-        model_segmentation_layer = np.argmax(yhat_new_model[0], -1).astype(np.int32)
-    else: model_segmentation_layer = None
+    try:
+        if model_layer is not None:
+            X_test = np.concatenate([np.expand_dims(img / np.percentile(img, 95), -1), yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
+            # X_test = np.concatenate([np.expand_dims(img, -1), yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
+            # X_test = np.concatenate([yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
+            yhat_new_model = model_layer.predict(np.expand_dims(X_test, 0))
+            model_segmentation_layer = np.argmax(yhat_new_model[0], -1).astype(np.int32)
+        else:
+	        model_segmentation_layer = None
+    except:
+        print('failed')
+    #print('check here?')
+        
     # Return all predictions
     return model_segmentation_layer
  

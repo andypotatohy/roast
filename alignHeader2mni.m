@@ -44,7 +44,7 @@ if ~isempty(T2)
     end
 end
 
-if ~exist([dirname filesep subject '_T1orT2_' segOutName '_masks_MNI.nii'],'file')
+if ~exist([dirname filesep subject '_T1orT2' segOutName '_masks_MNI.nii'],'file')
     disp('Aligning segmentation''s header to the MNI space ...');
     [Vol,info] = update_affine([dirname filesep subject '_T1orT2' segOutName '_masks.nii'],mniAffine);
     niftiwrite(Vol,[dirname filesep subject '_T1orT2' segOutName '_masks_MNI.nii'],info);

@@ -92,7 +92,7 @@ function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
 
     imgAx = axes('Parent', panel, 'Position', [0, 0, 1, 1]); % Keeps image full inside panel
     axis(imgAx, 'off');
-    updateInstructions('Screenshots\Nasion_New.png');
+    updateInstructions('Screenshots/Nasion_New.png');
 
     % Callback for mouse click
     set(fig, 'WindowButtonDownFcn', @onMouseClick);
@@ -282,13 +282,13 @@ function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
                     view(0, 0);
                     updateLighting([1, -1, 1]);
                     title('Select the Right Ear: In the Front Middle');
-                    updateInstructions('Screenshots\Right_Ear_New.png');
+                    updateInstructions('Screenshots/Right_Ear_New.png');
                 case 1
                     selectionPhase = 2;
                     view(180, 0);
                     updateLighting([-1, 0, 1]);
                     title('Select the Left Ear: In the Front Middle');
-                    updateInstructions('Screenshots\Left_Ear_New.png');
+                    updateInstructions('Screenshots/Left_Ear_New.png');
                 case 2
                     selectionPhase = 3;
                     if exist('skinPatch', 'var')
@@ -297,13 +297,13 @@ function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
                     view(180, 0);
                     updateLighting([-1, 0, 1]);
                     title('Select the Inion: The Skull Begins to Slope Inwards');
-                    updateInstructions('Screenshots\Inion1_New.png');
+                    updateInstructions('Screenshots/Inion1_New.png');
                 case 3
                     selectionPhase = 4;
                     view(-90, 0);
                     updateLighting([-1, -1, 1]);
                     title('Select the Inion: In the Middle of the Skull');
-                    updateInstructions('Screenshots\Inion2_New.png');
+                    updateInstructions('Screenshots/Inion2_New.png');
                 case 4
                     selectionPhase = 5;
                     set(submitButton, 'Enable', 'off');

@@ -24,8 +24,8 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 def main():
     print("Starting main function")
     if len(sys.argv) < 2:
-        print('Please include a model configuration file:')
-        print('>>> python SEGMENT2.py </path_to/segmentation_config.py> </subject_value> \n')
+        print('Please include an input image:')
+        print('>>> python SEGMENT.py </subject_value> \n')
         sys.exit()
 
     working_dir = os.getcwd().replace('\\', '/')
@@ -80,8 +80,10 @@ def main():
         print(f"Loading coronal model from {CORONAL_MODEL_SESSION_PATH}")
         model_coronal = tf.keras.models.load_model(CORONAL_MODEL_SESSION_PATH, custom_objects=my_custom_objects)
 
+    # model_coronal.summary()
     print(f"Loading consensus model from {CONSENSUS_LAYER_PATH}")
     consensus_model = tf.keras.models.load_model(CONSENSUS_LAYER_PATH)
+    # consensus_model.summary()
 
     print(f"Loading scan from {scan_path}")
     nii = nib.load(scan_path)

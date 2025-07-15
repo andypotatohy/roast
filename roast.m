@@ -471,10 +471,6 @@ if multiaxial && ~isempty(T2)
     error('Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please only provide T1 image with option ''multiaxial'' turned on.');
 end
 
-if multiaxial && ~isempty(T2)
-    error('Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please only provide T1 image with option ''multiaxial'' turned on.');
-end
-
 if ~exist('manual_gui','var')
     manual_gui = 0;
 else
@@ -834,19 +830,19 @@ if all(strcmpi(recipe,'leadfield'))
     % only warn users the first time they run for this subject
     if all(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
-        % doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
-        % if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
+        doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
+        if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
     end
 end
 
 if ~strcmp(subjName,'nyhead')
     if ~multiaxial
         if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
-        disp('======================================================')
-        disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
-        disp('======================================================')
-        start_seg(subjRasRSPD,T2);
-        renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
+            disp('======================================================')
+            disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
+            disp('======================================================')
+            start_seg(subjRasRSPD,T2);
+            renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
         else
             disp('======================================================')
             disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
@@ -868,13 +864,13 @@ if ~strcmp(subjName,'nyhead')
         end
     else
         if ~multiaxial
-        disp('======================================================')
-        disp('     SPM SEGMENTATION ALREADY DONE, SKIP STEP 2       ')
-        disp('======================================================')
-        else 
-        disp('======================================================')
-        disp('   MULTIAXIAL SEGMENTATION ALREADY DONE, SKIP STEP 1  ')
-        disp('======================================================')
+            disp('======================================================')
+            disp('     SPM SEGMENTATION ALREADY DONE, SKIP STEP 2       ')
+            disp('======================================================')
+        else
+            disp('======================================================')
+            disp('   MULTIAXIAL SEGMENTATION ALREADY DONE, SKIP STEP 1  ')
+            disp('======================================================')
         end
     end
 else
@@ -883,16 +879,18 @@ else
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
 end
-    if ~exist([dirname filesep subjName '_affine_matrix.txt'],"file")
+
+if ~exist([dirname filesep subjName '_affine_matrix.txt'],"file")
     disp('======================================================')
     disp('    STEP 2 (out of 6): RUNNING NIFTYREG ALIGNMENT ... ')
     disp('======================================================')
     runNiftyReg(subjRas);
-    else
+else
     disp('======================================================')
     disp('    NIFTYREG ALIGNMENT ALREADY DONE, SKIP STEP 2 ...  ')
     disp('======================================================')
-    end
+end
+
 if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')

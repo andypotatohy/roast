@@ -14,7 +14,7 @@ from skimage.transform import resize
 
 from nibabel.orientations import axcodes2ornt
 from nibabel.orientations import ornt_transform
-print("hello")
+#print("hello")
 
 def reorient( nii, orientation) -> nib.Nifti1Image:
     """Reorients a nifti image to specified orientation. Orientation string or tuple
