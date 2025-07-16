@@ -1,5 +1,5 @@
-function runMultiaxial(T1,spmOut)
-% runMultiaxial(T1,spmOut)
+function runMultiaxial(T1)
+% runMultiaxial(T1)
 % 
 % This calls Multiaxial segmentation that is based on a deep CNN.
 % 

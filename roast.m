@@ -688,7 +688,7 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
 
     % check if multiaxial is on, and if yes, uses it for segmentation
     if multiaxial 
-        subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multiaxial' ext];
+        subjRasRSPDSeg = [dirname filesep subjModelName '_multiaxial' ext];
     else
         %if not, uses SPM for segmentation
         subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
@@ -839,37 +839,44 @@ if ~strcmp(subjName,'nyhead')
     if ~multiaxial
         if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
             disp('======================================================')
-            disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
+            disp('     STEP 1 (out of 6): SEGMENT THE MRI BY SPM ...    ')
             disp('======================================================')
             start_seg(subjRasRSPD,T2);
             renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
         else
             disp('======================================================')
-            disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
+            disp('         MRI SEGMENTED BY SPM, SKIP STEP 1            ')
             disp('======================================================')
         end
-    end
-
-    if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
-        if multiaxial
-            disp('======================================================')
-            disp('    STEP 1 (out of 6): MULTIAXIAL SEGMENTATION ...    ')
-            disp('======================================================')
-            runMultiaxial(subjRasRSPD,subjRasRSPDspm);
-        else
+        if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
             disp('======================================================')
             disp('    STEP 2 (out of 6): SPM SEGMENTATION TOUCHUP ...   ')
             disp('======================================================')
             segTouchup(subjRasRSPDspm,subjRasRSPDSeg);
-        end
-    else
-        if ~multiaxial
-            disp('======================================================')
-            disp('     SPM SEGMENTATION ALREADY DONE, SKIP STEP 2       ')
-            disp('======================================================')
         else
             disp('======================================================')
-            disp('   MULTIAXIAL SEGMENTATION ALREADY DONE, SKIP STEP 1  ')
+            disp('       SEGMENTATION TOUCHUP DONE, SKIP STEP 2         ')
+            disp('======================================================')
+        end
+    else
+        if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
+            disp('======================================================')
+            disp('    STEP 1 (out of 6): MULTIAXIAL SEGMENTATION ...    ')
+            disp('======================================================')
+            runMultiaxial(subjRasRSPD);
+        else
+            disp('======================================================')
+            disp('       MULTIAXIAL SEGMENTATION DONE, SKIP STEP 1      ')
+            disp('======================================================')
+        end
+        if ~exist([dirname filesep subjModelName '_niftyReg.mat'],"file")
+            disp('======================================================')
+            disp('      STEP 2 (out of 6): NIFTYREG REGISTRATION ...    ')
+            disp('======================================================')
+            runNiftyReg(subjRasRSPD);
+        else
+            disp('======================================================')
+            disp('       NIFTYREG REGISTRATION DONE, SKIP STEP 2        ')
             disp('======================================================')
         end
     end
@@ -878,17 +885,6 @@ else
     disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
     disp('======================================================')
     warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-end
-
-if ~exist([dirname filesep subjName '_affine_matrix.txt'],"file")
-    disp('======================================================')
-    disp('    STEP 2 (out of 6): RUNNING NIFTYREG ALIGNMENT ... ')
-    disp('======================================================')
-    runNiftyReg(subjRas);
-else
-    disp('======================================================')
-    disp('    NIFTYREG ALIGNMENT ALREADY DONE, SKIP STEP 2 ...  ')
-    disp('======================================================')
 end
 
 if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')

@@ -937,32 +937,37 @@ def segment_MRI(img, coords, model_sagittal=None, model_axial=None, model_corona
     model_segmentation_coronal = None
     model_segmentation_axial = None
 
+    print('SEGMENTING...will take a while...')
     # Predict using sagittal model
     if model_sagittal is not None:
-        yhat_sagittal = model_sagittal.predict([np.expand_dims(img, -1), coords], batch_size=1) if coords is not None else model_sagittal.predict(np.expand_dims(img, -1), batch_size=1)
+        print('working on the sagittal slices...')
+        yhat_sagittal = model_sagittal.predict([np.expand_dims(img, -1), coords], batch_size=1,verbose=2) if coords is not None else model_sagittal.predict(np.expand_dims(img, -1), batch_size=1,verbose=2)
             
     # Predict using coronal model
     if model_coronal is not None:
+        print('working on the coronal slices...')
         img_coronal = np.swapaxes(img, 0, 1)
         coords_coronal = np.swapaxes(coords, 0, 1) if coords is not None else None
-        yhat_coronal = model_coronal.predict([np.expand_dims(img_coronal, -1), coords_coronal], batch_size=1) if coords is not None else model_coronal.predict(np.expand_dims(img_coronal, -1), batch_size=1)
+        yhat_coronal = model_coronal.predict([np.expand_dims(img_coronal, -1), coords_coronal], batch_size=1,verbose=2) if coords is not None else model_coronal.predict(np.expand_dims(img_coronal, -1), batch_size=1,verbose=2)
         yhat_coronal = np.swapaxes(yhat_coronal, 0, 1)  # Align to original orientation
             
     # Predict using axial model
     if model_axial is not None:
+        print('working on the axial slices...')
         img_axial = np.swapaxes(np.swapaxes(img, 1, 2), 0, 1)
         coords_axial = np.swapaxes(np.swapaxes(coords, 1, 2), 0, 1) if coords is not None else None
-        yhat_axial = model_axial.predict([np.expand_dims(img_axial, -1), coords_axial], batch_size=1) if coords is not None else model_axial.predict(np.expand_dims(img_axial, -1), batch_size=1)
+        yhat_axial = model_axial.predict([np.expand_dims(img_axial, -1), coords_axial], batch_size=1,verbose=2) if coords is not None else model_axial.predict(np.expand_dims(img_axial, -1), batch_size=1,verbose=2)
         yhat_axial = np.swapaxes(np.swapaxes(yhat_axial, 0, 1), 1, 2)  # Align to original orientation
         
     #print('done 3 views!')
     # Prepare input data for the new model using probability maps
     try:
         if model_layer is not None:
+            print('now combining results from the 3 views...')
             X_test = np.concatenate([np.expand_dims(img / np.percentile(img, 95), -1), yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
             # X_test = np.concatenate([np.expand_dims(img, -1), yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
             # X_test = np.concatenate([yhat_sagittal, yhat_coronal, yhat_axial], axis=-1)
-            yhat_new_model = model_layer.predict(np.expand_dims(X_test, 0))
+            yhat_new_model = model_layer.predict(np.expand_dims(X_test, 0),verbose=2)
             model_segmentation_layer = np.argmax(yhat_new_model[0], -1).astype(np.int32)
         else:
 	        model_segmentation_layer = None

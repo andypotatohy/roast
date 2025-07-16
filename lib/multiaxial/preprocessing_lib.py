@@ -68,8 +68,8 @@ def preprocess_head_MRI(nii: nib.Nifti1Image, nii_seg: nib.Nifti1Image = None, a
    
     if nii_seg is not None:
         img_seg = nii_seg.get_fdata()
-    else:
-        print('Segmentation image not given')
+    # else:
+        # print('Segmentation image not given')
                 
     ############### ISOTROPIC #######################
     

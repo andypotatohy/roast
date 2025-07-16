@@ -22,7 +22,7 @@ if gpus:
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 def main():
-    print("Starting main function")
+    # print("Starting main function")
     if len(sys.argv) < 2:
         print('Please include an input image:')
         print('>>> python SEGMENT.py </subject_value> \n')
@@ -31,24 +31,24 @@ def main():
     working_dir = os.getcwd().replace('\\', '/')
     # Extract subj from command-line arguments
     subj = sys.argv[1].replace('\\', '/')
-    print(f"Subject: {subj}")
+    # print(f"Subject: {subj}")
     
     
     if not os.path.isabs(subj):
         subj = os.path.join(working_dir, subj)
     OUTPUT_PATH = os.path.join(os.path.dirname(subj), '')
     scan_path = subj
-    print(f"Output path: {OUTPUT_PATH}")
-    print(f"Scan path: {scan_path}")
+    # print(f"Output path: {OUTPUT_PATH}")
+    # print(f"Scan path: {scan_path}")
     SAGITTAL_MODEL_SESSION_PATH = 'sagittal_model.h5'
     AXIAL_MODEL_SESSION_PATH = 'axial_model.h5'
     CORONAL_MODEL_SESSION_PATH = 'coronal_model.h5'
     CONSENSUS_LAYER_PATH = 'consensus_layer.h5'
 
-    print(f"Sagittal model session path: {SAGITTAL_MODEL_SESSION_PATH}")
-    print(f"Axial model session path: {AXIAL_MODEL_SESSION_PATH}")
-    print(f"Coronal model session path: {CORONAL_MODEL_SESSION_PATH}")
-    print(f"Consensus layer path: {CONSENSUS_LAYER_PATH}")
+    # print(f"Sagittal model session path: {SAGITTAL_MODEL_SESSION_PATH}")
+    # print(f"Axial model session path: {AXIAL_MODEL_SESSION_PATH}")
+    # print(f"Coronal model session path: {CORONAL_MODEL_SESSION_PATH}")
+    # print(f"Consensus layer path: {CONSENSUS_LAYER_PATH}")
     
     
     segmentation_path = None 
@@ -93,55 +93,34 @@ def main():
     else:
         nii_seg = None
 
-    print(f"Scan shape: {nii.shape}")
+    # print(f"Scan shape: {nii.shape}")
 
     subject = scan_path.split('/')[-1].replace('.nii', '')
     # subject = scan_path.split('/')[-2]
     # if subject.startswith('r'):
     #    subject = subject[1:]
-    print(f"Subject ID: {subject}")
+    # print(f"Subject ID: {subject}")
      
     nii_out, nii_seg_out, coords, anterior_commissure, reconstruction_parms = preprocess_head_MRI(
         nii, nii_seg, anterior_commissure=anterior_commissure, keep_parameters_for_reconstruction=True)
 
     segmentation = segment_MRI(nii_out.get_fdata(), coords, model_sagittal, model_axial, model_coronal, consensus_model)
-    print("Reshaping segmentation back to original")
+    # print("Reshaping segmentation back to original")
     nii_model_seg_reconstructed = reshape_back_to_original(segmentation, nii, reconstruction_parms, resample_order=0).get_fdata()
 
-    nii_out_pred = nib.Nifti1Image(np.array(nii_model_seg_reconstructed, dtype='int8'), nii.affine)
-    img_multiaxial =   OUTPUT_PATH + subject + '_T1orT2_multiaxial_masks.nii'
+    img_ROAST = np.array(nii_model_seg_reconstructed, dtype='uint8')
+  
+    # Define mapping from MP to ROAST labels
+    mapping = {1: 6, 3: 1, 4: 3, 5: 4, 6: 5}
+
+    # Apply the mapping
+    for mp_label, roast_label in mapping.items():
+        img_ROAST[nii_model_seg_reconstructed == mp_label] = roast_label
+        
+    nii_out_pred = nib.Nifti1Image(img_ROAST, nii.affine)
+    img_multiaxial = OUTPUT_PATH + subject + '_multiaxial_masks.nii'
     nib.save(nii_out_pred,  img_multiaxial)
     print("Segmentation saved successfully")
-
-    process_segmentation(img_multiaxial)
-
-def process_segmentation(subj):
-    # Extract the name and extension from the subject file
-    #name, _ = os.path.splitext(subj)
-    #segmentation_file = name + '_T1orT2_multipriors_masks.nii'
-    segmentation_file = subj
-    # Check if the segmentation file exists
-    if os.path.exists(segmentation_file):
-        print("Found segmentation file:", segmentation_file)
-
-        # Load the segmentation file
-        nii = nib.load(segmentation_file)
-        img_MP = nii.get_fdata()
-
-        # Convert to uint8
-        img_ROAST = np.array(img_MP, dtype='uint8')
-
-        # Define mapping from MP to ROAST labels
-        mapping = {1: 6, 3: 1, 4: 3, 5: 4, 6: 5}
-
-        # Apply the mapping
-        for mp_label, roast_label in mapping.items():
-            img_ROAST[img_MP == mp_label] = roast_label
-
-        nib.save(nib.Nifti1Image(img_ROAST, nii.affine), segmentation_file)
-        print("Processed segmentation file saved as:",  segmentation_file)
-    else:
-        print("No segmentation file with the specified ending found in the directory.")
 
 if __name__ == "__main__":
     main()
