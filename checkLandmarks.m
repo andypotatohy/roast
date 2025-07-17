@@ -1,4 +1,4 @@
-function [landmarks, updated] = checkLandmarks(segOut, landmarks, smooth, smoothLandmarks, updated)
+function landmarks = checkLandmarks(segOut,landmarks)
 %
 % GUI for visual inspection and optional modification of anatomical landmarks 
 % (Nasion, Inion, Left Ear, Right Ear) on a segmented MRI head.
@@ -29,132 +29,134 @@ function [landmarks, updated] = checkLandmarks(segOut, landmarks, smooth, smooth
 % 
 % June 2025
 
-% Initialize updated flag only if it is not already set
-if ~exist('updated', 'var') || isempty(updated)
-    updated = false;
+% % Initialize updated flag only if it is not already set
+% if ~exist('updated', 'var') || isempty(updated)
+%     updated = false;
+% end
+
+% smooth=0;
+
+% Load NIfTI segmentation
+nii = niftiread(segOut);
+skin = double(nii == 5); 
+brain = double(nii == 2);
+% Apply Gaussian smoothing to the segmentation masks
+% if smooth
+skin = imgaussfilt3(skin, 1);
+% end
+
+% Create a new figure
+fig = figure('Name', '3D Segmentation Viewer: Selected Landmarks', ...
+             'NumberTitle', 'off', ...
+             'Position', [100, 100, 1200, 800]);  
+
+% Create a panel in the new figure
+panel = uipanel('Parent', fig, 'Position', [0, 0, 1, 1]);
+
+% Create new axes inside the panel
+imgAx = axes('Parent', panel, 'Position', [0, 0, 1, 1]);
+axis(imgAx, 'off');
+
+% Render skin layer (start fresh)
+p = patch(isosurface(skin, 0.5,'noshare'));
+p.FaceColor = '#E5B5A1';
+p.EdgeColor = 'none';
+alpha(p, 0.3);  % Make the brain semi-transparent
+hold on;
+
+p_brain = patch(isosurface(brain, 0.5,'noshare'));
+p_brain.FaceColor = [1, 0.6, 0.8];  % Light blue color
+p_brain.EdgeColor = 'none';
+
+% Indices of points to keep (All four landmarks)
+keepIdx = [1, 2, 3, 4];  
+% Scatter plot for landmarks
+
+% if smooth 
+% scatter3(smoothLandmarks(keepIdx, 2),smoothLandmarks(keepIdx, 1), smoothLandmarks(keepIdx, 3), 200, 'red', 'filled');
+% else
+scatter3(landmarks(keepIdx, 2), landmarks(keepIdx, 1), landmarks(keepIdx, 3), 200, 'red', 'filled');
+% end
+% Labels for points
+labels = {'     Nasion', '     Inion', '     Left Ear', '     Right Ear'}; 
+
+for i = 1:length(keepIdx)  
+%     if smooth 
+%     text(smoothLandmarks(keepIdx(i), 2),smoothLandmarks(keepIdx(i), 1), smoothLandmarks(keepIdx(i), 3), labels{i}, ...
+%          'FontSize', 14, 'Color', 'red', 'FontWeight', 'bold');
+%     else
+    text(landmarks(keepIdx(i), 2), landmarks(keepIdx(i), 1), landmarks(keepIdx(i), 3), labels{i}, ...
+     'FontSize', 14, 'Color', 'red', 'FontWeight', 'bold');
+%     end
 end
 
-    % Load NIfTI segmentation
-    nii = niftiread(segOut);
-    skin = double(nii == 5); 
-    brain = double(nii == 2);
-    % Apply Gaussian smoothing to the segmentation masks
-    if smooth
-        skin = imgaussfilt3(skin, 1);
-    end
+% Improve 3D visualization
+view(3);
+axis equal;
 
-    % Create a new figure
-    fig = figure('Name', '3D Segmentation Viewer: Selected Landmarks', ...
-                 'NumberTitle', 'off', ...
-                 'Position', [100, 100, 1200, 800]);  
+% Set two lights, one on the left and one on the right
+light('Position', [-1, 0, 0], 'Style', 'infinite'); % Back light
+light('Position', [1, 0, 1], 'Style', 'infinite');  % Front light        
+lighting phong;  
 
-    % Create a panel in the new figure
-    panel = uipanel('Parent', fig, 'Position', [0, 0, 1, 1]);
+% Enable 3D rotation interaction
+rotate3d on;
 
-    % Create new axes inside the panel
-    imgAx = axes('Parent', panel, 'Position', [0, 0, 1, 1]);
-    axis(imgAx, 'off');
+% Update title
+title('Selected Landmarks');
 
-    % Render skin layer (start fresh)
-    p = patch(isosurface(skin, 0.5));
-    p.FaceColor = '#E5B5A1';
-    p.EdgeColor = 'none';
-    alpha(p, 0.3);  % Make the brain semi-transparent
-    hold on;
-    
-    p_brain = patch(isosurface(brain, 0.5));
-    p_brain.FaceColor = [1, 0.6, 0.8];  % Light blue color
-    p_brain.EdgeColor = 'none';
-    
-    % Indices of points to keep (All four landmarks)
-    keepIdx = [1, 2, 3, 4];  
-    % Scatter plot for landmarks
+% Define selectedPoints correctly
+selectedPoints = landmarks(keepIdx, :);
+disp('Current voxel coordinates of landmarks (nasion, inion, right ear, left ear):');
+disp(selectedPoints);
+disp('3D interaction enabled. Rotate and inspect the points.');
 
-    if smooth 
-    scatter3(smoothLandmarks(keepIdx, 2),smoothLandmarks(keepIdx, 1), smoothLandmarks(keepIdx, 3), 200, 'red', 'filled');
-    else
-    scatter3(landmarks(keepIdx, 2), landmarks(keepIdx, 1), landmarks(keepIdx, 3), 200, 'red', 'filled');
-    end
-    % Labels for points
-    labels = {'     Nasion', '     Inion', '     Left Ear', '     Right Ear'}; 
+% Add Confirm button (keeps landmarks and closes figure)
+uicontrol('Style', 'pushbutton', 'String', 'Confirm', ...
+          'Position', [1000 10 80 40], ...
+          'FontSize', 14, ...
+          'Callback', @(~,~) confirmSelection());
 
-    for i = 1:length(keepIdx)  
-        if smooth 
-        text(smoothLandmarks(keepIdx(i), 2),smoothLandmarks(keepIdx(i), 1), smoothLandmarks(keepIdx(i), 3), labels{i}, ...
-             'FontSize', 14, 'Color', 'red', 'FontWeight', 'bold');
-        else
-        text(landmarks(keepIdx(i), 2), landmarks(keepIdx(i), 1), landmarks(keepIdx(i), 3), labels{i}, ...
-         'FontSize', 14, 'Color', 'red', 'FontWeight', 'bold');
-        end
-    end
+% Add Modify button (calls segmentation_viewer_nii)
+uicontrol('Style', 'pushbutton', 'String', 'Modify', ...
+          'Position', [1100 10 80 40], ...
+          'FontSize', 14, ...
+          'Callback', @(~,~) modifyLandmarks());
 
-    % Improve 3D visualization
-    view(3);
-    axis equal;
+% Wait for the figure to close before returning landmarks
+uiwait(fig);  % Wait here until the figure is closed
 
-    % Set two lights, one on the left and one on the right
-    light('Position', [-1, 0, 0], 'Style', 'infinite'); % Back light
-    light('Position', [1, 0, 1], 'Style', 'infinite');  % Front light        
-    lighting phong;  
+% Callback function for confirming landmarks
+function confirmSelection()
+    % Close the figure and return landmarks
+    uiresume(fig);
+    close(fig);
+end
 
-    % Enable 3D rotation interaction
-    rotate3d on;
+% Nested function to call segmentation_viewer_nii
+function modifyLandmarks()
+    % Close the figure before modification
+    close(fig);
 
-    % Update title
-    title('Selected Landmarks');
+    % Modify landmarks inside segmentation_viewer_nii
+    filepath = segOut; % Pass the segmentation file path
+    updatedLandmarks = getLandmarksManual(filepath);  % Modify the landmarks
 
-    % Define selectedPoints correctly
-    selectedPoints = landmarks(keepIdx, :);
-    disp('All points selected and saved to variable: selectedPoints');
-    disp(selectedPoints);
-    disp('3D interaction enabled. Rotate and inspect the points.');
+    landmarks  = reorderLandmarks(updatedLandmarks);
+%     smoothLandmarks = reorderLandmarks(smoothLandmarks);
+%     updated = true;
 
-    % Add Confirm button (keeps landmarks and closes figure)
-    uicontrol('Style', 'pushbutton', 'String', 'Confirm', ...
-              'Position', [1000 10 80 40], ...
-              'FontSize', 14, ...
-              'Callback', @(~,~) confirmSelection());
+    % Reopen the 3D viewer with updated landmarks
+    landmarks = checkLandmarks(segOut,landmarks);
+end
 
-    % Add Modify button (calls segmentation_viewer_nii)
-    uicontrol('Style', 'pushbutton', 'String', 'Modify', ...
-              'Position', [1100 10 80 40], ...
-              'FontSize', 14, ...
-              'Callback', @(~,~) modifyLandmarks());
+function reorderedLandmarks = reorderLandmarks(inputMatrix)
+    % Define the new row order
+    newOrder = [1, 5, 3, 2]; 
+    % Reorder the rows of the matrix according to the new order
+    reorderedLandmarks = inputMatrix(newOrder, :);
+end
 
-    % Wait for the figure to close before returning landmarks
-    uiwait(fig);  % Wait here until the figure is closed
-
-    % Callback function for confirming landmarks
-    function confirmSelection()
-        % Close the figure and return landmarks
-        uiresume(fig);
-        close(fig);
-    end
-
-    % Nested function to call segmentation_viewer_nii
-    function modifyLandmarks()
-        % Close the figure before modification
-        close(fig);
-
-        % Modify landmarks inside segmentation_viewer_nii
-        filepath = segOut; % Pass the segmentation file path
-        [updatedLandmarks, smoothLandmarks] = getLandmarksManual(filepath);  % Modify the landmarks
-
-        landmarks  = reorderLandmarks(updatedLandmarks);
-        smoothLandmarks = reorderLandmarks(smoothLandmarks);
-        updated = true;
-
-        % Reopen the 3D viewer with updated landmarks
-        [landmarks, updated] = checkLandmarks(segOut, landmarks, true, smoothLandmarks, updated);
-    end
-    
-    function reorderedLandmarks = reorderLandmarks(inputMatrix)
-        % Define the new row order
-        newOrder = [1, 5, 3, 2]; 
-        % Reorder the rows of the matrix according to the new order
-        reorderedLandmarks = inputMatrix(newOrder, :);
-    end
-
-    % Only return landmarks after the figure is closed (confirmed or modified)
-    % The function will return after uiwait completes
+% Only return landmarks after the figure is closed (confirmed or modified)
+% The function will return after uiwait completes
 end

@@ -430,6 +430,8 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
+    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
+
     fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
     capType = '1010';
@@ -696,7 +698,9 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
 
 else
-    
+   
+    warning('New York head selected. Note the New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
+
     if ~exist('example/nyhead_T1orT2_SPM_masks.nii','file')
         unzip('example/nyhead_T1orT2_SPM_masks.nii.zip','example')
     end
@@ -779,62 +783,6 @@ end
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multiaxial',multiaxial,'manual_gui',manual_gui,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
-% log tracking
-Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);
-if isempty(Sopt)
-    options = writeRoastLog(subj,options,'roast');
-else
-    isNew = zeros(length(Sopt),1);
-    for i=1:length(Sopt)
-        load([dirname filesep Sopt(i).name],'opt');
-        isNew(i) = isNewOptions(options,opt,'roast');
-    end
-    if all(isNew)
-        options = writeRoastLog(subj,options,'roast');
-    else
-        load([dirname filesep Sopt(find(~isNew)).name],'opt');
-        if ~isempty(options.uniqueTag) && ~strcmp(options.uniqueTag,opt.uniqueTag)
-            warning(['The simulation with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
-        end
-        options.uniqueTag = opt.uniqueTag;
-    end
-end
-uniqueTag = options.uniqueTag;
-
-fprintf('\n');
-disp('======================================================')
-if ~strcmp(subjName,'nyhead')
-    disp(['ROAST ' subj])
-else
-    disp('ROAST New York head')
-end
-disp('USING RECIPE:')
-disp(configTxt)
-disp('...and simulation options saved in:')
-disp([dirname filesep subjName '_roastLog,'])
-disp(['under tag: ' uniqueTag])
-disp('======================================================')
-fprintf('\n\n');
-
-% warn users lead field will take a long time to generate
-if all(strcmpi(recipe,'leadfield'))
-    [~,indRef] = ismember('Iz',elecName);
-    indStimElec = setdiff(1:length(elecName),indRef);
-    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
-    isSolved = zeros(length(indStimElec),1);
-    for i=1:length(indStimElec)
-        if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
-            isSolved(i) = 1;
-        end
-    end
-    % only warn users the first time they run for this subject
-    if all(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
-        warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
-        doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
-        if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
-    end
-end
-
 if ~strcmp(subjName,'nyhead')
     if ~multiaxial
         if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
@@ -881,11 +829,55 @@ if ~strcmp(subjName,'nyhead')
         end
     end
 else
-    disp('======================================================')
-    disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
-    disp('======================================================')
-    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
+    disp('==================================================================')
+    disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
+    disp('==================================================================')
 end
+
+landmarks=randn(4,3)+100;
+landmarksNew=checkLandmarks('/home/andy/projects/roast/roast/example/subject1_1mm_padded10_T1orT2_SPM_masks.nii',landmarks);
+if any(landmarks(:)~=landmarksNew(:))
+    getAffine()
+end
+
+% !!!!! update Affine options !!!!!!
+
+% log tracking
+Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);
+if isempty(Sopt)
+    options = writeRoastLog(subj,options,'roast');
+else
+    isNew = zeros(length(Sopt),1);
+    for i=1:length(Sopt)
+        load([dirname filesep Sopt(i).name],'opt');
+        isNew(i) = isNewOptions(options,opt,'roast');
+    end
+    if all(isNew)
+        options = writeRoastLog(subj,options,'roast');
+    else
+        load([dirname filesep Sopt(find(~isNew)).name],'opt');
+        if ~isempty(options.uniqueTag) && ~strcmp(options.uniqueTag,opt.uniqueTag)
+            warning(['The simulation with the same options has been run before under tag ''' opt.uniqueTag '''. The new tag you specified ''' options.uniqueTag ''' will be ignored.']);
+        end
+        options.uniqueTag = opt.uniqueTag;
+    end
+end
+uniqueTag = options.uniqueTag;
+
+fprintf('\n');
+disp('======================================================')
+if ~strcmp(subjName,'nyhead')
+    disp(['ROAST ' subj])
+else
+    disp('ROAST New York head')
+end
+disp('USING RECIPE:')
+disp(configTxt)
+disp('...and simulation options saved in:')
+disp([dirname filesep subjName '_roastLog,'])
+disp(['under tag: ' uniqueTag])
+disp('======================================================')
+fprintf('\n\n');
 
 if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
@@ -944,6 +936,16 @@ if any(~strcmpi(recipe,'leadfield'))
 
 else
 
+    [~,indRef] = ismember('Iz',elecName);
+    indStimElec = setdiff(1:length(elecName),indRef);
+    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
+    isSolved = zeros(length(indStimElec),1);
+    for i=1:length(indStimElec)
+        if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
+            isSolved(i) = 1;
+        end
+    end
+    
     if any(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
