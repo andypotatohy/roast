@@ -781,7 +781,13 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multiaxial',multiaxial,'manual_gui',manual_gui,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+% landmarks in the TPM (hard-coded)
+landmarksInTPM = [ 61 139  98; % nasion
+                   61   9 100; % inion
+                   11  62  93; % right
+                  111  63  93; % left; note here because eTPM is LAS orientation
+                   61 113   7; % front_neck
+                   61   7  20]; % back_neck
 
 if ~strcmp(subjName,'nyhead')
     if ~multiaxial
@@ -806,6 +812,7 @@ if ~strcmp(subjName,'nyhead')
             disp('       SEGMENTATION TOUCHUP DONE, SKIP STEP 2         ')
             disp('======================================================')
         end
+        load([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
     else
         if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
             disp('======================================================')
@@ -827,20 +834,38 @@ if ~strcmp(subjName,'nyhead')
             disp('       NIFTYREG REGISTRATION DONE, SKIP STEP 2        ')
             disp('======================================================')
         end
+        load([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine');
     end
+    tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+    landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
+    landmarks = round(landmarks(:,1:3));
+    if manual_gui
+        landmarksNew = checkLandmarks(subjRasRSPDSeg,landmarks);
+        if any(landmarksNew(:)~=landmarks(:))
+            warning('New landmarks detected. ROAST will use these new landmarks to re-run registration and overwrite the registration computed by SPM or niftyReg.');
+%             maybe run fitCap2individual here
+            mri2mniVox = [landmarksInTPM,ones(size(landmarksInTPM,1),1)]'/[landmarksNew,ones(size(landmarksNew,1),1)]';
+            Affine = tpm(1).mat*mri2mniVox*inv(image(1).mat);
+
+            if ~multiaxial
+                save([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
+            else
+                save([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine')
+            end
+        end
+    end
+%     alignHeader2mni
 else
     disp('==================================================================')
     disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
     disp('==================================================================')
+    load(['example/' subjModelName '_T1orT2_seg8.mat'],'image','tpm','Affine');
+    tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+    landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
+    landmarks = round(landmarks(:,1:3));
 end
 
-landmarks=randn(4,3)+100;
-landmarksNew=checkLandmarks('/home/andy/projects/roast/roast/example/subject1_1mm_padded10_T1orT2_SPM_masks.nii',landmarks);
-if any(landmarks(:)~=landmarksNew(:))
-    getAffine()
-end
-
-% !!!!! update Affine options !!!!!!
+options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);

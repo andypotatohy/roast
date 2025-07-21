@@ -112,7 +112,7 @@ switch fun
             return
         end
 
-        if optNew.manual_gui ~= optOld.manual_gui
+        if any(optNew.Affine(:) ~= optOld.Affine(:))
             isNewOpt = 1;
             return
         end

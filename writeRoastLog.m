@@ -30,7 +30,7 @@ switch fun
         if ~exist([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'file')
             save([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'opt');
         else
-            error('You''re about to run a simulation using options that you never used before, but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
+            error('You''re about to run a simulation using options that you never used before (especially if you manually chose different landmarks in the manual GUI), but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
         end
         
         fprintf(fid,'%s:\n',uniqueTag);
@@ -119,12 +119,15 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'manual_gui:\t');
-        if opt.manual_gui
-            fprintf(fid,'on');
-        else
-            fprintf(fid,'off');
+        fprintf(fid,'Affine matrix:\t [');
+        for i=1:size(opt.Affine,1)
+            for j=1:size(opt.Affine,2)
+                fprintf(fid,'%.1f',opt.Affine(i,j));
+                if j<size(opt.Affine,2), fprintf(fid,','); end
+            end
+            if i<size(opt.Affine,1), fprintf(fid,'; '); end
         end
+        fprintf(fid,']');
         
         fprintf(fid,'\n');
         fprintf(fid,'meshOpt:\t');

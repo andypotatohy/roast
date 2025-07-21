@@ -36,17 +36,20 @@ function landmarks = checkLandmarks(segOut,landmarks)
 
 % smooth=0;
 
+disp('=============    OPENING MANUAL GUI ...    =============')
+
 % Load NIfTI segmentation
-nii = niftiread(segOut);
-skin = double(nii == 5); 
-brain = double(nii == 2);
+[dirname,segOutName] = fileparts(segOut);
+nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
+skin = double(nii.img == 5); 
+brain = double(nii.img == 2);
 % Apply Gaussian smoothing to the segmentation masks
 % if smooth
 skin = imgaussfilt3(skin, 1);
 % end
 
 % Create a new figure
-fig = figure('Name', '3D Segmentation Viewer: Selected Landmarks', ...
+fig = figure('Name', '3D Viewer. Please rotate and inspect the landmarks.', ...
              'NumberTitle', 'off', ...
              'Position', [100, 100, 1200, 800]);  
 
@@ -103,13 +106,13 @@ lighting phong;
 rotate3d on;
 
 % Update title
-title('Selected Landmarks');
+title('Selecting Landmarks ...');
 
 % Define selectedPoints correctly
 selectedPoints = landmarks(keepIdx, :);
-disp('Current voxel coordinates of landmarks (nasion, inion, right ear, left ear):');
-disp(selectedPoints);
-disp('3D interaction enabled. Rotate and inspect the points.');
+% disp('Current voxel coordinates of landmarks (nasion, inion, right ear, left ear):');
+% disp(selectedPoints);
+disp('3D interaction enabled. Rotate and inspect the landmarks.');
 
 % Add Confirm button (keeps landmarks and closes figure)
 uicontrol('Style', 'pushbutton', 'String', 'Confirm', ...
@@ -142,7 +145,7 @@ function modifyLandmarks()
     filepath = segOut; % Pass the segmentation file path
     updatedLandmarks = getLandmarksManual(filepath);  % Modify the landmarks
 
-    landmarks  = reorderLandmarks(updatedLandmarks);
+    landmarks(keepIdx, :) = reorderLandmarks(updatedLandmarks);
 %     smoothLandmarks = reorderLandmarks(smoothLandmarks);
 %     updated = true;
 

@@ -18,11 +18,14 @@ function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
 %
 % June 2025
 
+disp('=============    LOADING GUI FOR MODIFY ...    =============')
+
 % Load NIfTI segmentation
-nii = niftiread(filepath);
-skin = double(nii == 5);  % Skin layer
-skull = double(nii == 4); % Skull layer
-[rows, cols, slices] = size(nii);
+[dirname,segOutName] = fileparts(filepath);
+nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
+skin = double(nii.img == 5);  % Skin layer
+skull = double(nii.img == 4); % Skull layer
+[rows, cols, slices] = size(nii.img);
 
 % Apply Gaussian smoothing to the segmentation masks
 skinSmooth = imgaussfilt3(skin, 1);
@@ -36,7 +39,7 @@ figX = (screenSize(3) - figWidth) / 2;
 figY = (screenSize(4) - figHeight) / 2;
 
 % Create figure and axes
-fig = figure('Name', '3D Segmentation Viewer', ...
+fig = figure('Name', 'Selecting Landmarks ...', ...
              'NumberTitle', 'off', ...
              'Position', [figX, figY, figWidth, figHeight], 'MenuBar', 'none');
 
