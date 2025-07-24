@@ -1,15 +1,22 @@
-function hdrInfo = electrodePlacement(subj,subjRasRSPD,spmOut,segOut,elecNeeded,options,uniTag)
-% hdrInfo = electrodePlacement(subj,subjRasRSPD,spmOut,segOut,elecNeeded,options,uniTag)
+function electrodePlacement(subj,segOut,imgHdr,landmarks,elecNeeded,options,uniTag)
+% electrodePlacement(subj,segOut,landmarks,elecNeeded,options,uniTag)
 %
 % Place electrodes on the scalp surface. options.elecPara contains all the options
-% info for each electrode.
+% info for each electrode. Enforced RAS in the first step starting from ROAST v3.0
 % 
 % (c) Yu (Andy) Huang, Parra Lab at CCNY
 % yhuang16@citymail.cuny.edu
-% April 2018d
+% April 2018
 
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
+
+[~,segOutName] = fileparts(segOut);
+template = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
+% Load the scalp mask; template is used for saving the results with the same header info as the input
+% scalp = template.img==5;
+scalp=template.img>0; % fill in scalp first to avoid complication % ANDY 2024-03-12
+scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
 
 elecPara = options.elecPara;
 
@@ -17,42 +24,36 @@ indP = elecPara(1).indP;
 indN = elecPara(1).indN;
 indC = elecPara(1).indC;
 
-% %% can be any non-ras head (to be consistent with user-provided coordinates)
-% Enforcing RAS in the first step starting from ROAST v3.0
-% landmarks_original = getLandmarks(P2,T2);
-% 
-% [perm,iperm,isFlipInner,isFlipOutter] = how2getRAS(landmarks_original);
-[~,segOutName] = fileparts(segOut);
-template = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-% Load the scalp mask; template is used for saving the results with the same header info as the input
-pixdim = template.hdr.dime.pixdim(2:4);
-dim = size(template.img);
-v2w = [template.hdr.hist.srow_x;template.hdr.hist.srow_y;template.hdr.hist.srow_z;0 0 0 1];
-% hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
-% keep the header info for use later
-% scalp_original = template.img==5;
-% scalp = changeOrientationVolume(scalp_original,perm,isFlipInner);
-% scalp = template.img==5;
-scalp=template.img>0; % fill in scalp first to avoid complication % ANDY 2024-03-12
-
-
-if ~isempty(indP) || ~isempty(indN)
-%     landmarks = changeOrientationPointCloud(landmarks_original,perm,isFlipInner,size(scalp));
-    [landmarks,mri2mni] = getLandmarks(subjRasRSPD,options.multiaxial);
-    alignHeader2mni(subjRasRSPD,[],options.multiaxial)
-end
-
-% Add if manual is on, maybe by the spm part too
-if options.manual_gui
-[landmarks,updated] = checkLandmarks([dirname filesep segOutName '_masks.nii'],landmarks,[],[]);
+%% fit cap position on the individual's head
+if ~isempty(indP)
+   switch lower(elecPara(1).capType)
+       case {'1020','1010','1005'}
+           load('./cap1005FullWithExtra.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 0;
+       case 'biosemi'
+           load('./capBioSemiFullWithExtra.mat','capInfo');
+           isBiosemi = 1;
+           isEGI = 0;
+       case 'egi'
+           load('./capEGIfull.mat','capInfo');
+           isBiosemi = 0;
+           isEGI = 1;
+   end
+   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,imgHdr,capInfo,indP,isBiosemi,isEGI);
 else
-updated = 0;
+    electrode_coord_P = []; center_P = [];
 end
-% mri2mni is put in the header, it is the affine needed from mni alignmnet
-% maybe find different location to save so we dont need to overwrite 
-% hdr file each run
-hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w,'mri2mni',mri2mni);
-% hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w);
+
+if ~isempty(indN)
+    if any(landmarks(5:6,3)<=0)
+        error('MRI does not cover the neck, so cannot place electrodes on the neck. Consider using ''zeroPadding'' option to extend the input MRI.');
+    else
+        [electrode_coord_N,center_N] = placeNeckElec(scalp,scalp_surface,landmarks,indN);
+    end
+else
+    electrode_coord_N = []; center_N = [];
+end
 
 if ~isempty(indC)
     fid = fopen([dirname filesep subjName '_customLocations']);
@@ -76,53 +77,6 @@ if ~isempty(indC)
     end
     
     elecLoc_C = elecLoc_C(indC,:);
-%     elecLoc_C = changeOrientationPointCloud(elecLoc_C,perm,isFlipInner,size(scalp));
-end
-
-scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
-
-%% fit cap position on the individual's head
-if ~isempty(indP)
-   switch lower(elecPara(1).capType)
-       case {'1020','1010','1005'}
-           load('./cap1005FullWithExtra.mat','capInfo');
-           isBiosemi = 0;
-           isEGI = 0;
-       case 'biosemi'
-           load('./capBioSemiFullWithExtra.mat','capInfo');
-           isBiosemi = 1;
-           isEGI = 0;
-       case 'egi'
-           load('./capEGIfull.mat','capInfo');
-           isBiosemi = 0;
-           isEGI = 1;
-   end
-   [electrode_coord_P,center_P]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indP,isBiosemi,isEGI,false);
-else
-    electrode_coord_P = []; center_P = [];
-end
-
-if updated
-
-[electrode_coord_P1,center_P1]= fitCap2individual(scalp,scalp_surface,landmarks,hdrInfo,capInfo,indP,isBiosemi,isEGI,true);
-new_landmarks = [landmarks',round(center_P1)',round(electrode_coord_P1)']';
-[Affine,mri2mni] = getAffine(subjRasRSPD,new_landmarks);
-hdrInfo = struct('pixdim',pixdim,'dim',dim,'v2w',v2w,'mri2mni',mri2mni);
-alignHeader2mni(subjRasRSPD,[],1,Affine);
-end
-
-
-if ~isempty(indN)
-    if any(landmarks(5:6,3)<=0)
-        error('MRI does not cover the neck, so cannot place electrodes on the neck. Consider using ''zeroPadding'' option to extend the input MRI.');
-    else
-        [electrode_coord_N,center_N] = placeNeckElec(scalp,scalp_surface,landmarks,indN);
-    end
-else
-    electrode_coord_N = []; center_N = [];
-end
-
-if ~isempty(indC)
     [~,indOnScalpSurf] = map2Points(elecLoc_C,scalp_surface,'closest');
     electrode_coord_C = scalp_surface(indOnScalpSurf,:);
 else
@@ -180,10 +134,10 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
 %% placing and model the electrodes
-resolution = mean(pixdim);
+resolution = mean([imgHdr.mat(1,1),imgHdr.mat(2,2),imgHdr.mat(3,3)]);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
-[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,1,uniTag);
+[elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,0,uniTag);
 
 %% generate final results (elec and gel masks, and their coordinate ranges)
 disp('constructing electrode and gel volume to be exported...')
@@ -210,31 +164,20 @@ for i=1:6
     volume_gel = xor(volume_gel,volume_gel & volume_tissue);
 end % remove the gel that goes into other tissue masks
 
-% disp('saving the results...')
+disp('visualizing...')
+viewElectrodes(template.img,volume_elec,volume_gel,landmarks,imgHdr,uniTag);
+
+disp('saving placed electrodes...')
 template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_elec'];
 template.hdr.hist.descrip = 'electrode mask';
 % template.img = uint8(volume_elec)*255;
 template.img = uint8(volume_elec_C.*volume_elec);
 
 save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-elec = template.img;
 template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_gel'];
 template.hdr.hist.descrip = 'gel mask';
 % template.img = uint8(volume_gel)*255;
 template.img = uint8(volume_gel_C.*volume_gel);
 save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-gel = template.img;
 
-if options.manual_gui
-viewElectrodes(segOut,elec, gel, new_landmarks)
-else
-% dont show landmarks unless manual GUI is on
-viewElectrodes(segOut,elec, gel)
-end
 % save([dirname filesep subjName '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-[~,subjModelName] = fileparts(subjRasRSPD);
-% if ~exist([dirname filesep subjModelName '_header.mat'],'file')
-% header info must be updated based on mri2mni alignmnet will cause errors
-% if old run is redone
-save([dirname filesep subjModelName '_header.mat'],'hdrInfo');
-% end

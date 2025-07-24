@@ -75,7 +75,9 @@ disp('General Public License version 3 or later. It''s supported by')
 disp('both NIH grants and Soterix Medical Inc.')
 disp('=============================================================')
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+if isempty(strfind(path,[fileparts(which(mfilename)) filesep 'lib/']))
+    addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+end
 
 fprintf('\n\n');
 disp('======================================================')
@@ -736,8 +738,16 @@ else
        multiaxial = 0;
     end
 
-    subjRasRSPDspm = 'example/nyhead_T1orT2.nii';
-    subjRasRSPDSeg = 'example/nyhead_T1orT2_SPM.nii';
+    if manual_gui
+       warning('New York head selected. The manual GUI will be disabled.');
+       manual_gui = 0;
+    end 
+
+    subjRasRSPDspm = ['example/' subjModelName '_T1orT2.nii'];
+    [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
+
+    subjRasRSPDSeg = ['example/' subjModelNameAftSpm '_SPM.nii'];
+    [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
 
 end
 
@@ -839,22 +849,27 @@ if ~strcmp(subjName,'nyhead')
     tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
     landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
     landmarks = round(landmarks(:,1:3));
+    mri2mni = Affine*image(1).mat; % mapping from MRI voxel space to MNI space
     if manual_gui
         landmarksNew = checkLandmarks(subjRasRSPDSeg,landmarks);
         if any(landmarksNew(:)~=landmarks(:))
-            warning('New landmarks detected. ROAST will use these new landmarks to re-run registration and overwrite the registration computed by SPM or niftyReg.');
+            warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
+            disp('Re-running registration ...')
 %             maybe run fitCap2individual here
             mri2mniVox = [landmarksInTPM,ones(size(landmarksInTPM,1),1)]'/[landmarksNew,ones(size(landmarksNew,1),1)]';
             Affine = tpm(1).mat*mri2mniVox*inv(image(1).mat);
-
+            disp('Overwriting computed registration ...')
             if ~multiaxial
                 save([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
             else
                 save([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine')
             end
+            landmarks = landmarksNew;
+            mri2mni = Affine*image(1).mat;
+            disp('Resetting headers in _MNI images ...')
+            alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
         end
     end
-%     alignHeader2mni
 else
     disp('==================================================================')
     disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
@@ -863,6 +878,12 @@ else
     tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
     landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
     landmarks = round(landmarks(:,1:3));
+    mri2mni = Affine*image(1).mat;
+end
+
+if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI' ext],'file')
+    disp('Resetting headers in _MNI images ...')
+    alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
 end
 
 options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
@@ -908,20 +929,18 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    hdrInfo = electrodePlacement(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,elecName,options,uniqueTag);
+    electrodePlacement(subj,subjRasRSPDSeg,image,landmarks,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-%   load([dirname filesep subjName '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-    load([dirname filesep subjModelName '_header.mat'],'hdrInfo');
 end
 
 if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDspm,subjRasRSPDSeg,meshOpt,hdrInfo,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDSeg,mri2mni,meshOpt,image,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -949,14 +968,14 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,image,uniqueTag);
+        visualizeRes(subj,subjRasRSPD,subjRasRSPDSeg,mri2mni,T2,node,elem,face,injectCurrent,image,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
+        visualizeRes(subj,subjRasRSPD,subjRasRSPDSeg,mri2mni,T2,node,elem,face,injectCurrent,image,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
 
 else
@@ -1001,7 +1020,7 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDP(subj,[],node,hdrInfo,uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
+        postGetDP(subj,[],node,[],uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')

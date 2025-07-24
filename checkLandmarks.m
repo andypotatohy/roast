@@ -41,8 +41,8 @@ disp('=============    OPENING MANUAL GUI ...    =============')
 % Load NIfTI segmentation
 [dirname,segOutName] = fileparts(segOut);
 nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-skin = double(nii.img == 5); 
-brain = double(nii.img == 2);
+skin = single(nii.img == 5); 
+brain = single(nii.img == 2);
 % Apply Gaussian smoothing to the segmentation masks
 % if smooth
 skin = imgaussfilt3(skin, 1);
@@ -81,7 +81,7 @@ keepIdx = [1, 2, 3, 4];
 scatter3(landmarks(keepIdx, 2), landmarks(keepIdx, 1), landmarks(keepIdx, 3), 200, 'red', 'filled');
 % end
 % Labels for points
-labels = {'     Nasion', '     Inion', '     Left Ear', '     Right Ear'}; 
+labels = {'     Nasion', '     Inion', '     Right Ear', '     Left Ear'};
 
 for i = 1:length(keepIdx)  
 %     if smooth 
@@ -96,6 +96,7 @@ end
 % Improve 3D visualization
 view(3);
 axis equal;
+axis ij; % use axis ij, so that we can LR flip the axis from patch command, without flipping the data or hacking the order of labels
 
 % Set two lights, one on the left and one on the right
 light('Position', [-1, 0, 0], 'Style', 'infinite'); % Back light

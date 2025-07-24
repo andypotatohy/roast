@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
-% [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
+function [node,elem,face] = meshByIso2mesh(subj,segOut,mri2mni,opt,imgHdr,uniTag)
+% [node,elem,face] = meshByIso2mesh(subj,segOut,mri2mni,opt,imgHdr,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -11,23 +11,10 @@ function [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-% [~,spmOutName] = fileparts(spmOut);
-% mappingFile = [dirname filesep spmOutName '_seg8.mat'];
-% if ~exist(mappingFile,'file')
-%     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-% else
-%     load(mappingFile,'image','Affine');
-%     mri2mni = Affine*image(1).mat;
-%     % mapping from MRI voxel space to MNI space
-% end
-mri2mni = hdrInfo.mri2mni;
 [~,segOutName] = fileparts(segOut);
 data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-% allMask = data.img;
-% allMaskShow = data.img;
-% added +1 for plotting better colormap
-allMask = data.img+1;
-allMaskShow = data.img+1;
+allMask = data.img;
+allMaskShow = data.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 % data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 % allMask(data.img==255) = 7;
@@ -49,13 +36,14 @@ allMaskShow(data.img>0) = numOfTissue + 2;
 
 % More anatomical looking colormap
 color_map = [
-    0, 0, 0;                   % label 0 -> index 1 (black)
-    1, 1, 1;                   % label 1 -> index 2 (white)
-    0.7, 0.7, 0.7;             % label 2 -> index 3 (gray)
-    105/255, 175/255, 255/255; % label 3 -> index 4 (blue)
-    241/255, 214/255, 145/255; % label 4 -> index 5 (bone)
-    177/255, 122/255, 101/255; % label 5 -> index 6 (skin)
-    0.6863, 0.8824, 0.6863;    % label 6 -> index 7 (green)
+    0, 0, 0;                   % background: black
+    1, 1, 1;                   % white matter: white
+    0.7, 0.7, 0.7;             % gray matter: gray
+    105/255, 175/255, 255/255; % CSF: blue
+    241/255, 214/255, 145/255; % bone
+    177/255, 122/255, 101/255; % skin
+    0.6863, 0.8824, 0.6863;    % air cavities
+    0, 0, 139/255;             % gel&elec
 ];
 
 % sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
@@ -74,7 +62,7 @@ drawnow
 [node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 
-for i=1:3, node(:,i) = node(:,i)*hdrInfo.pixdim(i); end
+for i=1:3, node(:,i) = node(:,i)*imgHdr.mat(i,i); end
 % Put mesh coordinates into pseudo-world space (voxel space but scaled properly
 % using the scaling factors in the header) to avoid mistakes in
 % solving. Putting coordinates into pure-world coordinates causes other

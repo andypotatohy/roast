@@ -1,5 +1,5 @@
-function [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,hdrInfo,uniTag,indSolved,indInCore)
-% [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,hdrInfo,uniTag,indSolved,indInCore)
+function [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,imgHdr,uniTag,indSolved,indInCore)
+% [vol_all,ef_mag,ef_all] = postGetDP(subj,segOut,node,imgHdr,uniTag,indSolved,indInCore)
 %
 % Post processing after solving the model / generating the lead field.
 % Save the result in Matlab format in the MRI voxel space. For the lead
@@ -19,9 +19,9 @@ if ~isempty(segOut) % for roast()
     
     % convert pseudo-world coordinates back to voxel coordinates for
     % interpolation into regular grid in the voxel space
-    for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+    for i=1:3, node(:,i) = node(:,i)/imgHdr.mat(i,i); end
 
-    [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
+    [xi,yi,zi] = ndgrid(1:imgHdr.dim(1),1:imgHdr.dim(2),1:imgHdr.dim(3));
     
     disp('converting the results into Matlab format...');
     fid = fopen([dirname filesep subjName '_' uniTag '_v.pos']);
@@ -39,7 +39,7 @@ if ~isempty(segOut) % for roast()
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);
     
-    ef_all = zeros([hdrInfo.dim 3]);
+    ef_all = zeros([imgHdr.dim 3]);
     F = TriScatteredInterp(node(C{1},1:3), C{2});
     ef_all(:,:,:,1) = F(xi,yi,zi);
     F = TriScatteredInterp(node(C{1},1:3), C{3});

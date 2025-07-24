@@ -23,8 +23,8 @@ disp('=============    LOADING GUI FOR MODIFY ...    =============')
 % Load NIfTI segmentation
 [dirname,segOutName] = fileparts(filepath);
 nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-skin = double(nii.img == 5);  % Skin layer
-skull = double(nii.img == 4); % Skull layer
+skin = single(nii.img == 5);  % Skin layer
+skull = single(nii.img == 4); % Skull layer
 [rows, cols, slices] = size(nii.img);
 
 % Apply Gaussian smoothing to the segmentation masks
