@@ -111,8 +111,8 @@ title('Selecting Landmarks ...');
 
 % Define selectedPoints correctly
 selectedPoints = landmarks(keepIdx, :);
-% disp('Current voxel coordinates of landmarks (nasion, inion, right ear, left ear):');
-% disp(selectedPoints);
+disp('Current voxel coordinates of landmarks (nasion, inion, right ear, left ear):');
+disp(selectedPoints);
 disp('3D interaction enabled. Rotate and inspect the landmarks.');
 
 % Add Confirm button (keeps landmarks and closes figure)
@@ -156,7 +156,7 @@ end
 
 function reorderedLandmarks = reorderLandmarks(inputMatrix)
     % Define the new row order
-    newOrder = [1, 5, 3, 2]; 
+    newOrder = [1, 5, 2, 3]; 
     % Reorder the rows of the matrix according to the new order
     reorderedLandmarks = inputMatrix(newOrder, :);
 end

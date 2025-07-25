@@ -48,10 +48,6 @@ hold(ax, 'on');
 axis(ax, 'off');
 grid off;
 
-% Initial view (Left-Side)
-view(90, 0);
-title('Select the Nasion: The Point in Between the Eyes','FontSize', 16);
-
 % Render segmentation (Skin first)
 skinPatch = patch(isosurface(skinSmooth, 0.5,'noshare'));
 skinPatch.FaceColor = '#E5B5A1'; % Skin is brown
@@ -61,6 +57,11 @@ skinPatch.EdgeColor = 'none';
 skullPatch = patch(isosurface(skullSmooth, 0.5,'noshare')); 
 skullPatch.FaceColor = '#F1D691'; % Skull is light yellow
 skullPatch.EdgeColor = 'none';
+
+axis(ax,'ij'); % now the data visualized genuinely follow the real orientation, so that the code below will be clean
+
+view(90, 0); % Initial view
+title('Select the Nasion: The Point in Between the Eyes','FontSize', 16);
 
 % Apply lighting
 updateLighting([1, 0, 0]); % Initial front light
@@ -207,17 +208,17 @@ function onMouseClick(~, ~)
 
             if ~isempty(nonZeroPointsSmooth)
                 if selectionPhase == 1  % Right Ear (max x)
-                    xSmooth = min(nonZeroPointsSmooth);
-                else  % Left Ear (min x)
                     xSmooth = max(nonZeroPointsSmooth);
+                else  % Left Ear (min x)
+                    xSmooth = min(nonZeroPointsSmooth);
                 end
             end
 
             if ~isempty(nonZeroPoints)
                 if selectionPhase == 1  % Right Ear (max x)
-                    x = min(nonZeroPoints);
-                else  % Left Ear (min x)
                     x = max(nonZeroPoints);
+                else  % Left Ear (min x)
+                    x = min(nonZeroPoints);
                 end
             end
             
@@ -261,10 +262,10 @@ function drawGridLines(z)
 
     % Draw grid lines only along the axes, no diagonals
     hold on;
-    % Horizontal plane at the selected point
-    [X, Y] = meshgrid(xLimits(1):xLimits(2), yLimits(1):yLimits(2));
-    Z = z * ones(size(X));
-    surf(X, Y, Z, 'FaceAlpha', 1, 'EdgeColor', 'black', 'FaceColor', 'black', 'LineStyle', '--', 'LineWidth', 2);
+    % Horizontal line at the selected point
+    plot3(xLimits(1):xLimits(2),ones(xLimits(2),1),ones(xLimits(2),1)*z,'--k','linewidth',2); 
+    plot3(ones(yLimits(2),1),yLimits(1):yLimits(2),ones(yLimits(2),1)*z,'--k','linewidth',2);
+    % this is much faster than the surf command
 end
 
 function submitSelection(~, ~)
