@@ -791,13 +791,23 @@ else
     error('Something is wrong!');
 end
 
-% landmarks in the TPM (hard-coded)
+% landmarks in the TPM
 landmarksInTPM = [ 61 139  98; % nasion
                    61   9 100; % inion
                    11  62  93; % right
                   111  63  93; % left; note here because eTPM is LAS orientation
                    61 113   7; % front_neck
-                   61   7  20]; % back_neck
+                   61   7  20; % back_neck
+                   61.1698   74.8445  128.6539; % scalp center
+                   61.1266    6.7765  128.3046; % nine 10-10 electrodes on the central sagittal line
+                   61.0821   13.1721  153.1825;
+                   61.0449   26.7791  176.6905;
+                   61.0294   49.4432  192.0928;
+                   61.0444   76.4435  193.3487;
+                   61.0751  101.3033  185.8634;
+                   61.1154  122.7582  172.3329;
+                   61.1658  137.4929  151.4222;
+                   61.2171  141.6240  126.5092];
 
 if ~strcmp(subjName,'nyhead')
     if ~multiaxial
@@ -851,12 +861,20 @@ if ~strcmp(subjName,'nyhead')
     landmarks = round(landmarks(:,1:3));
     mri2mni = Affine*image(1).mat; % mapping from MRI voxel space to MNI space
     if manual_gui
-        landmarksNew = checkLandmarks(subjRasRSPDSeg,landmarks);
-        if any(landmarksNew(:)~=landmarks(:))
+        landmarksNew = nan(size(landmarks));
+        landmarksNew(1:4,:) = checkLandmarks(subjRasRSPDSeg,landmarks(1:4,:));
+        if any(any(landmarksNew(1:4,:)~=landmarks(1:4,:)))
             warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
             disp('Re-running registration ...')
-%             maybe run fitCap2individual here
-            mri2mniVox = [landmarksInTPM,ones(size(landmarksInTPM,1),1)]'/[landmarksNew,ones(size(landmarksNew,1),1)]';
+            % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
+            template = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
+            scalp=template.img>0;
+            scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
+            load('./cap1005FullWithExtra.mat','capInfo');
+            [landmarksNew(8:end,:),landmarksNew(7,:)]= fitCap2individual(scalp,scalp_surface,landmarksNew(1:4,:),image,capInfo,[],0,0);
+            % use the 4 manually clicked landmarks, the scalp center, and the fitted 10-10 electrodes on the central sagittal line to estimate the Affine
+            indForAffine = [1:4,7:16];
+            mri2mniVox = [landmarksInTPM(indForAffine,:),ones(size(landmarksInTPM(indForAffine,:),1),1)]'/[landmarksNew(indForAffine,:),ones(size(landmarksNew(indForAffine,:),1),1)]';
             Affine = tpm(1).mat*mri2mniVox*inv(image(1).mat);
             disp('Overwriting computed registration ...')
             if ~multiaxial
@@ -864,7 +882,11 @@ if ~strcmp(subjName,'nyhead')
             else
                 save([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine')
             end
-            landmarks = landmarksNew;
+            % update landmarksNew(5:6,:) (the neck electrodes, as they're not clicked or fitted)
+            tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+            temp = (tpm2mri * [landmarksInTPM(5:6,:),ones(size(landmarksInTPM(5:6,:),1),1)]')';
+            landmarksNew(5:6,:) = temp(:,1:3);
+            landmarks = round(landmarksNew);
             mri2mni = Affine*image(1).mat;
             disp('Resetting headers in _MNI images ...')
             alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);

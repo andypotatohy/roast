@@ -19,9 +19,9 @@ if ~isempty(segOut) % for roast()
     
     % convert pseudo-world coordinates back to voxel coordinates for
     % interpolation into regular grid in the voxel space
-    for i=1:3, node(:,i) = node(:,i)/imgHdr.mat(i,i); end
+    for i=1:3, node(:,i) = node(:,i)/imgHdr(1).mat(i,i); end
 
-    [xi,yi,zi] = ndgrid(1:imgHdr.dim(1),1:imgHdr.dim(2),1:imgHdr.dim(3));
+    [xi,yi,zi] = ndgrid(1:imgHdr(1).dim(1),1:imgHdr(1).dim(2),1:imgHdr(1).dim(3));
     
     disp('converting the results into Matlab format...');
     fid = fopen([dirname filesep subjName '_' uniTag '_v.pos']);
@@ -39,7 +39,7 @@ if ~isempty(segOut) % for roast()
     C = textscan(fid,'%d %f %f %f');
     fclose(fid);
     
-    ef_all = zeros([imgHdr.dim 3]);
+    ef_all = zeros([imgHdr(1).dim 3]);
     F = TriScatteredInterp(node(C{1},1:3), C{2});
     ef_all(:,:,:,1) = F(xi,yi,zi);
     F = TriScatteredInterp(node(C{1},1:3), C{3});

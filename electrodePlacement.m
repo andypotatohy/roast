@@ -134,7 +134,7 @@ electrode_coord = cat(1,electrode_coord_P,electrode_coord_N,electrode_coord_C);
 elec_range = cat(1,elec_range_P',elec_range_N',elec_range_C');
 
 %% placing and model the electrodes
-resolution = mean([imgHdr.mat(1,1),imgHdr.mat(2,2),imgHdr.mat(3,3)]);
+resolution = mean([imgHdr(1).mat(1,1),imgHdr(1).mat(2,2),imgHdr(1).mat(3,3)]);
 % mean() here to handle anisotropic resolution; ugly. Maybe just
 % resample MRI to isotropic in the very beginning?
 [elec_C,gel_C] = placeAndModelElectrodes(electrode_coord,elec_range,scalp_clean_surface,scalp_filled,elecNeeded,elecPara,resolution,0,uniTag);

@@ -62,7 +62,7 @@ drawnow
 [node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 
-for i=1:3, node(:,i) = node(:,i)*imgHdr.mat(i,i); end
+for i=1:3, node(:,i) = node(:,i)*imgHdr(1).mat(i,i); end
 % Put mesh coordinates into pseudo-world space (voxel space but scaled properly
 % using the scaling factors in the header) to avoid mistakes in
 % solving. Putting coordinates into pure-world coordinates causes other

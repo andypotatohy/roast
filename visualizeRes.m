@@ -80,12 +80,12 @@ end
 
 disp('generating 3D renderings...')
 
-for i=1:3, node(:,i) = node(:,i)/imgHdr.mat(i,i); end
+for i=1:3, node(:,i) = node(:,i)/imgHdr(1).mat(i,i); end
 % convert pseudo-world coordinates back to voxel coordinates so that the
 % following conversion to pure-world space is meaningful
 
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
-worldCoord = (imgHdr.mat*voxCoord')';
+worldCoord = (imgHdr(1).mat*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
 % sliceshow below is still in voxel space though
 node(:,1:3) = worldCoord(:,1:3);

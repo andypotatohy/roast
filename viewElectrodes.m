@@ -47,7 +47,7 @@ figure('Name', '3D Viewer. Please rotate and inspect.', ...
        'Position', [100, 100, 1200, 800], ...
        'Color', 'white');
 hold on;
-daspect(1 ./ [hdrInfo.mat(1,1),hdrInfo.mat(2,2),hdrInfo.mat(3,3)]);
+daspect(1 ./ [hdrInfo(1).mat(1,1),hdrInfo(1).mat(2,2),hdrInfo(1).mat(3,3)]);
 
 % Plot skin (semi-transparent)
 if any(mask_skin(:))

@@ -90,7 +90,7 @@ end
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
 elec_template = cell2mat(capInfo(2:4));
 elec_template = elec_template(indFit,:);
-elec_template = elec_template./repmat([hdrInfo.mat(1,1),hdrInfo.mat(2,2),hdrInfo.mat(3,3)],length(indFit),1);
+elec_template = elec_template./repmat([hdrInfo(1).mat(1,1),hdrInfo(1).mat(2,2),hdrInfo(1).mat(3,3)],length(indFit),1);
 % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
 
 theta = 23;
@@ -168,5 +168,9 @@ end
 
 if ~isEGI, [~,index] = min(F); else, index = 1; end
 % electrode_coord = ELEC_COORD(:,:,index); % exact coordinate for each electrode projected on the scalp surface
-electrode_coord = ELEC_COORD(length(indCentralElec)+1:end,:,index); % exact coordinate for each electrode projected on the scalp surface
+if ~isempty(indNeed)
+    electrode_coord = ELEC_COORD(length(indCentralElec)+1:end,:,index); % exact coordinate for each electrode projected on the scalp surface
+else
+    electrode_coord = ELEC_COORD(1:length(indCentralElec),:,index); % exact coordinate for central electrodes projected on the scalp surface
+end
 center = CENTER(index,:); % center of electrode coordinates
