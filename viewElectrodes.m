@@ -1,4 +1,4 @@
-function viewElectrodes(mask,elec,gel,landmarks,hdrInfo,uniTag)
+function viewElectrodes(subj,segOut,landmarks,imgHdr,uniTag)
 %
 % 3D Visualization of skin, brain, electrodes, gel, and anatomical landmarks
 % from segmented MRI data. Displays a rendered volume with overlaid surfaces
@@ -35,11 +35,18 @@ function viewElectrodes(mask,elec,gel,landmarks,hdrInfo,uniTag)
 % nii_elec = flip(nii_elec, 2);
 % nii_gel  = flip(nii_gel, 2);
 
-% Smoothing
-mask_skin = imgaussfilt3(single(mask == 5), 1);
-mask_brain = imgaussfilt3(single(mask == 2), 1);
-elec = imgaussfilt3(single(elec), 1);
-gel = imgaussfilt3(single(gel), 1);
+[dirname,subjName] = fileparts(subj);
+if isempty(dirname), dirname = pwd; end
+
+[~,segOutName] = fileparts(segOut);
+data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
+mask_skin = imgaussfilt3(single(data.img == 5), 1);
+mask_brain = imgaussfilt3(single(data.img == 2), 1);
+
+data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
+gel = imgaussfilt3(single(data.img>0), 1);
+data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
+elec = imgaussfilt3(single(data.img>0), 1);
 
 % Create figure
 figure('Name', '3D Viewer. Please rotate and inspect.', ...
@@ -47,7 +54,7 @@ figure('Name', '3D Viewer. Please rotate and inspect.', ...
        'Position', [100, 100, 1200, 800], ...
        'Color', 'white');
 hold on;
-daspect(1 ./ [hdrInfo(1).mat(1,1),hdrInfo(1).mat(2,2),hdrInfo(1).mat(3,3)]);
+daspect(1 ./ [imgHdr(1).mat(1,1),imgHdr(1).mat(2,2),imgHdr(1).mat(3,3)]);
 
 % Plot skin (semi-transparent)
 if any(mask_skin(:))
@@ -102,5 +109,6 @@ light('Position', [1, 0, 1], 'Style', 'infinite');
 lighting phong;
 rotate3d on;
 title(['Electrode placement in Simulation: ' uniTag]);
+drawnow
 %     % Save figure (optional — change path as needed)
 %     saveas(gcf, fullfile(dirname, [subjName '_3DView.fig']));

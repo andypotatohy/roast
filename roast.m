@@ -791,7 +791,7 @@ else
     error('Something is wrong!');
 end
 
-% landmarks in the TPM
+% landmarks in eTPM.nii
 landmarksInTPM = [ 61 139  98; % nasion
                    61   9 100; % inion
                    11  62  93; % right
@@ -864,8 +864,10 @@ if ~strcmp(subjName,'nyhead')
         landmarksNew = nan(size(landmarks));
         landmarksNew(1:4,:) = checkLandmarks(subjRasRSPDSeg,landmarks(1:4,:));
         if any(any(landmarksNew(1:4,:)~=landmarks(1:4,:)))
+            disp('======================================================')
             warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
-            disp('Re-running registration ...')
+            disp('======================================================')
+            disp('RE-RUNNING REGISTRATION ...')
             % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
             template = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
             scalp=template.img>0;
@@ -876,7 +878,8 @@ if ~strcmp(subjName,'nyhead')
             indForAffine = [1:4,7:16];
             mri2mniVox = [landmarksInTPM(indForAffine,:),ones(size(landmarksInTPM(indForAffine,:),1),1)]'/[landmarksNew(indForAffine,:),ones(size(landmarksNew(indForAffine,:),1),1)]';
             Affine = tpm(1).mat*mri2mniVox*inv(image(1).mat);
-            disp('Overwriting computed registration ...')
+            disp('======================================================')
+            disp('OVERWRITING COMPUTED REGISTRATION ...')
             if ~multiaxial
                 save([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
             else
@@ -888,10 +891,14 @@ if ~strcmp(subjName,'nyhead')
             landmarksNew(5:6,:) = temp(:,1:3);
             landmarks = round(landmarksNew);
             mri2mni = Affine*image(1).mat;
-            disp('Resetting headers in _MNI images ...')
+            disp('======================================================')
+            disp('RESETTING HEADERS IN _MNI IMAGES ...')
             alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
         end
     end
+    disp('======================================================')
+    disp('VISUALIZING THE MRI... ')
+    viewMRI(subjRasRSPD,T2,mri2mni);
 else
     disp('==================================================================')
     disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
@@ -902,9 +909,13 @@ else
     landmarks = round(landmarks(:,1:3));
     mri2mni = Affine*image(1).mat;
 end
+disp('======================================================')
+disp('VISUALIZING THE SEGMENTATION... ')
+viewSeg(subjRasRSPDSeg,mri2mni);
 
 if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI' ext],'file')
-    disp('Resetting headers in _MNI images ...')
+    disp('======================================================')
+    disp('RESETTING HEADERS IN _MNI IMAGES ...')
     alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
 end
 
@@ -957,12 +968,15 @@ else
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
 end
+disp('======================================================')
+disp('VISUALIZING ELECTRODE PLACEMENT... ')
+viewElectrodes(subj,subjRasRSPDSeg,landmarks,image,uniqueTag);
 
 if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDSeg,mri2mni,meshOpt,image,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDSeg,meshOpt,image,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -991,14 +1005,13 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
         [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,image,uniqueTag);
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDSeg,mri2mni,T2,node,elem,face,injectCurrent,image,uniqueTag,0,vol_all,ef_mag,ef_all);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDSeg,mri2mni,T2,node,elem,face,injectCurrent,image,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
+    visualizeRes(subj,subjRasRSPDSeg,mri2mni,node,elem,face,injectCurrent,image,uniqueTag,vol_all,ef_mag,ef_all);
 
 else
 
@@ -1049,7 +1062,7 @@ else
         disp(['         FOR SUBJECT ' subj])
         disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
-    end   
+    end
 end
 
 disp('==================ALL DONE ROAST=======================');

@@ -1,5 +1,5 @@
-function visualizeRes(subj,subjRasRSPD,segOut,mri2mni,T2,node,elem,face,inCurrent,imgHdr,uniTag,showAll,varargin)
-% visualizeRes(subj,subjRasRSPD,segOut,T2,node,elem,face,inCurrent,imgHdr,uniTag,showAll,varargin)
+function visualizeRes(subj,segOut,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
+% visualizeRes(subj,segOut,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -22,20 +22,6 @@ end
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-if showAll    
-    if ~strcmp(subjName,'nyhead')
-        disp('showing MRI and segmentations...');
-        data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
-        
-        if ~isempty(T2) %T2 specified
-            data = load_untouch_nii(T2);
-            sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
-        end
-    else
-        disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
-    end    
-end
-
 [~,segOutName] = fileparts(segOut);
 masks = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
 allMask = masks.img;
@@ -43,35 +29,11 @@ numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 if isRoast
     gel = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
     numOfGel = max(gel.img(:));
-    elec = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
+    % elec = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
     % numOfElec = max(elec.img(:));
 else
     numOfGel = length(inCurrent);
     indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
-end
-
-if showAll
-%     if isRoast,
-%     viewElectrodes(allMask,elec.img>0,gel.img>0,landmarks,imgHdr,uniTag);
-%     end % NEED TO THINK ABOUT HOW TO DO THIS MORE ELEGANTLY
-
-    % More anatomical looking colormap
-    color_map = [
-        0, 0, 0;                   % background: black
-        1, 1, 1;                   % white matter: white
-        0.7, 0.7, 0.7;             % gray matter: gray
-        105/255, 175/255, 255/255; % CSF: blue
-        241/255, 214/255, 145/255; % bone
-        177/255, 122/255, 101/255; % skin
-        0.6863, 0.8824, 0.6863;    % air cavities
-        0, 0, 139/255;             % gel&elec
-        ];
-
-    allMaskShow = masks.img;
-    allMaskShow(gel.img>0) = numOfTissue + 1;
-    allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],color_map,[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
-    drawnow
 end
 
 % node = node + 0.5; already done right after mesh
@@ -240,7 +202,7 @@ nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
-bbox = brainCrop(segOut);
+bbox = brainCrop(allMask);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];

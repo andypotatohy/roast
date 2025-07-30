@@ -164,9 +164,6 @@ for i=1:6
     volume_gel = xor(volume_gel,volume_gel & volume_tissue);
 end % remove the gel that goes into other tissue masks
 
-disp('visualizing...')
-viewElectrodes(template.img,volume_elec,volume_gel,landmarks,imgHdr,uniTag);
-
 disp('saving placed electrodes...')
 template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_elec'];
 template.hdr.hist.descrip = 'electrode mask';
