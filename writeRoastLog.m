@@ -119,17 +119,6 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'Affine matrix:\t [');
-        for i=1:size(opt.Affine,1)
-            for j=1:size(opt.Affine,2)
-                fprintf(fid,'%.1f',opt.Affine(i,j));
-                if j<size(opt.Affine,2), fprintf(fid,','); end
-            end
-            if i<size(opt.Affine,1), fprintf(fid,'; '); end
-        end
-        fprintf(fid,']');
-        
-        fprintf(fid,'\n');
         fprintf(fid,'meshOpt:\t');
         fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
             opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
@@ -166,6 +155,26 @@ switch fun
         else
             fprintf(fid,'yes');
         end
+        fprintf(fid,'\n');
+
+        fprintf(fid,'MRI that went into ROAST:\t');
+        fprintf(fid,'%s',opt.subjRasRSPD);
+        if ~isempty(opt.T2)
+            fprintf(fid,'\n');
+            fprintf(fid,'                         \t');
+            fprintf(fid,'%s',opt.T2);
+        end
+        fprintf(fid,'\n');
+
+        fprintf(fid,'mri2mni matrix:\t [');
+        for i=1:size(opt.mri2mni,1)
+            for j=1:size(opt.mri2mni,2)
+                fprintf(fid,'%.1f',opt.mri2mni(i,j));
+                if j<size(opt.mri2mni,2), fprintf(fid,','); end
+            end
+            if i<size(opt.mri2mni,1), fprintf(fid,'; '); end
+        end
+        fprintf(fid,']');
         
         fprintf(fid,'\n\n');
         fclose(fid);

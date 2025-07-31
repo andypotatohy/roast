@@ -902,6 +902,7 @@ if ~strcmp(subjName,'nyhead')
 else
     disp('==================================================================')
     disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
+    disp(' ...AND NO MRI TO SHOW')
     disp('==================================================================')
     load(['example/' subjModelName '_T1orT2_seg8.mat'],'image','tpm','Affine');
     tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
@@ -919,7 +920,7 @@ if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI' ext],'file')
     alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+options = struct('configTxt',configTxt,'elecPara',elecPara,'subjRasRSPD',subjRasRSPD,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'mri2mni',mri2mni,'landmarks',landmarks,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);

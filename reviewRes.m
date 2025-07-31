@@ -80,7 +80,9 @@ disp('General Public License version 3 or later. It''s supported by')
 disp('both NIH grants and Soterix Medical Inc.')
 disp('=============================================================')
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+if isempty(strfind(path,[fileparts(which(mfilename)) filesep 'lib/']))
+    addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+end
 
 % check subject name
 if nargin<1 || isempty(subj)
@@ -183,27 +185,7 @@ else
     
 end
 
-% to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if optRoast.isNonRAS
-    subjRas = [dirname filesep subjName '_ras' ext];
-else
-    subjRas = subj;
-end
-[~,subjRasName] = fileparts(subjRas);
-
-if optRoast.resamp
-    subjRasRS = [dirname filesep subjRasName '_1mm' ext];
-else
-    subjRasRS = subjRas;
-end
-[~,subjRasRsName] = fileparts(subjRasRS);
-
-if optRoast.zeroPad>0
-    subjRasRSPD = [dirname filesep subjRasRsName '_padded' num2str(optRoast.zeroPad) ext];
-    %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
-else
-    subjRasRSPD = subjRasRS;
-end
+subjRasRSPD = optRoast.subjRasRSPD;
 [~,subjModelName] = fileparts(subjRasRSPD);
 
 if ~isempty(optRoast.T2)
@@ -214,28 +196,21 @@ end
 [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
 
 if optRoast.multiaxial
-    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multiaxial' ext];
+    subjRasRSPDSeg = [dirname filesep subjModelName '_multiaxial' ext];
+    mappingFile = [dirname filesep subjModelName '_niftyReg.mat'];
 else
     subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
+    mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
 end
 [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
 
-% mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
-% if ~exist(mappingFile,'file')
-%     error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-% else
-%     load(mappingFile,'image','Affine');
-%     mri2mni = Affine*image(1).mat;
-%     % mapping from MRI voxel space to MNI space
-% end
-hdrFile = [dirname filesep subjModelName '_header.mat'];
-if ~exist(hdrFile,'file')
-    error(['Header file ' hdrFile ' not found. Check if you run through electrode placement.']);
+if ~exist(mappingFile,'file')
+    error(['Mapping file ' mappingFile ' not found. Please check if you run through STEP 1&2 in ROAST.']);
 else
-    load(hdrFile,'hdrInfo');
+    load(mappingFile,'image');
 end
+mri2mni = optRoast.mri2mni; % mapping from MRI voxel space to MNI space
 
-mri2mni = hdrInfo.mri2mni;
 if isRoast
     
     lp = strfind(optRoast.configTxt,'(');
@@ -251,18 +226,15 @@ if isRoast
         disp('showing MRI and segmentations...');
         if ~exist(subjRasRSPD,'file')
             error(['The subject MRI you provided ' subjRasRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
-        else
-            data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
         end
         
         if ~isempty(optRoast.T2) %T2 specified
             if ~exist(optRoast.T2,'file')
                 error(['T2 file ' optRoast.T2 ' does not exist. You used that to run ROAST but maybe later deleted it.']);
-            else
-                data = load_untouch_nii(optRoast.T2);
-                sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
             end
         end
+
+        viewMRI(subjRasRSPD,optRoast.T2,mri2mni);
     else
         disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
     end
@@ -283,6 +255,7 @@ if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
 else
     masks = load_untouch_nii(masksFile);
+    viewSeg(subjRasRSPDSeg,mri2mni);
 end
 
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
@@ -296,19 +269,15 @@ if isRoast
         gel = load_untouch_nii(gelMask);
         numOfGel = max(gel.img(:));
     end
-    elecMask = [dirname filesep subjName '_' simTag '_mask_elec.nii'];
-    if ~exist(elecMask,'file')
-        error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
-    else
-        elec = load_untouch_nii(elecMask);
-        % numOfElec = max(elec.img(:));
-    end
+%     elecMask = [dirname filesep subjName '_' simTag '_mask_elec.nii'];
+%     if ~exist(elecMask,'file')
+%         error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
+%     else
+%         elec = load_untouch_nii(elecMask);
+%         % numOfElec = max(elec.img(:));
+%     end
     
-    allMaskShow = masks.img;
-    allMaskShow(gel.img>0) = numOfTissue + 1;
-    allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
-    drawnow
+    viewElectrodes(subj,subjRasRSPDSeg,optRoast.landmarks,image,simTag);
     
 else
     
@@ -351,13 +320,11 @@ if ~fastRender
     % very slow if mesh is big
 end
 
-
-
-for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+for i=1:3, node(:,i) = node(:,i)/image(1).mat(i,i); end
 % convert pseudo-world coordinates back to voxel coordinates so that the
 % following conversion to pure-world space is meaningful
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
-worldCoord = (hdrInfo.v2w*voxCoord')';
+worldCoord = (image(1).mat*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
 % sliceshow below is still in voxel space though
 node(:,1:3) = worldCoord(:,1:3);
@@ -522,7 +489,7 @@ nan_mask(find(mask)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
 if strcmp(tissue,'white') || strcmp(tissue,'gray') || strcmp(tissue,'brain')
-    bbox = brainCrop(subjRasRSPDSeg);
+    bbox = brainCrop(allMask);
     pos = round(mean(bbox));
 else
     bbox = [];
