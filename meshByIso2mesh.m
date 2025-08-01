@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(subj,segOut,opt,imgHdr,uniTag)
-% [node,elem,face] = meshByIso2mesh(subj,segOut,opt,imgHdr,uniTag)
+function [node,elem,face] = meshByIso2mesh(subj,mask,elec,gel,opt,imgHdr,uniTag)
+% [node,elem,face] = meshByIso2mesh(subj,mask,elec,gel,opt,imgHdr,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -11,24 +11,20 @@ function [node,elem,face] = meshByIso2mesh(subj,segOut,opt,imgHdr,uniTag)
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,segOutName] = fileparts(segOut);
-data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-allMask = data.img;
+allMask = mask.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 % data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 % allMask(data.img==255) = 7;
 % data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
 % allMask(data.img==255) = 8;
 
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-numOfGel = max(data.img(:));
+numOfGel = max(gel.img(:));
 for i=1:numOfGel
-    allMask(data.img==i) = numOfTissue + i;
+    allMask(gel.img==i) = numOfTissue + i;
 end
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-numOfElec = max(data.img(:));
+numOfElec = max(elec.img(:));
 for i=1:numOfElec
-    allMask(data.img==i) = numOfTissue + numOfGel + i;
+    allMask(elec.img==i) = numOfTissue + numOfGel + i;
 end
 
 % allMask = uint8(allMask);

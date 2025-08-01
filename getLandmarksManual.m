@@ -1,4 +1,4 @@
-function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
+function [landmarks, smoothLandmarks] = getLandmarksManual(mask)
 % Interactive GUI for manual selection of five anatomical landmarks 
 % (Nasion, Right Ear, Left Ear, and two Inion points) from a segmented MRI.
 % Visualizes the 3D skin and skull surfaces and guides the user step-by-step.
@@ -21,11 +21,9 @@ function [landmarks, smoothLandmarks] = getLandmarksManual(filepath)
 disp('=============    LOADING GUI FOR MODIFY ...    =============')
 
 % Load NIfTI segmentation
-[dirname,segOutName] = fileparts(filepath);
-nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-skin = single(nii.img == 5);  % Skin layer
-skull = single(nii.img == 4); % Skull layer
-[rows, cols, slices] = size(nii.img);
+skin = single(mask.img == 5);  % Skin layer
+skull = single(mask.img == 4); % Skull layer
+[rows, cols, slices] = size(mask.img);
 
 % Apply Gaussian smoothing to the segmentation masks
 skinSmooth = imgaussfilt3(skin, 1);

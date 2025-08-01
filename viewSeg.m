@@ -1,13 +1,9 @@
-function viewSeg(segOut,mri2mni)
-% viewSeg(segOut,mri2mni)
+function viewSeg(mask,mri2mni)
+% viewSeg(mask,mri2mni)
 % 
 % (c) Yu (Andy) Huang
 % yhuang16@citymail.cuny.edu
 % July 2025
-
-[dirname,segOutName] = fileparts(segOut);
-data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-allMaskShow = data.img;
 
 % More anatomical looking colormap
 color_map = [
@@ -21,4 +17,4 @@ color_map = [
     %0, 0, 139/255;             % gel&elec
 ];
 
-sliceshow(allMaskShow,[],color_map,[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni); drawnow
+sliceshow(mask.img,[],color_map,[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni); drawnow

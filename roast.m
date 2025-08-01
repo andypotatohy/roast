@@ -130,8 +130,8 @@ while indArg <= length(varargin)
         case 'multiaxial'
             multiaxial = varargin{indArg+1};
             indArg = indArg+2;
-        case 'manual_gui'
-            manual_gui = varargin{indArg+1};
+        case 'manualgui'
+            manualGui = varargin{indArg+1};
             indArg = indArg+2;
         case 'meshoptions'
             meshOpt = varargin{indArg+1};
@@ -149,7 +149,7 @@ while indArg <= length(varargin)
             paddingAmt = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multiaxial'',''manual_gui'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multiaxial'',''manualGui'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -475,16 +475,16 @@ if multiaxial && ~isempty(T2)
     error('Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please only provide T1 image with option ''multiaxial'' turned on.');
 end
 
-if ~exist('manual_gui','var')
-    manual_gui = 0;
+if ~exist('manualGui','var')
+    manualGui = 0;
 else
-    if ~ischar(manual_gui), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manual_gui''.'); end
-    if strcmpi(manual_gui,'off')
-        manual_gui = 0;
-    elseif strcmpi(manual_gui,'on')
-        manual_gui = 1;
+    if ~ischar(manualGui), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manualGui''.'); end
+    if strcmpi(manualGui,'off')
+        manualGui = 0;
+    elseif strcmpi(manualGui,'on')
+        manualGui = 1;
     else
-        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manual_gui''.');
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manualGui''.');
     end
 end
 
@@ -738,9 +738,9 @@ else
        multiaxial = 0;
     end
 
-    if manual_gui
+    if manualGui
        warning('New York head selected. The manual GUI will be disabled.');
-       manual_gui = 0;
+       manualGui = 0;
     end 
 
     subjRasRSPDspm = ['example/' subjModelName '_T1orT2.nii'];
@@ -860,17 +860,17 @@ if ~strcmp(subjName,'nyhead')
     landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
     landmarks = round(landmarks(:,1:3));
     mri2mni = Affine*image(1).mat; % mapping from MRI voxel space to MNI space
-    if manual_gui
+    segMask = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
+    if manualGui
         landmarksNew = nan(size(landmarks));
-        landmarksNew(1:4,:) = checkLandmarks(subjRasRSPDSeg,landmarks(1:4,:));
+        landmarksNew(1:4,:) = checkLandmarks(segMask,landmarks(1:4,:));
         if any(any(landmarksNew(1:4,:)~=landmarks(1:4,:)))
             disp('======================================================')
             warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
             disp('======================================================')
             disp('RE-RUNNING REGISTRATION ...')
             % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
-            template = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
-            scalp=template.img>0;
+            scalp=segMask.img>0;
             scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
             load('./cap1005FullWithExtra.mat','capInfo');
             [landmarksNew(8:end,:),landmarksNew(7,:)]= fitCap2individual(scalp,scalp_surface,landmarksNew(1:4,:),image,capInfo,[],0,0);
@@ -909,10 +909,11 @@ else
     landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
     landmarks = round(landmarks(:,1:3));
     mri2mni = Affine*image(1).mat;
+    segMask = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
 end
 disp('======================================================')
 disp('VISUALIZING THE SEGMENTATION... ')
-viewSeg(subjRasRSPDSeg,mri2mni);
+viewSeg(segMask,mri2mni);
 
 if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI' ext],'file')
     disp('======================================================')
@@ -963,21 +964,23 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    electrodePlacement(subj,subjRasRSPDSeg,image,landmarks,elecName,options,uniqueTag);
+    [elec,gel] = electrodePlacement(subj,segMask,image,landmarks,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
+    elec = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_elec.nii']);
+    gel = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_gel.nii']);
 end
 disp('======================================================')
 disp('VISUALIZING ELECTRODE PLACEMENT... ')
-viewElectrodes(subj,subjRasRSPDSeg,landmarks,image,uniqueTag);
+viewElectrodes(segMask,elec,gel,landmarks,image,uniqueTag);
 
 if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDSeg,meshOpt,image,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,segMask,elec,gel,meshOpt,image,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -1005,14 +1008,14 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,image,uniqueTag);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,segMask,node,image,uniqueTag);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
     end
-    visualizeRes(subj,subjRasRSPDSeg,mri2mni,node,elem,face,injectCurrent,image,uniqueTag,vol_all,ef_mag,ef_all);
+    visualizeRes(subj,segMask,mri2mni,node,elem,face,injectCurrent,image,uniqueTag,vol_all,ef_mag,ef_all);
 
 else
 

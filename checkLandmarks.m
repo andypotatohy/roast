@@ -1,4 +1,4 @@
-function landmarks = checkLandmarks(segOut,landmarks)
+function landmarks = checkLandmarks(mask,landmarks)
 %
 % GUI for visual inspection and optional modification of anatomical landmarks 
 % (Nasion, Inion, Left Ear, Right Ear) on a segmented MRI head.
@@ -39,10 +39,8 @@ function landmarks = checkLandmarks(segOut,landmarks)
 disp('=============    OPENING MANUAL GUI ...    =============')
 
 % Load NIfTI segmentation
-[dirname,segOutName] = fileparts(segOut);
-nii = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-skin = single(nii.img == 5); 
-brain = single(nii.img == 2);
+skin = single(mask.img == 5); 
+brain = single(mask.img == 2);
 % Apply Gaussian smoothing to the segmentation masks
 % if smooth
 skin = imgaussfilt3(skin, 1);
@@ -143,15 +141,14 @@ function modifyLandmarks()
     close(fig);
 
     % Modify landmarks inside segmentation_viewer_nii
-    filepath = segOut; % Pass the segmentation file path
-    updatedLandmarks = getLandmarksManual(filepath);  % Modify the landmarks
+    updatedLandmarks = getLandmarksManual(mask);  % Modify the landmarks
 
     landmarks(keepIdx, :) = reorderLandmarks(updatedLandmarks);
 %     smoothLandmarks = reorderLandmarks(smoothLandmarks);
 %     updated = true;
 
     % Reopen the 3D viewer with updated landmarks
-    landmarks = checkLandmarks(segOut,landmarks);
+    landmarks = checkLandmarks(mask,landmarks);
 end
 
 function reorderedLandmarks = reorderLandmarks(inputMatrix)

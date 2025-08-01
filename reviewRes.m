@@ -254,11 +254,12 @@ masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
 if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
 else
-    masks = load_untouch_nii(masksFile);
-    viewSeg(subjRasRSPDSeg,mri2mni);
+    mask = load_untouch_nii(masksFile);
+    viewSeg(mask,mri2mni);
 end
 
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
+numOfGel = length(inCurrent);
 
 if isRoast
     
@@ -267,21 +268,17 @@ if isRoast
         error(['Gel mask ' gelMask ' not found. Check if you run through electrode placement.']);
     else
         gel = load_untouch_nii(gelMask);
-        numOfGel = max(gel.img(:));
     end
-%     elecMask = [dirname filesep subjName '_' simTag '_mask_elec.nii'];
-%     if ~exist(elecMask,'file')
-%         error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
-%     else
-%         elec = load_untouch_nii(elecMask);
-%         % numOfElec = max(elec.img(:));
-%     end
-    
-    viewElectrodes(subj,subjRasRSPDSeg,optRoast.landmarks,image,simTag);
+    elecMask = [dirname filesep subjName '_' simTag '_mask_elec.nii'];
+    if ~exist(elecMask,'file')
+        error(['Electrode mask ' elecMask ' not found. Check if you run through electrode placement.']);
+    else
+        elec = load_untouch_nii(elecMask);
+    end
+    viewElectrodes(mask,elec,gel,optRoast.landmarks,image,simTag);
     
 else
     
-    numOfGel = length(inCurrent);
     indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
     
     cm = colormap(jet(64));
@@ -479,17 +476,16 @@ end
 
 disp('generating slice views...');
 
-allMask = masks.img;
-mask = zeros(size(allMask));
+tissueMask = zeros(size(mask.img));
 for i=1:length(indSliceShow)
-    mask = (mask | allMask==indSliceShow(i));
+    tissueMask = (tissueMask | mask.img==indSliceShow(i));
 end
-nan_mask = nan(size(mask));
-nan_mask(find(mask)) = 1;
+nan_tissueMask = nan(size(tissueMask));
+nan_tissueMask(find(tissueMask)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
 if strcmp(tissue,'white') || strcmp(tissue,'gray') || strcmp(tissue,'brain')
-    bbox = brainCrop(allMask);
+    bbox = brainCrop(mask.img);
     pos = round(mean(bbox));
 else
     bbox = [];
@@ -506,18 +502,18 @@ if isRoast
     end
     
     figName = ['Voltage in Simulation: ' simTag];
-    sliceshow(vol_all.*nan_mask,pos,cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
+    sliceshow(vol_all.*nan_tissueMask,pos,cm,[],'Voltage (mV)',[figName '. Click anywhere to navigate.'],[],mri2mni,bbox); drawnow
     
     figName = ['Electric field in Simulation: ' simTag];
-    for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_mask; end
-    ef_mag = ef_mag.*nan_mask;
+    for i=1:size(ef_all,4), ef_all(:,:,:,i) = ef_all(:,:,:,i).*nan_tissueMask; end
+    ef_mag = ef_mag.*nan_tissueMask;
     dataShowVal = ef_mag(~isnan(ef_mag(:)));
     sliceshow(ef_mag,pos,cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     
 else
     
-    for i=1:size(r.ef_all,4), r.ef_all(:,:,:,i) = r.ef_all(:,:,:,i).*nan_mask; end
-    r.ef_mag = r.ef_mag.*nan_mask;
+    for i=1:size(r.ef_all,4), r.ef_all(:,:,:,i) = r.ef_all(:,:,:,i).*nan_tissueMask; end
+    r.ef_mag = r.ef_mag.*nan_tissueMask;
     dataShowVal = r.ef_mag(~isnan(r.ef_mag(:)));
     for i=1:size(r.targetCoord,1)
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' tarTag];

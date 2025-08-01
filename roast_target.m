@@ -148,6 +148,13 @@ end
 mri2mni = optRoast.mri2mni; % mapping from MRI voxel space to MNI space
 mni2mri = inv(mri2mni); % mapping from MNI space to individual MRI voxel space
 
+masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
+if ~exist(masksFile,'file')
+    error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
+else
+    mask = load_untouch_nii(masksFile);
+end
+
 meshFile = [dirname filesep subjName '_' simTag '.mat'];
 if ~exist(meshFile,'file')
     error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
@@ -582,13 +589,7 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     r.ef_mag = sqrt(sum(r.ef_all.^2,4));
     
     % output intensities and focalities at targets
-    masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
-    if ~exist(masksFile,'file')
-        error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
-    else
-        masks = load_untouch_nii(masksFile);
-    end
-    brain = (masks.img==1 | masks.img==2);
+    brain = (mask.img==1 | mask.img==2);
     nan_mask_brain = nan(size(brain));
     nan_mask_brain(find(brain)) = 1;
     
@@ -632,6 +633,6 @@ drawnow
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRasRSPDSeg,mri2mni,node,elem,face,mon(indInUsrInput),image,uniqueTag,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+visualizeRes(subj,mask,mri2mni,node,elem,face,mon(indInUsrInput),image,uniqueTag,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
 disp('==================ALL DONE ROAST-TARGET=======================');

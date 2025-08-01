@@ -1,4 +1,4 @@
-function viewElectrodes(subj,segOut,landmarks,imgHdr,uniTag)
+function viewElectrodes(mask,elec,gel,landmarks,imgHdr,uniTag)
 %
 % 3D Visualization of skin, brain, electrodes, gel, and anatomical landmarks
 % from segmented MRI data. Displays a rendered volume with overlaid surfaces
@@ -35,18 +35,11 @@ function viewElectrodes(subj,segOut,landmarks,imgHdr,uniTag)
 % nii_elec = flip(nii_elec, 2);
 % nii_gel  = flip(nii_gel, 2);
 
-[dirname,subjName] = fileparts(subj);
-if isempty(dirname), dirname = pwd; end
+mask_skin = imgaussfilt3(single(mask.img == 5), 1);
+mask_brain = imgaussfilt3(single(mask.img == 2), 1);
 
-[~,segOutName] = fileparts(segOut);
-data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-mask_skin = imgaussfilt3(single(data.img == 5), 1);
-mask_brain = imgaussfilt3(single(data.img == 2), 1);
-
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-gel = imgaussfilt3(single(data.img>0), 1);
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-elec = imgaussfilt3(single(data.img>0), 1);
+elec = imgaussfilt3(single(elec.img>0), 1);
+gel = imgaussfilt3(single(gel.img>0), 1);
 
 % Create figure
 figure('Name', '3D Viewer. Please rotate and inspect.', ...

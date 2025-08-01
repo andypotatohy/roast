@@ -1,5 +1,5 @@
-function electrodePlacement(subj,segOut,imgHdr,landmarks,elecNeeded,options,uniTag)
-% electrodePlacement(subj,segOut,landmarks,elecNeeded,options,uniTag)
+function [elec,gel] = electrodePlacement(subj,template,imgHdr,landmarks,elecNeeded,options,uniTag)
+% [elec,gel] = electrodePlacement(subj,template,imgHdr,landmarks,elecNeeded,options,uniTag)
 %
 % Place electrodes on the scalp surface. options.elecPara contains all the options
 % info for each electrode. Enforced RAS in the first step starting from ROAST v3.0
@@ -11,9 +11,6 @@ function electrodePlacement(subj,segOut,imgHdr,landmarks,elecNeeded,options,uniT
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,segOutName] = fileparts(segOut);
-template = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-% Load the scalp mask; template is used for saving the results with the same header info as the input
 % scalp = template.img==5;
 scalp=template.img>0; % fill in scalp first to avoid complication % ANDY 2024-03-12
 scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
@@ -165,16 +162,18 @@ for i=1:6
 end % remove the gel that goes into other tissue masks
 
 disp('saving placed electrodes...')
-template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_elec'];
-template.hdr.hist.descrip = 'electrode mask';
-% template.img = uint8(volume_elec)*255;
-template.img = uint8(volume_elec_C.*volume_elec);
+elec = template;
+elec.fileprefix = [dirname filesep subjName '_' uniTag '_mask_elec'];
+elec.hdr.hist.descrip = 'electrode mask';
+% elec.img = uint8(volume_elec)*255;
+elec.img = uint8(volume_elec_C.*volume_elec);
+save_untouch_nii(elec,[dirname filesep subjName '_' uniTag '_mask_elec.nii']);
 
-save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-template.fileprefix = [dirname filesep subjName '_' uniTag '_mask_gel'];
-template.hdr.hist.descrip = 'gel mask';
-% template.img = uint8(volume_gel)*255;
-template.img = uint8(volume_gel_C.*volume_gel);
-save_untouch_nii(template,[dirname filesep subjName '_' uniTag '_mask_gel.nii']);
+gel = template;
+gel.fileprefix = [dirname filesep subjName '_' uniTag '_mask_gel'];
+gel.hdr.hist.descrip = 'gel mask';
+% gel.img = uint8(volume_gel)*255;
+gel.img = uint8(volume_gel_C.*volume_gel);
+save_untouch_nii(gel,[dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 
 % save([dirname filesep subjName '_' uniTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');

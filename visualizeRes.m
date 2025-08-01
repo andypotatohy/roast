@@ -1,5 +1,5 @@
-function visualizeRes(subj,segOut,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
-% visualizeRes(subj,segOut,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
+function visualizeRes(subj,mask,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
+% visualizeRes(subj,mask,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -17,25 +17,15 @@ if ndims(varargin{1})==3
 else
     isRoast = 0;
     C = varargin{1}; ef_mag = varargin{2}; ef_all = varargin{3}; targetCoord = varargin{4};
+    indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
 end
 
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,segOutName] = fileparts(segOut);
-masks = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-allMask = masks.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
-if isRoast
-    gel = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-    numOfGel = max(gel.img(:));
-    % elec = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-    % numOfElec = max(elec.img(:));
-else
-    numOfGel = length(inCurrent);
-    indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
-end
-
+numOfGel = length(inCurrent);
+    
 % node = node + 0.5; already done right after mesh
 
 % scrsz = get(groot,'ScreenSize');
@@ -197,12 +187,12 @@ end
 
 disp('generating slice views...');
 
-brain = (allMask==1 | allMask==2);
+brain = (mask.img==1 | mask.img==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
-bbox = brainCrop(allMask);
+bbox = brainCrop(mask.img);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];
