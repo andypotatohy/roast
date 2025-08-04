@@ -128,6 +128,7 @@ else % for roast_target()
         delete([dirname filesep subjName '_' uniTag '_e' num2str(indSolved(i)) '.pos']);
     end
     
+    if all(isnan(A_all(:))), error('getDP did not converge for all the electrodes. Please check getDP before proceeding.'); end
 %     indAdata = find(~isnan(sum(sum(A,3),2))); % make sure no NaN is in matrix A
 %     A = A(indAdata,:,:);
 %     

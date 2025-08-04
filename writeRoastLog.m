@@ -322,7 +322,7 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'E-field focality at each target (in cm):\t');
+        fprintf(fid,'Focality of E-field magnitude at each target (in cm):\t');
         for i=1:length(opt.targetMagFoc)
             fprintf(fid,'%.2f',opt.targetMagFoc(i));
             if i<length(opt.targetMagFoc), fprintf(fid,','); end

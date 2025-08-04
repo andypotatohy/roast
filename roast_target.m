@@ -518,7 +518,7 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     % start targeting code
     p = optimize_prepare(p,A,locs);
     
-    if iscell(orient) && ismember('optimal',lower(orient(1)))
+    if iscell(orient) && ischar(orient{1}) && ismember('optimal',lower(orient(1)))
         u = zeros(numOfTargets,3);
         t0 = zeros(numOfTargets,2);
         for i=1:numOfTargets
@@ -543,10 +543,10 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     
     disp('Optimization DONE!');
     disp('======================================================');
-    disp('Results are saved as:');
+    disp('After program finishes, results will be saved as:');
     disp([dirname filesep subjName '_' uniqueTag '_targetResult.mat']);
     disp('======================================================');
-    disp('Stats at target locations are also saved in the log file: ');
+    disp('Stats at target locations will also be saved in the log file: ');
     disp([dirname filesep subjName '_targetLog,']);
     disp(['under tag: ' uniqueTag]);
         
@@ -579,7 +579,7 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     r.xopt = zeros(sum(~isNaNinA),4);
     r.xopt(:,1) = find(~isNaNinA);
     for i=1:size(A_all,2), r.xopt(:,i+1) = squeeze(A_all(~isNaNinA,i,:))*I_opt; end
-    
+
     F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,2));
     r.ef_all(:,:,:,1) = F(xi,yi,zi);
     F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,3));
@@ -592,14 +592,23 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     brain = (mask.img==1 | mask.img==2);
     nan_mask_brain = nan(size(brain));
     nan_mask_brain(find(brain)) = 1;
-    
+
     r.targetMag = zeros(numOfTargets,1); r.targetInt = zeros(numOfTargets,1);
     r.targetMagFoc = zeros(numOfTargets,1);
     ef_mag = r.ef_mag.*nan_mask_brain; ef_magTemp = ef_mag(~isnan(ef_mag(:)));
     for i=1:numOfTargets
-        r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
-        r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]) / 10; % in cm
-        r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
+        if ~isnan(ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3)))
+            r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
+            r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]) / 10; % in cm
+            r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
+        else
+            r.targetMag(i) = getDataAroundTar(ef_mag,targetCoord(i,:),xi,yi,zi,p.targetRadius);
+            r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]) / 10; % in cm
+            ef = [getDataAroundTar(r.ef_all(:,:,:,1).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius),...
+                  getDataAroundTar(r.ef_all(:,:,:,2).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius),...
+                  getDataAroundTar(r.ef_all(:,:,:,3).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius)];
+            r.targetInt(i) = dot(ef,p.u(i,:));
+        end
     end
     
     r.targetCoord = targetCoord;

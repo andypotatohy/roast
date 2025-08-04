@@ -223,7 +223,7 @@ if isRoast
     
     if ~strcmp(subjName,'nyhead')
         
-        disp('showing MRI and segmentations...');
+        disp('showing MRI...');
         if ~exist(subjRasRSPD,'file')
             error(['The subject MRI you provided ' subjRasRSPD ' does not exist. Check if you run through resampling or zero-padding if you tried to do that.']);
         end
@@ -255,13 +255,15 @@ if ~exist(masksFile,'file')
     error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation.']);
 else
     mask = load_untouch_nii(masksFile);
-    viewSeg(mask,mri2mni);
 end
 
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 numOfGel = length(inCurrent);
 
 if isRoast
+
+    disp('showing segmentations...')
+    viewSeg(mask,mri2mni);
     
     gelMask = [dirname filesep subjName '_' simTag '_mask_gel.nii'];
     if ~exist(gelMask,'file')
@@ -275,6 +277,7 @@ if isRoast
     else
         elec = load_untouch_nii(elecMask);
     end
+    disp('showing electrode placement...')
     viewElectrodes(mask,elec,gel,optRoast.landmarks,image,simTag);
     
 else
