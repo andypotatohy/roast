@@ -95,11 +95,16 @@ def preprocess_head_MRI(nii: nib.Nifti1Image, nii_seg: nib.Nifti1Image = None, a
     start = None
     end = None    
     
-    if d1 < 256:
+    if d1 > 256:
+        crop1 = d1-256
+        img = img[crop1//2:-(crop1//2+crop1%2)]
+        if nii_seg is not None: img_seg = img_seg[crop1//2:-(crop1//2+crop1%2)]
+        anterior_commissure[0] -= crop1//2
+        
+    elif d1 < 256:
         pad1 = 256-d1
         img = np.pad(img, ((pad1//2, pad1//2+pad1%2),(0,0),(0,0)))
         if nii_seg is not None: img_seg = np.pad(img_seg, ((pad1//2, pad1//2+pad1%2),(0,0),(0,0)))
-
         anterior_commissure[0] += pad1//2
         
     
@@ -184,11 +189,7 @@ def reshape_back_to_original(img, nii_original, reconstruction_parms, resample_o
             img = np.pad(img, ((0,0),(0,0),(start,pad_end))) # img[:,:,start:end]           
     elif d3 < 256:
         crop3 = 256-d3
-        if crop3 == 1:
-            img = img[:,:,crop3//2:]
-    
-        else:
-            img = img[:,:,crop3//2:-crop3//2+crop3%2]
+        img = img[:,:,crop3//2:-(crop3//2+crop3%2)]
     
     # pad or crop y axis
     if d2 > 256:    
@@ -197,17 +198,16 @@ def reshape_back_to_original(img, nii_original, reconstruction_parms, resample_o
             
     elif d2 < 256:
         crop2 = 256-d2
-        if crop2 == 1:
-            img = img[:,crop2//2:,:]
-        
-        else:
-            img = img[:,crop2//2:-crop2//2+crop2%2,:]
+        img = img[:,crop2//2:-(crop2//2+crop2%2),:]
         
     # pad or crop x axis
-    if d1 < 256:
+    if d1 > 256:    
+        pad1 = d1-256
+        img = np.pad(img, ((pad1//2,pad1//2+pad1%2),(0,0),(0,0)))#img[:,:,crop3:]
+       
+    elif d1 < 256:
         crop1 = 256-d1
-        img = img[crop1//2:-crop1//2+crop1%2,:,:]
-        
+        img = img[crop1//2:-(crop1//2+crop1%2),:,:]
         
     # resample to original resolution
     img = resize(img, nii_original.shape, anti_aliasing=True, preserve_range=True, order=resample_order)
