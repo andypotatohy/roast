@@ -721,6 +721,12 @@ else
             origin = inv(image.mat)*[0;0;0;1];
             origin = origin(1:3) + paddingAmt;
             image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
+            image.dim = image.dim+paddingAmt*2;
+            image.private.dat.dim = image.private.dat.dim+paddingAmt*2;
+            image.private.hdr.dim(2:4) = image.private.hdr.dim(2:4)+paddingAmt*2;
+            image.private.hdr.srow_x = image.mat(1,:);
+            image.private.hdr.srow_y = image.mat(2,:);
+            image.private.hdr.srow_z = image.mat(3,:);
             save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
         end
     else
@@ -915,7 +921,7 @@ disp('======================================================')
 disp('VISUALIZING THE SEGMENTATION... ')
 viewSeg(segMask,mri2mni);
 
-if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI' ext],'file')
+if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI.nii'],'file')
     disp('======================================================')
     disp('RESETTING HEADERS IN _MNI IMAGES ...')
     alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
