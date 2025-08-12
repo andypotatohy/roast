@@ -1,14 +1,12 @@
 function runNiftyReg(input_mri)
-% Computes and saves the inverse affine matrix as *_affine_matrix.txt using NiftyReg.
-% Skips computation if the file already exists.
-%
-% INPUT:
-%   input_mri - Full path to subject MRI NIfTI file
-%
-% OUTPUT:
-%   Affine - 4x4 inverse affine matrix (double)
+% runNiftyReg(input_mri)
+% 
+% Run affine registration between individual MRI and the MNI152 head using NiftyReg.
+% This is called when segmentation is done by Multiaxial. The output is
+% saved in the same format as in the _seg8.mat file output by SPM12.
 %
 % (c) Andrew Birnbaum, Parra Lab at CCNY
+%     Yu (Andy) Huang
 % June 2025
 
 % Choose correct NiftyReg path based on OS

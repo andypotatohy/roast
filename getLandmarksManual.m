@@ -1,21 +1,15 @@
 function [landmarks, smoothLandmarks] = getLandmarksManual(mask)
+% [landmarks, smoothLandmarks] = getLandmarksManual(mask)
+% 
 % Interactive GUI for manual selection of five anatomical landmarks 
 % (Nasion, Right Ear, Left Ear, and two Inion points) from a segmented MRI.
 % Visualizes the 3D skin and skull surfaces and guides the user step-by-step.
 %
-% INPUT:
-%   filepath - path to NIfTI (.nii) segmentation file with labeled tissues:
-%              label 5 = skin, label 4 = skull.
+% Developed for input MRIs that have failed registration to the MNI space
+% and need manual alignment
 %
-% OUTPUT:
-%   landmarks        - Nx3 array of selected voxel coordinates (original).
-%   smoothLandmarks  - Nx3 array of corresponding smoothed coordinates.
-%
-% Developed for clinical tDCS modeling applications, where robust and accurate
-% anatomical landmark selection is essential for electrode placement.
-%
-% (c) Andrew Birnbaum, Parra Lab at CCNY  
-%
+% (c) Andrew Birnbaum, Parra Lab at CCNY
+%     Yu (Andy) Huang
 % June 2025
 
 disp('=============    LOADING GUI FOR MODIFY ...    =============')

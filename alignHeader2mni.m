@@ -6,7 +6,7 @@ function alignHeader2mni(T1,T2,segOut,mri2mni)
 %
 % (c) Andrew Birnbaum, Parra Lab at CCNY
 %     Yu (Andy) Huang
-% April 2024
+% June 2025
 
 [dirname,segOutName] = fileparts(segOut);
 if isempty(dirname), dirname = pwd; end

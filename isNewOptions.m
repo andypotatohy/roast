@@ -7,6 +7,7 @@ function isNewOpt = isNewOptions(optNew,optOld,fun)
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+% July 2025 also checks Affine
 
 isNewOpt = 0;
 

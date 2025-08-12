@@ -14,6 +14,7 @@ function [electrode_coord,center]= fitCap2individual(scalp,scalp_surface,landmar
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 added EGI layout
+% July 2025 adapted for manual alignment
 
 nasion = landmarks(1,:);
 inion = landmarks(2,:);

@@ -5,7 +5,7 @@ function viewSeg(mask,mri2mni)
 % yhuang16@citymail.cuny.edu
 % July 2025
 
-% More anatomical looking colormap
+% More anatomical looking colormap by Andrew Birnbaum
 color_map = [
     0, 0, 0;                   % background: black
     1, 1, 1;                   % white matter: white

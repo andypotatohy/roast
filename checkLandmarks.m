@@ -1,22 +1,12 @@
 function landmarks = checkLandmarks(mask,landmarks)
+% landmarks = checkLandmarks(mask,landmarks)
 %
 % GUI for visual inspection and optional modification of anatomical landmarks 
-% (Nasion, Inion, Left Ear, Right Ear) on a segmented MRI head.
+% (Nasion, Inion, Right Ear, Left Ear) on a segmented MRI head.
 %
 % This function loads the segmentation, renders a 3D visualization of the skin and 
 % brain, and overlays the current landmark locations. The user can confirm the 
-% existing selections or relaunch the manual selection tool to modify them.
-%
-% INPUTS:
-%   segOut           - Path to the NIfTI (.nii) segmentation file.
-%   landmarks        - Nx3 array of landmark voxel coordinates.
-%   smooth           - Boolean flag: if true, use smoothed landmarks for display.
-%   smoothLandmarks  - Nx3 array of smoothed landmark coordinates.
-%   updated          - (Optional) Boolean flag indicating if landmarks were previously updated.
-%
-% OUTPUTS:
-%   landmarks        - Nx3 array of current (possibly updated) landmark coordinates.
-%   updated          - Boolean flag indicating whether the landmarks were changed.
+% existing selections or (re)launch the manual selection tool to modify them.
 %
 % USAGE NOTES:
 % - Segmentation labels: 5 = skin, 2 = brain.
@@ -26,7 +16,7 @@ function landmarks = checkLandmarks(mask,landmarks)
 % See also: getLandmarksManual
 %
 % (c) Andrew Birnbaum, Parra Lab at CCNY  
-% 
+%     Yu (Andy) Huang
 % June 2025
 
 % % Initialize updated flag only if it is not already set

@@ -40,9 +40,9 @@ function roast(subj,recipe,varargin)
 % If you also use the Multiaxial for segmentation by turning on the `multiaxial`
 % option, please cite this:
 %
-% Full-Head Segmentation of MRI with Abnormal Brain Anatomy: Model and Data Release
-% Andrew M Birnbaum, Adam Buchwald, Peter Turkeltaub, Adam Jacks, Yu Huang, Abhisheck Datta, Lucas C Parra, Lukas A Hirsch
-% https://arxiv.org/abs/2501.18716 (Jan 2025).
+% Birnbaum, A.M., Buchwald, A., Turkeltaub, P., Jacks, A., Huang, Y., Datta, A., 
+% Parra, L.C., Hirsch, L.A., Full-Head Segmentation of MRI with Abnormal Brain
+% Anatomy: Model and Data Release, arXiv preprint arXiv:2501.18716
 % 
 % ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
@@ -66,7 +66,7 @@ function roast(subj,recipe,varargin)
 %
 % (c) Multiaxial segmentation developed by Lukas Hirsch, and integrated into
 % ROAST by Andrew Birnbaum
-% April 2024
+% June 2025
 
 fprintf('\n\n');
 disp('=============================================================')

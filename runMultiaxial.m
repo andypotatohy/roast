@@ -3,12 +3,11 @@ function runMultiaxial(T1)
 % 
 % This calls Multiaxial segmentation that is based on a deep CNN.
 % 
-% See Hirsch et al 2021 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8209627/)
-% for details.
+% See Birnbaum et al 2025 (https://arxiv.org/abs/2501.18716) for details.
 %
 % (c) Andrew Birnbaum, Parra Lab at CCNY
 %     Yu (Andy) Huang
-% April 2024
+% June 2025
 
 % Install miniconda and Multiaxial enviornment if it doesn't exist
 % And prepare to run Multiaxial python script

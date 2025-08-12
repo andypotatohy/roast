@@ -1,34 +1,21 @@
 function viewElectrodes(mask,elec,gel,landmarks,imgHdr,uniTag)
+% viewElectrodes(mask,elec,gel,landmarks,imgHdr,uniTag)
 %
 % 3D Visualization of skin, brain, electrodes, gel, and anatomical landmarks
 % from segmented MRI data. Displays a rendered volume with overlaid surfaces
 % and points for interactive inspection of electrode placement.
-%
-% INPUTS:
-%   subj       - Path to the original NIfTI segmentation (.nii) file.
-%                The function assumes the segmented mask is in a file named 
-%                [subjName '_masks.nii'] in the same directory.
-%   elec       - 3D matrix of the same size as segmentation, where electrode
-%                regions have non-zero values.
-%   gel        - 3D matrix of the same size as segmentation, where gel 
-%                regions have non-zero values.
-%   landmarks  - (Optional) Nx3 array of anatomical landmark coordinates. If
-%                provided, the first four are labeled and displayed.
 %
 % USAGE NOTES:
 % - This function assumes the tissue labels in the segmentation:
 %     Label 5 = Skin
 %     Label 2 = Brain
 % - Landmarks will be displayed in red with text labels for Nasion, Inion,
-%   Left Ear, and Right Ear.
-%
-% OUTPUT:
-%   None. Launches an interactive 3D viewer with overlaid anatomy and electrodes.
+%   Right Ear, and Left Ear.
 %
 % See also: getLandmarksManual, checkLandmarks
 %
-% (c) Andrew Birnbaum, Parra Lab at CCNY  
-% 
+% (c) Andrew Birnbaum, Parra Lab at CCNY
+%     Yu (Andy) Huang
 % June 2025
 
 % nii_mask = flip(nii_mask, 2);      % Flip x-axis (left-right)

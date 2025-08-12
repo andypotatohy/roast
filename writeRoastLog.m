@@ -9,6 +9,7 @@ function opt = writeRoastLog(subject,opt,fun)
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+% July 2025 writes out the mri2mni matrix
 
 [dirname,subjName] = fileparts(subject);
 if isempty(dirname), dirname = pwd; end
