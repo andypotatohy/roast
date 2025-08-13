@@ -253,7 +253,7 @@ named as `custom1`, `custom2`, etc. You can of course do
 to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), 
 even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. 
 Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of 
-all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See ![this figure](./3spaces.jpg) for details.
+all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
 
 #### Example 6
 
