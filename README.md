@@ -249,7 +249,11 @@ into a text file, and save the text file to the MRI data directory with name
 electrodes you specified. You need to name each customized electrode in
 the text file starting with `"custom"` (e.g., for this example they're
 named as `custom1`, `custom2`, etc. You can of course do
-`"custom_MyPreferredElectrodeName"`). Note that you need to use the MRI that enters ROAST to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
+`"custom_MyPreferredElectrodeName"`). Note that you need to use the original MRI that you use to call `roast()` 
+to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), 
+even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. 
+Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of 
+all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See ![this figure](./3spaces.jpg) for details.
 
 #### Example 6
 
@@ -721,7 +725,7 @@ ROAST was supported by the NIH through grants R01MH111896, R01MH111439, R01NS095
 
 ROAST is NOT backwards compatible in the generated simulation data.
 
-Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST. Related to this, there are three spaces involved in ROAST (see below figure). ROAST always operates in the center box (model voxel space).
+Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST. Related to this, there are three spaces involved in ROAST (see below figure). ROAST operates and outputs in the center box (model voxel space).
 
 ![Three spaces involved in ROAST](./3spaces.jpg)
 
