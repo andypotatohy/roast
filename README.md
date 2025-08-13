@@ -50,7 +50,7 @@ they sum up to 0. You can also place electrodes at customized locations
 on the scalp. See [Example 5](#example-5) for details. You can also use a special recipe called "leadField", so that ROAST will automatically generate all the data that will allow you to call `roast_target()` later to perform targeted TES. See [Example 25](#example-25) and [How to use `roast_target`](#3-how-to-use-roast_target).
 
 `varargin`: Options for ROAST can be entered as `Name-Value` pairs in the 3rd argument 
-(available from ROAST v2.0). The syntax follows the Matlab convention (see `plot()` for example).
+(available from ROAST v2.0). The syntax follows the Matlab convention (see [`plot()`](https://www.mathworks.com/help/matlab/ref/plot.html#namevaluepairarguments) for example).
 
 *If you do not want to read the detailed info on the options below, you can go to [Example 24](#example-24) for quick reference.*
 
@@ -114,21 +114,28 @@ directory.
 If you ONLY have a T2 MRI, put the T2 file in the first argument `'subj'`
 when you call roast, just like what you would do when you only have a T1.
 
-`'multiaxial'` -- use Multiaxial (a deep convolutional neural network) for segmentation.  
+`'multiaxial'` -- use Multiaxial (deep convolutional neural networks) for segmentation.  
 `'on' | 'off' (default)`  
 For heads with abnormal anatomies such as a lesion, SPM usually cannot output a correct segmentation 
-that captures the lesions. You can use a pre-trained deep convolutional neural network known as the Multiaxial 
-for modeling these abnormal anatomies. To use Multiaxial instead of SPM for segmentation, simply turn on 
-this option. See [Example 17](#example-17). Note if you turn on `'multiaxial'`, please do not provide any T2 image
- (just providing T1 is enough), as Multiaxial only works with T1 images.
+that captures the lesions, and fails to align the head to the MNI space. In this case, you can use 
+pre-trained deep convolutional neural networks known as the Multiaxial for modeling these abnormal anatomies. 
+To use Multiaxial instead of SPM for segmentation, simply turn on this option. See [Example 17](#example-17). 
+If you turn on `'multiaxial'`, please do not provide any T2 image (just providing T1 is enough), as Multiaxial 
+only works with T1 images. Also if you turn on `'multiaxial'`, SPM will be disabled, and another open-source 
+toolbox [NiftyReg](https://github.com/KCL-BMEIS/niftyreg) will be called to register the head MRI into the MNI space. 
+Note if `'multiaxial'` is turned on, and the head MRI does not cover the lower head, we do not recommend you to 
+place any electrodes on the lower head or on the neck. But if you have to do this with this MRI, please turn off 
+`'multiaxial'` and do some zeropadding (see below) so that SPM will be called to extend the MRI to the lower head.
 
-`'manual_gui'` — Manually select anatomical landmarks and guide electrode placement using a 3D GUI.
-`'on' | 'off' (default)` When set to 'on', this option opens an interactive 3D graphical user interface that allows you to 
-manually select anatomical landmarks such as the nasion, inion, and ears for accurate affine alignment to MNI space. In 
-addition to helping with landmark selection, the GUI also enables you to visualize and adjust electrode placement to ensure 
-proper positioning, which is especially useful for subjects with abnormal anatomies or lesions where automated methods may 
-fail. This manual approach provides full control over the alignment and electrode setup process and should be used in place
-of automatic methods like SPM or Multiaxial when precise manual intervention is needed.
+`'manualGui'` — 3D GUI that allows users to manually select anatomical landmarks.
+`'on' | 'off' (default)`  
+For heads with abnormal anatomies such as a lesion, you may want to manually check if the automated registration from 
+either SPM or NiftyReg worked well. To do this, you can open an interactive 3D graphical user interface (GUI) that allows you to 
+visually check if the landmarks look good on the individual head ([Example X](#example-x)). If not, it means the registration 
+did not work well, and you can adjust it by clicking the "Modify" button in the GUI to manually click the anatomical landmarks 
+(Nasion, Inion, Right Ear, Left Ear, just follow the program step by step). Note if you manually select the landmarks, ROAST will 
+re-align the head MRI to the MNI space based on the landmarks you select, overwrite any registration computed by SPM or niftyReg, 
+and reset the headers in the [`"_MNI.nii"` images](#51-outputs-of-roast).
 
 `'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
 (see [Example 18](#example-18)).  
@@ -169,8 +176,8 @@ is not padding any slices to the MRI. You can ask ROAST to pad *N* empty
 slices in all the six directions of the input MRI (left, right, front,
 back, up and down), where *N* is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
-([Example 21](#example-21)). This is also useful for MRIs that are cut off at the nose. 
-If you specify a zeropadding of, say, 60 slices, ROAST can automatically get the segmentation 
+([Example 21](#example-21)). This is also useful for MRIs that are cut off at the nose and thus do not cover the lower head. 
+If you specify a zeropadding of, say, 60 slices, and turn off `'multiaxial'`, ROAST can automatically get the segmentation 
 of the lower part of the head, see ([Example 21](#example-21)).
 
 `'conductivities'` -- advanced options of ROAST, the values are stored as a 
@@ -353,7 +360,17 @@ for segmentation as well.
     roast('example/subject1.nii',[],'multiaxial','on')
 
 Run simulation on subject1 with default recipe. Segmentaion will be done by 
-a deep convolutional neural network known as the Multiaxial.
+deep convolutional neural networks known as the Multiaxial.
+
+#### Example X
+
+    roast('example/subject1.nii',[],'multiaxial','on','manualGui','on')
+
+Run simulation on subject1 with default recipe. Segmentaion will be done by 
+deep convolutional neural networks known as the Multiaxial. A 3D GUI will be 
+open to allow users to inspect the registration and to either confirm it or 
+modify it by manually selecting the anatomical landmarks. Useful when running 
+ROAST on a lesioned head for the first time to confirm if registration worked well.
 
 #### Example 18
 
