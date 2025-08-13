@@ -127,7 +127,7 @@ Note if `'multiaxial'` is turned on, and the head MRI does not cover the lower h
 place any electrodes on the lower head or on the neck. But if you have to do this with this MRI, please turn off 
 `'multiaxial'` and do some zeropadding (see below) so that SPM will be called to extend the MRI to the lower head.
 
-`'manualGui'` — 3D GUI that allows users to manually select anatomical landmarks.
+`'manualGui'` -- 3D GUI that allows users to manually check and select anatomical landmarks.  
 `'on' | 'off' (default)`  
 For heads with abnormal anatomies such as a lesion, you may want to manually check if the automated registration from 
 either SPM or NiftyReg worked well. To do this, you can open an interactive 3D graphical user interface (GUI) that allows you to 
@@ -178,7 +178,7 @@ back, up and down), where *N* is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
 ([Example 21](#example-21)). This is also useful for MRIs that are cut off at the nose and thus do not cover the lower head. 
 If you specify a zeropadding of, say, 60 slices, and turn off `'multiaxial'`, ROAST can automatically get the segmentation 
-of the lower part of the head, see ([Example 21](#example-21)).
+of the lower part of the head, see [Example 21](#example-21).
 
 `'conductivities'` -- advanced options of ROAST, the values are stored as a 
 structure, with the following field names:
@@ -734,7 +734,7 @@ Huang, Y., Thomas, C., Datta, A., Parra, L.C., [Optimized tDCS for Targeting Mul
 
 If you also use the Multiaxial for segmentation by turning on the `multiaxial` option, please cite this:
 
-Hirsch, L., Huang, Y., Parra, L.C., [Segmentation of MRI head anatomy using deep volumetric networks and multiple spatial priors](https://www.spiedigitallibrary.org/journals/journal-of-medical-imaging/volume-8/issue-3/034001/Segmentation-of-MRI-head-anatomy-using-deep-volumetric-networks-and/10.1117/1.JMI.8.3.034001.short). Journal of Medical Imaging, Vol. 8, Issue 3, 034001 (June 2021).
+Birnbaum, A.M., Buchwald, A., Turkeltaub, P., Jacks, A., Huang, Y., Datta, A., Parra, L.C., Hirsch, L.A., [Full-Head Segmentation of MRI with Abnormal Brain Anatomy: Model and Data Release](https://arxiv.org/abs/2501.18716), arXiv preprint arXiv:2501.18716 (Jan 2025).
 
 ROAST was supported by the NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
@@ -746,7 +746,8 @@ Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwidema
 
 ![Three spaces involved in ROAST](./3spaces.jpg)
 
-Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multiaxial` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). This model requires a Python Enviornment which should automatically be installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
+Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option (in v3.5) and the `multiaxial` option (in v4.0) developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). 
+These options require Python Enviornment that will be automatically installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
 
 ```
 Creating Multiaxial Enviornment
@@ -764,9 +765,11 @@ Download the proper dependencies by using Conda or Pip Install:
 Place the enviornment into your lib/multiaxial folder.
 ```
 
-ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only intel will work. An update will be added in the future. 
+ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work.
 
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
+
+ROAST has been adapted to model electric field in the mouse brain under transcranial electrical stimulation. See the [EFMouse toolbox](https://github.com/klabhub/EFMouse) by [the KLab](https://github.com/klabhub).
 
 ## 10. License
 
@@ -780,4 +783,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-April 2024
+August 2025
