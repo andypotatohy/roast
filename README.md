@@ -247,7 +247,7 @@ directory of ROAST).
 Run simulation on subject1 with recipe that includes: EGI electrodes
 E12 and E7; neck electrodes Nk1 and Nk3 (see `capInfo.xlsx`); and
 user-provided electrodes custom1 and custom3. You can use a free program
-called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
+called [MRIcro](https://people.cas.sc.edu/rorden/mricro/) to load
 the MRI first (note do NOT use MRIcron for this as MRIcron will not give you
 the true voxel coordinates) and click the locations on the scalp surface where you want
 to place the electrodes, record the voxel coordinates returned by MRIcro
@@ -493,7 +493,7 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 31](#example-31)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](https://people.cas.sc.edu/rorden/mricro/) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 31](#example-31)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
@@ -539,19 +539,19 @@ log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
     roast_target([],'MNI152leadField')
 
-If you have run [Example 26](#example-26), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 25](#example-25). Here in this example, we try to guide the current flow to hit the default target location (left primary motor cortex (`[-48 -8 50]`)) with maximal intensity (`'max-l1'` algorithm used) along the `'radial-in'` direction. All the options are in their defaults.
+If you have run [Example 26](#example-26), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 26](#example-26). Here in this example, we try to guide the current flow to hit the default target location (left primary motor cortex (`[-48 -8 50]`)) with maximal intensity (`'max-l1'` algorithm used) along the `'radial-in'` direction. All the options are in their defaults.
 
 #### Example 30
 
     roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
 
-If you have run [Example 27](#example-27), now you can perform targeting on the New York head using the simulation tag you used in [Example 26](#example-26). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized among all possible directions.
+If you have run [Example 27](#example-27), now you can perform targeting on the New York head using the simulation tag you used in [Example 27](#example-27). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized among all possible directions.
 
 #### Example 31
 
     roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordType','voxel','orient',[1 1 1])
 
-If you have run [Example 28](#example-28), now you can perform targeting on subject1 using the simulation tag you used in [Example 27](#example-27). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 26](#example-26), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`'example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orientation (`[1 1 1]`).
+If you have run [Example 28](#example-28), now you can perform targeting on subject1 using the simulation tag you used in [Example 28](#example-28). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 28](#example-28), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`'example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orientation (`[1 1 1]`).
 
 #### Example 32
 
