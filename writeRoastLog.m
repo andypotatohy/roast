@@ -158,7 +158,7 @@ switch fun
         end
         fprintf(fid,'\n');
 
-        fprintf(fid,'MRI that went into ROAST:\t');
+        fprintf(fid,'MRI that was modeled by ROAST:\t');
         fprintf(fid,'%s',opt.subjRasRSPD);
         if ~isempty(opt.T2)
             fprintf(fid,'\n');

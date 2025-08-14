@@ -593,14 +593,16 @@ A lot of info are hidden in the fancy `capInfo.xlsx` file under the ROAST root d
 
 ### 5.1 Outputs of `roast`
 
-`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all the options.
+`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, 
+where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed 
+values of all the options, the MRI that was modeled, and the corresponding `mri2mni` mapping matrix.
 
 The simulation data are mainly output in the following formats.
 
 #### Figure outputs
 
-ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
+ROAST outputs several figures for quick visualization of the simulation
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the placed electrodes; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a purple/magenta circle.
 
 #### Outputs in Matlab format
 
@@ -638,7 +640,7 @@ The results are also output in the following formats.
 
 #### Figure outputs
 
-`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a grayish/black circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
+`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a purple/magenta circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a purple/magenta circle.
 
 #### Outputs in Matlab format
 
@@ -684,7 +686,7 @@ Review the results generated from running [Example 25](#example-25), where `'awe
 
     reviewRes('nyhead','20180611T185950')
 
-Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brian by default.
+Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brain by default.
 
 #### Example 39
 
@@ -763,7 +765,7 @@ Download the proper dependencies by using Conda or Pip Install:
 -scikit-image
 -nibabel
 
-Place the enviornment into your lib/multiaxial folder.
+Place the enviornment into your lib/multiaxial folder under ROAST.
 ```
 
 ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work.

@@ -1,6 +1,19 @@
+ROAST V4.0 (codename: Dyker Heights) -- 2025/08/xx:
+
+Replaced the MultiPriors by the Multiaxial (a different CNN) as the segmentation engine that is better and fully independent from SPM, for modeling heads with abnormal anatomies (e.g. lesions).
+
+Related to this, NiftyReg is now used for registration when the Multiaxial is called for segmentation.
+
+Added an interactive GUI for users to check and modify registration, especially for heads with abnormal anatomies where automated registration may fail.
+
+Improved visualization.
+
+Output the mri2mni matrix so that users can use it for post-processing.
+
+
 ROAST V3.5 (codename: Dumbo) -- 2024/04/25:
 
-Added the Multiaxial (a deep CNN) as the segmentation engine, so that users can model heads with abnormal anatomies (e.g. lesions).
+Added the MultiPriors (a deep CNN) as the segmentation engine, so that users can model heads with abnormal anatomies (e.g. lesions).
 
 Changed some variable names related to segmentation for better readability.
 
