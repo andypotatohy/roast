@@ -134,7 +134,7 @@ either SPM or NiftyReg worked well. To do this, you can open an interactive 3D g
 visually check if the landmarks look good on the individual head ([Example X](#example-x)). If not, it means the registration 
 did not work well, and you can adjust it by clicking the "Modify" button in the GUI to manually click the anatomical landmarks 
 (Nasion, Inion, Right Ear, Left Ear, just follow the program step by step). Note if you manually select the landmarks, ROAST will 
-re-align the head MRI to the MNI space based on the landmarks you select, overwrite any registration computed by SPM or niftyReg, 
+re-align the head MRI to the MNI space based on the landmarks you select, overwrite any registration computed by SPM or NiftyReg, 
 and reset the headers in the [`"_MNI.nii"` images](#51-outputs-of-roast).
 
 `'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
@@ -161,7 +161,7 @@ log file (named as `"subjName_roastLog"`), parsed by the simulation tags.
 
 `'resampling'` -- re-sample the input MRI to 1mm isotropic resolution.  
 `'on' | 'off' (default)`  
-Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
+Sometimes the input MRI has a resolution other than 1 mm, e.g., 0.6 mm.
 While higher resolution can give more accurate models, the computation
 will be more expensive and thus slower. If you want a faster simulation,
 you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
@@ -221,7 +221,8 @@ See options below for details.
 
     roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
 
-Build the TES model on any subject with your own "recipe". Here we inject
+Build the TES model on any subject with your own "recipe". You could use any 
+head MRI you have in the 1st argument as `'path/to/your/subject.nii'`. Here we inject
 0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
 and 0.4 mA flowing out of O2. You can define any stimulation montage you want
 in the 2nd argument, with `electrodeName-injectedCurrent` pair. Electrodes are
@@ -401,8 +402,8 @@ Run simulation on the MNI152 averaged head, but add 60 empty slices on
 each of the six directions to the MRI first, to allow placement of
 electrode Exx19, which is outside of the MRI (i.e., several centimeters
 below the most bottom slice of the MRI). This zeropadding also will generate the 
-segmentation of the lower part of the head, thanks to the extended TPM coming along 
-with ROAST. You can visually check this by 
+segmentation of the lower part of the head (provided `'multiaxial'` is turned off), 
+thanks to the extended TPM coming along with ROAST. You can visually check this by 
 
     reviewRes([],'paddingExample','all')
 
@@ -459,9 +460,9 @@ From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling t
 
     roast([],'leadField','simulationTag','MNI152leadField')
 
-This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message the first time you run this asking you for confirmation, so be patient to get the lead field for targeting.
+This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message reminding you of this, so be patient to get the lead field for targeting.
 
-Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multiaxial`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
+Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multiaxial`, `manualGui`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
 
 You can also generate the lead field for the New York head, which will take even more time as the solving of the New York head (0.5 mm resolution) takes twice the time of solving a 1-mm head model.
 
