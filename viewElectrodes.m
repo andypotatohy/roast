@@ -29,7 +29,7 @@ elec = imgaussfilt3(single(elec.img>0), 1);
 gel = imgaussfilt3(single(gel.img>0), 1);
 
 % Create figure
-figure('Name', '3D Viewer. Please rotate and inspect.', ...
+fh=figure('Name', '3D Viewer. Please rotate and inspect.', ...
        'NumberTitle', 'off', ...
        'Position', [100, 100, 1200, 800], ...
        'Color', 'white');
@@ -89,6 +89,7 @@ light('Position', [1, 0, 1], 'Style', 'infinite');
 lighting phong;
 rotate3d on;
 title(['Electrode placement in Simulation: ' uniTag]);
+movegui(fh,'center')
 drawnow
 %     % Save figure (optional — change path as needed)
 %     saveas(gcf, fullfile(dirname, [subjName '_3DView.fig']));
