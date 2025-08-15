@@ -61,9 +61,6 @@ for i=1:size(T1,1)
     
     if strcmp(ext,'.hdr'), ref = [dirname filesep t1name '.img']; end
     
-    t1Data = load_untouch_nii(ref);
-    sliceshow(t1Data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.'); drawnow
-        
     matlabbatch{1}.spm.spatial.preproc.channel.vols = {ref};  % image to be segmented
     matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.001; % P(beta) % 0.0001;
     matlabbatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;
@@ -80,9 +77,6 @@ for i=1:size(T1,1)
         if strcmp(ext2,'.hdr'), ref2 = [dirname2 filesep t2name '.img']; end
 %         fprintf('Using %s to segment T1 and T2 images: %s %s\n', Template, ref, ref2);
 
-        t2Data = load_untouch_nii(ref2);
-        sliceshow(t2Data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.'); drawnow
-        
         matlabbatch{1}.spm.spatial.preproc.channel(2).vols = {ref2}; % the 2nd image aiding segmentation
         matlabbatch{1}.spm.spatial.preproc.channel(2).biasreg = 0.001; % 0.0001;
         matlabbatch{1}.spm.spatial.preproc.channel(2).biasfwhm = 60;

@@ -5,18 +5,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 1:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('','','multipriors','on')
+    roast('','','multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 2:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -27,7 +27,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 3:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -38,7 +38,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 4:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -49,18 +49,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 5:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast([],{'Exx19',1,'C4',-1},'zeropadding',20,'multipriors','on')
+    roast([],{'Exx19',1,'C4',-1},'zeropadding',20,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 6:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -71,18 +71,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 7:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'multipriors','on')
+    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 8:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -93,18 +93,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 9:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('example/subject1.nii',[],'T2','example/subject1_T2.nii','multipriors','on')
+    roast('example/subject1.nii',[],'T2','example/subject1_T2.nii','multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 10:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -115,18 +115,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 11:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'resampling','on','zeropadding',20,'multipriors','on')
+    roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4},'resampling','on','zeropadding',20,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 12:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -141,7 +141,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 13:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -152,7 +152,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 14:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -163,7 +163,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 15:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -174,7 +174,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 16:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -185,7 +185,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 17:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -200,7 +200,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 18:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -211,7 +211,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 19:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -222,7 +222,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 20:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -233,7 +233,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 21:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -244,7 +244,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 22:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -255,7 +255,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 23:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -266,7 +266,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 24:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -284,7 +284,7 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 25:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -295,18 +295,18 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 26:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('nyhead',[],'multipriors','on')
+    roast('nyhead',[],'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 27:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -317,29 +317,29 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 28:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('nyhead',[],'resampling','on','zeropadding',25,'multipriors','on')
+    roast('nyhead',[],'resampling','on','zeropadding',25,'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 29:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
 try
-    roast('nyhead',[],'electype','ring','elecsize',[7 10 3],'multipriors','on')
+    roast('nyhead',[],'zeropadding',5,'electype','ring','elecsize',[7 10 3],'multiaxial','on')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 30:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
@@ -350,31 +350,33 @@ try
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 31:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 %pause
 close all
 
-% test on leadfield and roast_target, reviewRes
 try
-    roast([],'leadfield','multipriors','on','zeropadding',10,'electype','ring','simulationtag','LFwithMP')
+    roast([],'leadfield','multiaxial','on','zeropadding',10,'electype','ring','simulationtag','LFwithMA')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 32:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 % pause
 close all
 
 try
-    roast('nyhead','leadfield','multipriors','on','zeropadding',10,'electype','ring','simulationtag','nyLFwithMP')
+    roast('nyhead','leadfield','multiaxial','on','zeropadding',10,'electype','ring','simulationtag','nyLFwithMA')
 catch ME
     fid=fopen('errLog.txt','a');
     fprintf(fid,'error at running cmd 33:\n');
-    fprintf(fid,ME.message);
+    fprintf(fid,'%s\n',ME.message);
     fclose(fid);
 end
 % pause
 close all
+
+% add test on roast_target, reviewRes
+% add test on manual gui and align

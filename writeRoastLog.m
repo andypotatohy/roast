@@ -9,6 +9,7 @@ function opt = writeRoastLog(subject,opt,fun)
 % yhuang16@citymail.cuny.edu
 % April 2018
 % August 2019 callable by roast_target()
+% July 2025 writes out the mri2mni matrix
 
 [dirname,subjName] = fileparts(subject);
 if isempty(dirname), dirname = pwd; end
@@ -30,7 +31,7 @@ switch fun
         if ~exist([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'file')
             save([dirname filesep subjName '_' uniqueTag '_roastOptions.mat'],'opt');
         else
-            error('You''re about to run a simulation using options that you never used before, but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
+            error('You''re about to run a simulation using options that you never used before (especially if you manually chose different landmarks in the manual GUI), but forgot to use a new tag for it. ROAST will get confused when managing different simulations with the same tag. Please use a new tag.');
         end
         
         fprintf(fid,'%s:\n',uniqueTag);
@@ -111,14 +112,14 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'multipriors:\t');
-        if opt.multipriors
+        fprintf(fid,'multiaxial:\t');
+        if opt.multiaxial
             fprintf(fid,'on');
         else
             fprintf(fid,'off');
         end
         fprintf(fid,'\n');
-
+        
         fprintf(fid,'meshOpt:\t');
         fprintf(fid,'radbound: %d; angbound: %d; distbound: %.1f; reratio: %d; maxvol: %d',...
             opt.meshOpt.radbound,opt.meshOpt.angbound,opt.meshOpt.distbound,opt.meshOpt.reratio,opt.meshOpt.maxvol);
@@ -155,6 +156,26 @@ switch fun
         else
             fprintf(fid,'yes');
         end
+        fprintf(fid,'\n');
+
+        fprintf(fid,'MRI that was modeled by ROAST:\t');
+        fprintf(fid,'%s',opt.subjRasRSPD);
+        if ~isempty(opt.T2)
+            fprintf(fid,'\n');
+            fprintf(fid,'                         \t');
+            fprintf(fid,'%s',opt.T2);
+        end
+        fprintf(fid,'\n');
+
+        fprintf(fid,'mri2mni matrix:\t [');
+        for i=1:size(opt.mri2mni,1)
+            for j=1:size(opt.mri2mni,2)
+                fprintf(fid,'%.1f',opt.mri2mni(i,j));
+                if j<size(opt.mri2mni,2), fprintf(fid,','); end
+            end
+            if i<size(opt.mri2mni,1), fprintf(fid,'; '); end
+        end
+        fprintf(fid,']');
         
         fprintf(fid,'\n\n');
         fclose(fid);
@@ -302,7 +323,7 @@ switch fun
         end
         fprintf(fid,'\n');
         
-        fprintf(fid,'E-field focality at each target (in cm):\t');
+        fprintf(fid,'Focality of E-field magnitude at each target (in cm):\t');
         for i=1:length(opt.targetMagFoc)
             fprintf(fid,'%.2f',opt.targetMagFoc(i));
             if i<length(opt.targetMagFoc), fprintf(fid,','); end

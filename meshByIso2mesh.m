@@ -1,5 +1,5 @@
-function [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
-% [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag)
+function [node,elem,face] = meshByIso2mesh(subj,mask,elec,gel,opt,imgHdr,uniTag)
+% [node,elem,face] = meshByIso2mesh(subj,mask,elec,gel,opt,imgHdr,uniTag)
 %
 % Generate volumetric tetrahedral mesh using iso2mesh toolbox
 % http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Download
@@ -11,42 +11,21 @@ function [node,elem,face] = meshByIso2mesh(subj,spmOut,segOut,opt,hdrInfo,uniTag
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,spmOutName] = fileparts(spmOut);
-mappingFile = [dirname filesep spmOutName '_seg8.mat'];
-if ~exist(mappingFile,'file')
-    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-else
-    load(mappingFile,'image','Affine');
-    mri2mni = Affine*image(1).mat;
-    % mapping from MRI voxel space to MNI space
-end
-
-[~,segOutName] = fileparts(segOut);
-data = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-allMask = data.img;
-allMaskShow = data.img;
+allMask = mask.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
 % data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
 % allMask(data.img==255) = 7;
 % data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
 % allMask(data.img==255) = 8;
 
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-numOfGel = max(data.img(:));
+numOfGel = max(gel.img(:));
 for i=1:numOfGel
-    allMask(data.img==i) = numOfTissue + i;
+    allMask(gel.img==i) = numOfTissue + i;
 end
-allMaskShow(data.img>0) = numOfTissue + 1;
-data = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-numOfElec = max(data.img(:));
+numOfElec = max(elec.img(:));
 for i=1:numOfElec
-    allMask(data.img==i) = numOfTissue + numOfGel + i;
+    allMask(elec.img==i) = numOfTissue + numOfGel + i;
 end
-allMaskShow(data.img>0) = numOfTissue + 2;
-
-% sliceshow(allMask,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.')
-sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
-drawnow
 
 % allMask = uint8(allMask);
 
@@ -60,7 +39,7 @@ drawnow
 [node,elem,face] = cgalv2m(allMask,opt,opt.maxvol);
 node(:,1:3) = node(:,1:3) + 0.5; % then voxel space
 
-for i=1:3, node(:,i) = node(:,i)*hdrInfo.pixdim(i); end
+for i=1:3, node(:,i) = node(:,i)*imgHdr(1).mat(i,i); end
 % Put mesh coordinates into pseudo-world space (voxel space but scaled properly
 % using the scaling factors in the header) to avoid mistakes in
 % solving. Putting coordinates into pure-world coordinates causes other

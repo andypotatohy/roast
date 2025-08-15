@@ -47,12 +47,12 @@ recipe is anode on Fp1 (1 mA) and cathode on P4 (-1 mA). You can specify
 any recipe you want in the format of `electrodeName-injectedCurrent` pair
 (see [Example 3](#example-3)). You can pick any electrode from the 10/20, 10/10, 10/05, BioSemi-256, or EGI HCGSN-256 EEG system (see the Microsoft Excel file `capInfo.xlsx` under the root directory of ROAST). The unit of the injected current is in milliampere (mA). Make sure
 they sum up to 0. You can also place electrodes at customized locations
-on the scalp. See [Example 5](#example-5) for details. You can also use a special recipe called "leadField", so that ROAST will automatically generate all the data that will allow you to call `roast_target()` later to perform targeted TES. See [Example 25](#example-25) and [How to use `roast_target`](#3-how-to-use-roast_target).
+on the scalp. See [Example 5](#example-5) for details. You can also use a special recipe called "leadField", so that ROAST will automatically generate all the data that will allow you to call `roast_target()` later to perform targeted TES. See [Example 26](#example-26) and [How to use `roast_target`](#3-how-to-use-roast_target).
 
 `varargin`: Options for ROAST can be entered as `Name-Value` pairs in the 3rd argument 
-(available from ROAST v2.0). The syntax follows the Matlab convention (see `plot()` for example).
+(available from ROAST v2.0). The syntax follows the Matlab convention (see [`plot()`](https://www.mathworks.com/help/matlab/ref/plot.html#namevaluepairarguments) for example).
 
-*If you do not want to read the detailed info on the options below, you can go to [Example 24](#example-24) for quick reference.*
+*If you do not want to read the detailed info on the options below, you can go to [Example 25](#example-25) for quick reference.*
 
 `'capType'` -- the EEG system that you want to pick any electrode from.  
 `'1020' | '1010' (default) | '1005' | 'BioSemi' | 'EGI'`  
@@ -114,16 +114,31 @@ directory.
 If you ONLY have a T2 MRI, put the T2 file in the first argument `'subj'`
 when you call roast, just like what you would do when you only have a T1.
 
-`'multipriors'` -- use MultiPriors (a deep convolutional neural network) for segmentation.  
+`'multiaxial'` -- use Multiaxial (deep convolutional neural networks) for segmentation.  
 `'on' | 'off' (default)`  
 For heads with abnormal anatomies such as a lesion, SPM usually cannot output a correct segmentation 
-that captures the lesions. You can use a pre-trained deep convolutional neural network known as the MultiPriors 
-for modeling these abnormal anatomies. To use MultiPriors instead of SPM for segmentation, simply turn on 
-this option. See [Example 17](#example-17). Note if you turn on `'multipriors'`, please do not provide any T2 image
- (just providing T1 is enough), as MultiPriors only works with T1 images.
+that captures the lesions, and fails to align the head to the MNI space. In this case, you can use 
+pre-trained deep convolutional neural networks known as the Multiaxial for modeling these abnormal anatomies. 
+To use Multiaxial instead of SPM for segmentation, simply turn on this option. See [Example 17](#example-17). 
+If you turn on `'multiaxial'`, please do not provide any T2 image (just providing T1 is enough), as Multiaxial 
+only works with T1 images. Also if you turn on `'multiaxial'`, SPM will be disabled, and another open-source 
+toolbox [NiftyReg](https://github.com/KCL-BMEIS/niftyreg) will be called to register the head MRI into the MNI space. 
+Note if `'multiaxial'` is turned on, and the head MRI does not cover the lower head, we do not recommend you to 
+place any electrodes on the lower head or on the neck. But if you have to do this with this MRI, please turn off 
+`'multiaxial'` and do some zeropadding (see below) so that SPM will be called to extend the MRI to the lower head.
+
+`'manualGui'` -- 3D GUI that allows users to manually check and select anatomical landmarks.  
+`'on' | 'off' (default)`  
+For heads with abnormal anatomies such as a lesion, you may want to manually check if the automated registration from 
+either SPM or NiftyReg worked well. To do this, you can open an interactive 3D graphical user interface (GUI) that allows you to 
+visually check if the landmarks look good on the individual head ([Example 18](#example-18)). If not, it means the registration 
+did not work well, and you can adjust it by clicking the "Modify" button in the GUI to manually click the anatomical landmarks 
+(Nasion, Inion, Right Ear, Left Ear, just follow the program step by step). Note if you manually select the landmarks, ROAST will 
+re-align the head MRI to the MNI space based on the landmarks you select, overwrite any registration computed by SPM or NiftyReg, 
+and reset the headers in the [`"_MNI.nii"` images](#51-outputs-of-roast).
 
 `'meshOptions'` -- advanced options of ROAST, for controlling mesh parameters
-(see [Example 18](#example-18)).  
+(see [Example 19](#example-19)).  
 5 sub-options are available:
 - `meshOpt.radbound`: maximal surface element size, default 5;
 - `meshOpt.angbound`: mimimal angle of a surface triangle, default 30;
@@ -140,20 +155,20 @@ identify if a certain simulation has been already run. If yes, it will
 just load the results to save time. You can leave this option empty so 
 that ROAST will just use the date and time as the unique tag for the
 simulation. Or you can provide your preferred tag for a specific
-simulation ([Example 19](#example-19)), then you can find it more easily later. Also all the
+simulation ([Example 20](#example-20)), then you can find it more easily later. Also all the
 simulation history with options info for each simulation are saved in the
 log file (named as `"subjName_roastLog"`), parsed by the simulation tags.
 
 `'resampling'` -- re-sample the input MRI to 1mm isotropic resolution.  
 `'on' | 'off' (default)`  
-Sometimes the input MRI has a resolution of not being 1 mm, e.g., 0.6 mm.
+Sometimes the input MRI has a resolution other than 1 mm, e.g., 0.6 mm.
 While higher resolution can give more accurate models, the computation
 will be more expensive and thus slower. If you want a faster simulation,
 you can ask ROAST to resample the MRI into 1 mm isotropic resolution by
-turning on this option ([Example 20](#example-20)). Also it is recommended to turn on
+turning on this option ([Example 21](#example-21)). Also it is recommended to turn on
 this option if your input MRI has anisotropic resolution (e.g., 1 mm by
 1.2 mm by 1.2 mm), as the electrode size will not be exact if the model
-is built from an MRI with anisotropic resolution. From ROAST v3.0, the data generated by ROAST can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software), if the input MRI has 1 mm resolution. Users can turn on `'resampling'` option for non-1 mm resolution MRI if they want to load the results (only the lead field) in Soterix software later for better visualization. See [Example 26](#example-26).
+is built from an MRI with anisotropic resolution. From ROAST v3.0, the data generated by ROAST can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software), if the input MRI has 1 mm resolution. Users can turn on `'resampling'` option for non-1 mm resolution MRI if they want to load the results (only the lead field) in Soterix software later for better visualization. See [Example 27](#example-27).
 
 `'zeroPadding'` -- extend the input MRI by some amount, to avoid
 complications when electrodes are placed by the image boundaries. Default
@@ -161,9 +176,9 @@ is not padding any slices to the MRI. You can ask ROAST to pad *N* empty
 slices in all the six directions of the input MRI (left, right, front,
 back, up and down), where *N* is a positive integer. This is very useful
 when placing big electrodes on the locations close to image boundaries
-([Example 21](#example-21)). This is also useful for MRIs that are cut off at the nose. 
-If you specify a zeropadding of, say, 60 slices, ROAST can automatically get the segmentation 
-of the lower part of the head, see ([Example 21](#example-21)).
+([Example 22](#example-22)). This is also useful for MRIs that are cut off at the nose and thus do not cover the lower head. 
+If you specify a zeropadding of, say, 60 slices, and turn off `'multiaxial'`, ROAST can automatically get the segmentation 
+of the lower part of the head, see [Example 22](#example-22).
 
 `'conductivities'` -- advanced options of ROAST, the values are stored as a 
 structure, with the following field names:
@@ -178,7 +193,7 @@ structure, with the following field names:
 You can use this option to customize the electrical conductivity for each tissue, each electrode, as well as the
 conducting medium under each electrode. You can even assign different conductivity
 values to different electrodes and their conducting media (e.g., `'gel'`). See
-[Example 22](#example-22) and [Example 23](#example-23) for details.
+[Example 23](#example-23) and [Example 24](#example-24) for details.
 
 ### 2.2 Examples on `roast`
 
@@ -206,7 +221,8 @@ See options below for details.
 
     roast('example/subject1.nii',{'F1',0.3,'P2',0.7,'C5',-0.6,'O2',-0.4})
 
-Build the TES model on any subject with your own "recipe". Here we inject
+Build the TES model on any subject with your own "recipe". You could use any 
+head MRI you have in the 1st argument as `'path/to/your/subject.nii'`. Here we inject
 0.3 mA at electrode F1, 0.7 mA at P2, and we ask 0.6 mA coming out of C5,
 and 0.4 mA flowing out of O2. You can define any stimulation montage you want
 in the 2nd argument, with `electrodeName-injectedCurrent` pair. Electrodes are
@@ -231,7 +247,7 @@ directory of ROAST).
 Run simulation on subject1 with recipe that includes: EGI electrodes
 E12 and E7; neck electrodes Nk1 and Nk3 (see `capInfo.xlsx`); and
 user-provided electrodes custom1 and custom3. You can use a free program
-called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load
+called [MRIcro](https://people.cas.sc.edu/rorden/mricro/) to load
 the MRI first (note do NOT use MRIcron for this as MRIcron will not give you
 the true voxel coordinates) and click the locations on the scalp surface where you want
 to place the electrodes, record the voxel coordinates returned by MRIcro
@@ -241,7 +257,11 @@ into a text file, and save the text file to the MRI data directory with name
 electrodes you specified. You need to name each customized electrode in
 the text file starting with `"custom"` (e.g., for this example they're
 named as `custom1`, `custom2`, etc. You can of course do
-`"custom_MyPreferredElectrodeName"`). Note that you need to use the MRI that enters ROAST to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
+`"custom_MyPreferredElectrodeName"`). Note that you need to use the original MRI that you use to call `roast()` 
+to click for the customized electrode locations (here in this example you need to load `'example/subject1.nii'`), 
+even if the MRI is not in RAS orientation, or you turn on the `'resampling'` or use `'zeroPadding'` option. 
+Just record whatever you get from the original MRI that you used for running ROAST, and ROAST will take care of 
+all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
 
 #### Example 6
 
@@ -338,25 +358,35 @@ for segmentation as well.
 
 #### Example 17
 
-    roast('example/subject1.nii',[],'multipriors','on')
+    roast('example/subject1.nii',[],'multiaxial','on')
 
 Run simulation on subject1 with default recipe. Segmentaion will be done by 
-a deep convolutional neural network known as the MultiPriors.
+deep convolutional neural networks known as the Multiaxial.
 
 #### Example 18
+
+    roast('example/subject1.nii',[],'multiaxial','on','manualGui','on')
+
+Run simulation on subject1 with default recipe. Segmentaion will be done by 
+deep convolutional neural networks known as the Multiaxial. A 3D GUI will be 
+open to allow users to inspect the registration and to either confirm it or 
+modify it by manually selecting the anatomical landmarks. Useful when running 
+ROAST on a lesioned head for the first time to confirm if registration worked well.
+
+#### Example 19
 
     roast([],[],'meshoptions',struct('radbound',4,'maxvol',8))
 
 Run simulation on the MNI152 averaged head with default recipe. Two of
 the mesh options are customized.
 
-#### Example 19
+#### Example 20
 
     roast([],[],'simulationTag','roastDemo')
 
 Give the default run of ROAST a tag as `'roastDemo'`.
 
-#### Example 20
+#### Example 21
 
     roast('example/subject1.nii',[],'resampling','on')
 
@@ -364,7 +394,7 @@ Run simulaiton on subject1 with default recipe, but resample the MRI of
 subject1 to 1mm isotropic resolution first (the original MRI of subject1
 has resolution of 1mm by 0.99mm by 0.99mm).
 
-#### Example 21
+#### Example 22
 
     roast([],{'Exx19',1,'C4',-1},'zeropadding',60,'simulationTag','paddingExample')
 
@@ -372,8 +402,8 @@ Run simulation on the MNI152 averaged head, but add 60 empty slices on
 each of the six directions to the MRI first, to allow placement of
 electrode Exx19, which is outside of the MRI (i.e., several centimeters
 below the most bottom slice of the MRI). This zeropadding also will generate the 
-segmentation of the lower part of the head, thanks to the extended TPM coming along 
-with ROAST. You can visually check this by 
+segmentation of the lower part of the head (provided `'multiaxial'` is turned off), 
+thanks to the extended TPM coming along with ROAST. You can visually check this by 
 
     reviewRes([],'paddingExample','all')
 
@@ -386,7 +416,7 @@ of 10 to start with, and if you're not happy with the results, just increase
 the amount of zero-padding. But the best solution is to get an MRI that covers
 the area where you want to place the electrodes.
 
-#### Example 22
+#### Example 23
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'conductivities',struct('csf',0.6,'electrode',0.1))
 
@@ -394,7 +424,7 @@ Run simulation on the MNI152 averaged head with specified recipe. The
 conductivity values of CSF and electrodes are customized. Conductivities
 of other tissues will use the literature values.
 
-#### Example 23
+#### Example 24
 
     roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'pad','disc','pad'},'conductivities',struct('gel',[1 0.3 1],'electrode',[0.1 5.9e7 0.1]))
 
@@ -407,7 +437,7 @@ in mind that the values you put in the vector in `'gel'` and `'electrode'`
 field in `'conductivities'` option should follow the order of electrodes
 you put in the `'recipe'` argument.
 
-#### Example 24
+#### Example 25
 
 All the options can be combined to meet your specific simulation needs.
 
@@ -426,23 +456,23 @@ Now you should know what this will do.
 
 From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling the `roast_target()` function. To be able to do targeting, you have to first run `roast()` with `leadField` as the value for argument `recipe`, i.e.,
 
-### Example 25
+### Example 26
 
     roast([],'leadField','simulationTag','MNI152leadField')
 
-This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message the first time you run this asking you for confirmation, so be patient to get the lead field for targeting.
+This will automatically generate all the lead field data on the MNI152 head required by `roast_target()` to perform targeting on this head. The candidate electrodes are the 74 electrodes following the 1010 system (2 electrodes on the ear are removed), and you can find their names in a separate text file under ROAST root directory (`elec72.loc`). Note generating the lead field data will usually take a lot of time (half day to a day depending on the MRI resolution and machine specs). You'll get a warning message reminding you of this, so be patient to get the lead field for targeting.
 
-Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multipriors`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
+Note you can still config most of the options in ROAST even though you're generating the lead field. Options that are still usable when generating the lead field are: `T2`, `multiaxial`, `manualGui`, `meshOptions`, `simulationTag`, `resampling`, `zeroPadding`, and `conductivities`. All the options on electrodes (`capType`, `elecType`, `elecSize`, `elecOri`) cannot be used and will be set to the defaults for generating the lead field, i.e., `capType` will be set to `1010`, `elecType` will be set to `disc`, `elecSize` will be set to `[6mm 2mm]`, `elecOri` will be set to `[]`.
 
 You can also generate the lead field for the New York head, which will take even more time as the solving of the New York head (0.5 mm resolution) takes twice the time of solving a 1-mm head model.
 
-### Example 26
+### Example 27
 
     roast('nyhead','leadField','simulationTag','nyheadLeadField')
 
 If the input MRI has 1 mm isotropic resolution, then results from using `leadField` as the recipe can be loaded into the [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). If the input MRI does not have 1 mm isotropic resolution but you turn on the `resampling` option, the generated lead field can also be readable by Soterix software.
 
-### Example 27
+### Example 28
 
     roast('example/subject1.nii','leadField','resampling','on','simulationTag','subj1LeadFieldForSoterix')
 
@@ -453,9 +483,9 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `roast_target(subj,simTag,targetCoord,varargin)`
 
-`subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#21-synopsis-of-roast) as the `roast()` function. Make sure that you use the original MRI that you used to run `roast()` for generating the lead field, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` (see [Example 30](#example-30)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
+`subj`: file name of the MRI of the subject that you want to run targeting. This follows the [same syntax](#21-synopsis-of-roast) as the `roast()` function. Make sure that you use the original MRI that you used to run `roast()` for generating the lead field, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` (see [Example 31](#example-31)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
 
-`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 25](#example-25), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 28](#example-28). Similarly, if you run [Example 26](#example-26) first, you can run [Example 29](#example-29) for targeting on the New York head.
+`simTag`: the `simulationTag` that you used in `roast()` when generating the lead field. For example, if you generated the lead field for the MNI152 head following [Example 26](#example-26), you will use the tag you entered in that example (`'MNI152leadField'`) for this `simTag` in `roast_target()`. See [Example 29](#example-29). Similarly, if you run [Example 27](#example-27) first, you can run [Example 30](#example-30) for targeting on the New York head.
 
 `targetCoord`: the coordinates of the locations in the brain that you want to target. You can do either single location or multiple locations, by putting the coordinates into a *N-by-3* matrix, where *N* is the number of target locations. The coordinates can be either the voxel coordinates or the MNI coordinates, specified by the option `coordType` (see below). If you don't provide any target location, it defaults to the MNI coordinates of the left primary motor cortex (`[-48 -8 50]`).
 
@@ -463,11 +493,11 @@ This will generate the lead field for subject1. Also since the MRI resolution is
 
 `'coordType'` -- the coordinate space where the target coordinates reside.  
 `'MNI'` (default) | `'voxel'`  
-You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](http://www.mccauslandcenter.sc.edu/crnl/mricro) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 30](#example-30)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding).
+You can tell `roast_target()` the target locations in either the MNI coordinates or the voxel coordinates. If you use the voxel coordinates, you can use a free program called [MRIcro](https://people.cas.sc.edu/rorden/mricro/) to load the MRI (note do NOT use MRIcron for this as MRIcron will not give you the true voxel coordinates) and click the locations in the brain where you want to target. MRIcro will return the voxel coordinates of the locations you click. Make sure that you use the original MRI that you used to run `roast()` to click for the voxel coordinates, even if the original MRI is not in RAS orientation, or you turned on the `'resampling'` or did `'zeroPadding'` option when running `roast()` to generate the lead field (see [Example 31](#example-31)), as `roast_target()`  will take care of all the transforms of MRI data (re-orientation into RAS, resampling or zero-padding). See [this figure](./3spaces.jpg) for details.
 
 `'optType'` -- the specific algorithm used to perform the targeted TES.  
 `'unconstrained-wls'` | `'wls-l1'` | `'wls-l1per'` | `'unconstrained-lcmv'` | `'lcmv-l1'` | `'lcmv-l1per'` | `'max-l1'` (default) | `'max-l1per'`  
-You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 31](#example-31) to [Example 34](#example-34) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
+You can do either max-focality or max-intensity optimization for TES. Each of the algorithms are explained below. For further details, please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta). If you want to do multi-focal targeting, it is recommended to use the `'wls-l1'` algorithm, see [Example 32](#example-32) to [Example 35](#example-35) and [this paper](https://ieeexplore.ieee.org/abstract/document/8513034) for details.
 - Max-focality algorithms
   - `'unconstrained-wls'`: unconstrained weighted least squares. This is for max-focality without any constraint on injected current intensities.
   - `'wls-l1'`: weighted least squares with L1-norm constraint on injected current intensities. The L1-norm constraint enforces the total injected current not beyond 4 mA (2 mA injected into the head and 2 mA coming out of the head).
@@ -477,20 +507,20 @@ You can do either max-focality or max-intensity optimization for TES. Each of th
   - `'lcmv-l1per'`: LCMV with L1-norm constraint on injected current intensities below 4 mA, with additional L1-norm constraint on each individual electrode to be below 1 mA.
 - Max-intensity algorithms
   - `'max-l1'`: maximum intensity with L1-norm constraint on injected current intensities to be smaller than 4 mA.
-  - `'max-l1per'`: maximum intensity with L1-norm constraint on injected current intensities below 4 mA., with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`, see [Example 35](#example-35).
+  - `'max-l1per'`: maximum intensity with L1-norm constraint on injected current intensities below 4 mA., with additional L1-norm constraint on each individual electrode. This can be used together with the option `'elecNum'` (see below), to specify the number of electrodes used. This is because `'max-l1'` always gives a solution consists of 2 electrodes, with each one having 2 mA flowing through. If you also constrain the current through each electrode to be 1 mA maximum, then the program will split the 1 electrode with 2 mA current into 2 electrodes with each one having 1 mA flowing through, leading to a 4-electrode solution. You can specify how many electrodes you want by using `'elecNum'` when you choose `'max-l1per'`, see [Example 36](#example-36).
 
 `'orient'` -- the desired orientation of the electric field (i.e., the direction of the current flow) at the target locations.  
 `'radial-in'` (default) | `'radial-out'` | `'right'` | `'left'` | `'anterior'` | `'posterior'` | `'right-anterior'` | `'right-posterior'` | `'left-anterior'` | `'left-posterior'` | `'optimal'` | orientation vector of your choice  
-The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 29](#example-29) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by a customized vector, e.g. [1 1 1], see [Example 30](#example-30). If you provide more than 1 target location, you can specify different orientations at each target, by providing a cell string of different keywords ([Example 31](#example-31)) or putting customized orientation vectors into an *N-by-3* matrix, where *N* is the number of target locations ([Example 32](#example-32)). You can also mix pre-defined orientation keywords with customized orientation vectors, see [Example 33](#example-33). But you cannot mix the `'optimal'` orientation with other orientations.
+The `'radial-in'` means the desired direction of the optimized electric field will point radial inwards to the brain center (whose MNI coordinates is [0 0 0]). Other orientation keywords are self-explanatory. The `'optimal'` direction is the direction determined by the program that maximizes the electric field magnitude, see [Example 30](#example-30) and [this paper](https://www.sciencedirect.com/science/article/abs/pii/S1053811913001833) for details. You can also provide the orientation by a customized vector, e.g. [1 1 1], see [Example 31](#example-31). If you provide more than 1 target location, you can specify different orientations at each target, by providing a cell string of different keywords ([Example 32](#example-32)) or putting customized orientation vectors into an *N-by-3* matrix, where *N* is the number of target locations ([Example 33](#example-33)). You can also mix pre-defined orientation keywords with customized orientation vectors, see [Example 34](#example-34). But you cannot mix the `'optimal'` orientation with other orientations.
 
 `'desiredIntensity'` -- the desired electric field intensity at target location (in V/m), only applies to the max-focality algorithms (the keywords with `'wls'` or `'lcmv'`), defaults to 1 V/m. If you provide more than 1 target location, you cannot specify different desired intensities at each target.
 
 `'elecNum'` -- the desired number of electrodes in the optimal montage when using the algorithm `'max-l1per'`.  
-This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an *even* number of at least 4 to this option. The default is 4. See [Example 35](#example-35).
+This option only applies when `'optType'` is set to `'max-l1per'`. Please provide an *even* number of at least 4 to this option. The default is 4. See [Example 36](#example-36).
 
 `'targetRadius'` -- advanced option of roast_target(), for controlling the size of each target area. Assuming the target area is a sphere, this gives the radius (in mm) of that sphere. Defaults to 2 mm. If you get the error saying "No nodes found near target", then you should increase the value of this option.
 
-`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 31](#example-31) to [Example 34](#example-34).
+`'k'` -- advanced option of roast_target(), for adjusting the weights in the weighted least squares algorithm, so this option only applies to `'unconstrained-wls'`, `'wls-l1'` and `'wls-l1per'`. The default value is 0.2. If you want more focality but do not care about the intensity of the electric field at the target locations, set `'k'` to be low; on the other hand, a high `'k'` value will try to attain the desired intensity at the target locations but will not give you that focal electric field. Please refer to [this paper](https://iopscience.iop.org/article/10.1088/1741-2560/8/4/046011/meta) for details. Also you may want to decrease `'k'` if you want to do multi-focal targeting. See [Example 32](#example-32) to [Example 35](#example-35).
 
 `'targetingTag'` -- a unique tag that identifies each run of targeting.  
 `dateTime string (default) | user-provided string`  
@@ -498,56 +528,56 @@ This tag is used by `roast_target()` for managing the data generated from each r
 identify if a certain run of targeting has been already done. If yes, it will
 just load the results to save time. You can leave this option empty so 
 that `roast_target()` will just use the date and time as the unique tag for the targeting. Or you can provide your preferred tag for a specific
-targeting ([Example 33](#example-33) and [Example 34](#example-34)), then you can find it more easily later. Also all the
+targeting ([Example 34](#example-34) and [Example 35](#example-35)), then you can find it more easily later. Also all the
 targeting history with options info and results are saved in the
 log file (named as `"subjName_targetLog"`), parsed by the targeting tags.
 
 
 ### 3.2 Examples on `roast_target`
 
-#### Example 28
+#### Example 29
 
     roast_target([],'MNI152leadField')
 
-If you have run [Example 25](#example-25), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 24](#example-24). Here in this example, we try to guide the current flow to hit the default target location (left primary motor cortex (`[-48 -8 50]`)) with maximal intensity (`'max-l1'` algorithm used) along the `'radial-in'` direction. All the options are in their defaults.
-
-#### Example 29
-
-    roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
-
-If you have run [Example 26](#example-26), now you can perform targeting on the New York head using the simulation tag you used in [Example 25](#example-25). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized among all possible directions.
+If you have run [Example 26](#example-26), now you can perform targeting on the MNI152 head using the simulation tag you used in [Example 26](#example-26). Here in this example, we try to guide the current flow to hit the default target location (left primary motor cortex (`[-48 -8 50]`)) with maximal intensity (`'max-l1'` algorithm used) along the `'radial-in'` direction. All the options are in their defaults.
 
 #### Example 30
 
-    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordType','voxel','orient',[1 1 1])
+    roast_target('nyhead','nyheadLeadField',[-48 -8 50;48 -8 50],'optType','lcmv-l1','orient','optimal')
 
-If you have run [Example 27](#example-27), now you can perform targeting on subject1 using the simulation tag you used in [Example 26](#example-26). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 26](#example-26), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`'example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orientation (`[1 1 1]`).
+If you have run [Example 27](#example-27), now you can perform targeting on the New York head using the simulation tag you used in [Example 27](#example-27). Here in this example, we aim to target both the left and right primary motor cortex with maximal focality (`'lcmv-l1'` algorithm used), and the program will also search for the `'optimal'` direction where the magnitude of the electric field at target locations are maximized among all possible directions.
 
 #### Example 31
+
+    roast_target('example/subject1.nii','subj1LeadFieldForSoterix',[154 74 156],'coordType','voxel','orient',[1 1 1])
+
+If you have run [Example 28](#example-28), now you can perform targeting on subject1 using the simulation tag you used in [Example 28](#example-28). Here we want to target a location with voxel coordinates. Even though we have turned on the `'resampling'` option in [Example 28](#example-28), we should still use the original MRI (`'example/subject1.nii'`) to click for the voxel coordinates in MRIcro, instead of using the re-sampled version (`'example/subject1_1mm.nii'`), as ROAST takes care of all the transforms applied on the MRI automatically (re-orientation into RAS, resampling or zero-padding). The algorithm used is the default (`'max-l1'`) to maximize the intensity at the target along a customized orientation (`[1 1 1]`).
+
+#### Example 32
 
     roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',{'right','left'},'optType','wls-l1','k',0.002)
 
 Run targeting on the MNI152 head at both the left and right primary motor cortex with maximal focality (`'wls-l1'` algorithm used). Desired orientation at the first target (left primary motor cortex) is `'right'`, and at the second target (right primary motor cortex) is `'left'`. A smaller value of `'k'` is used for better focality of electric field at the two targets.
 
-#### Example 32
+#### Example 33
 
     roast_target([],'MNI152leadField',[-48 -8 50;48 -8 50],'orient',[1 1 1;-1 -1 -1],'optType','wls-l1','k',0.002)
 
-Same as [Example 31](#example-31), but with customized orientations at the two target locations.
+Same as [Example 32](#example-32), but with customized orientations at the two target locations.
 
-#### Example 33
+#### Example 34
 
     roast_target([],'MNI152leadField',[52 184 72;25 80 72;139 171 72],'coordType','voxel','optType','wls-l1','k',0.002,'orient',{'radial-in',[-1 1 1],'posterior'},'targetingTag','mixed_orient')
 
 Run targeting on the MNI152 head at three locations indicated by their voxel coordinates (note obtained from original MRI, `'example/MNI152_T1_1mm.nii'`), with maximal focality (`'wls-l1'` algorithm used). Desired orientation at the targets are `'radial-in'`, customized vector (`[-1 1 1]`), and `'posterior'`, respectively. A smaller value of `'k'` is used for better focality of electric field at the targets. This targeting run is also tagged as `'mixed_orient'`.
 
-In [Example 33](#example-33), you can also leave the `'orient'` option blank, so then the desired orientations at the three targets will all be `'radial-in'`, i.e.
+In [Example 34](#example-34), you can also leave the `'orient'` option blank, so then the desired orientations at the three targets will all be `'radial-in'`, i.e.
 
-#### Example 34
+#### Example 35
 
     roast_target([],'MNI152leadField',[52 184 72;25 80 72;139 171 72],'coordType','voxel','optType','wls-l1','k',0.002,'targetingTag','3targets_radialIn')
 
-#### Example 35
+#### Example 36
 
     roast_target([],'MNI152leadField',[],'optType','max-l1per','elecNum',8)
 
@@ -563,14 +593,16 @@ A lot of info are hidden in the fancy `capInfo.xlsx` file under the ROAST root d
 
 ### 5.1 Outputs of `roast`
 
-`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed values of all the options.
+`roast()` records all the simulation history in a text file named as `"subjName_roastLog"`, 
+where you can find for each simulation (identified by its unique `'simulationTag'`) the detailed 
+values of all the options, the MRI that was modeled, and the corresponding `mri2mni` mapping matrix.
 
 The simulation data are mainly output in the following formats.
 
 #### Figure outputs
 
-ROAST outputs 7 or 8 figures for quick visualization of the simulation
-results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
+ROAST outputs several figures for quick visualization of the simulation
+results. These figures include the slice view of the MRI (T1 and/or T2) and the segmentation; 3D rendering of the placed electrodes; 3D rendering of the computed voltage and electric field distribution; and the slice view of the voltage and electric field. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a purple/magenta circle.
 
 #### Outputs in Matlab format
 
@@ -602,13 +634,13 @@ Note in these text files, voltage and electric field are defined at each mesh no
 
 ### 5.2 Outputs of `roast_target`
 
-`roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all the options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after possible transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded.
+`roast_target()` records all the targeting history in a text file named as `"subjName_targetLog"`, where you can find for each targeting (identified by its unique `'targetingTag'`) the detailed values of all the options. You will notice the target coordinates ('targetCoord') are recorded in the log file in three formats: MNI, original MRI voxel space, and model voxel space. If you provided the MNI coordinates for the targets, then the original MRI voxel coordinates will be shown as "not provided"; if you provided the voxel coordinates for the targets using the original MRI, then the MNI coordinates will be shown as "not provided". The model voxel coordinates are those coordinates that enter the targeting algorithm, after possible transforms applied on the original MRI (re-orienting into RAS, resampling, or zero-padding). See [this figure](./3spaces.jpg) for details. Note also that the targeting results are summarized in this log file as well: the optimal montage used, the achieved electric field magnitude, intensity and focality at each target are all recorded (if you see an electric field of NaN, it means the target is outside of the brain, or the target radius is too small).
 
 The results are also output in the following formats.
 
 #### Figure outputs
 
-`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a grayish/black circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a grayish/black circle.
+`roast_target()` outputs at least 3 figures for quick visualization of the targeting results. These figures include the optimal montage displayed as a topoplot; 3D rendering of the optimized electric field in the brain induced by the optimal montage; and the slice view of the optimized electric field, with slice cut orthogonally at each of the target locations, indicated by a purple/magenta circle. Note the slice view is always in the model voxel space, and the 3D rendering displays the data in the world space. In the slice view you can see both the voxel and MNI coordinates of any point you click in the slices, indicated by a purple/magenta circle.
 
 #### Outputs in Matlab format
 
@@ -644,19 +676,19 @@ You can use a main function `reviewRes()` to review/visualize the simulations/ta
 
 ### 6.1 Review of data from `roast`
 
-#### Example 36
+#### Example 37
 
     reviewRes('path/to/your/subject.nii','awesomeSimulation','white')
 
-Review the results generated from running [Example 24](#example-24), where `'awesomeSimulation'` is the corresponding `'simulationTag'`. This will show the results in the white matter specifically.
+Review the results generated from running [Example 25](#example-25), where `'awesomeSimulation'` is the corresponding `'simulationTag'`. This will show the results in the white matter specifically.
 
-#### Example 37
+#### Example 38
 
     reviewRes('nyhead','20180611T185950')
 
-Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brian by default.
+Review the results from simulation tagged `'20180611T185950'` on the New York head, showing the results in the brain by default.
 
-#### Example 38
+#### Example 39
 
     reviewRes('example/subject1.nii','20180613T142621','bone',0)
 
@@ -666,16 +698,16 @@ Note this function cannot visualize the lead field. If you ran `roast()` with `'
 
 ### 6.2 Review of data from `roast_target`
 
-#### Example 39
+#### Example 40
 
     reviewRes([],'MNI152leadField','','','mixed_orient')
 
-Review the results from running targeting `'mixed_orient'` in [Example 33](#example-33), showing the results in the brain by default and with fast rendering by default (no smoothing). You can specify `'all'` in the third argument so that it'll show the results in the entire head. You can also specify `0` in the fourth argument so that the 3D rendering will be more smooth (but takes more time to render).
+Review the results from running targeting `'mixed_orient'` in [Example 34](#example-34), showing the results in the brain by default and with fast rendering by default (no smoothing). You can specify `'all'` in the third argument so that it'll show the results in the entire head. You can also specify `0` in the fourth argument so that the 3D rendering will be more smooth (but takes more time to render).
 
 
 ## 7. How to ask questions
 
-Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 24](#example-24) and [Example 33](#example-33) for quick references. Do not forget to check out the fancy [`capInfo.xlsx`](#4-more-notes-on-the-capInfoxlsx-file) file.
+Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 25](#example-25) and [Example 34](#example-34) for quick references. Do not forget to check out the fancy [`capInfo.xlsx`](#4-more-notes-on-the-capInfoxlsx-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 
@@ -703,9 +735,9 @@ Dmochowski, J.P., Datta, A., Huang, Y., Richardson, J.D., Bikson, M., Fridriksso
 
 Huang, Y., Thomas, C., Datta, A., Parra, L.C., [Optimized tDCS for Targeting Multiple Brain Regions: An Integrated Implementation](https://ieeexplore.ieee.org/abstract/document/8513034). Proceedings of the 40th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, Honolulu, HI, July 2018, 3545-3548
 
-If you also use the MultiPriors for segmentation by turning on the `multipriors` option, please cite this:
+If you also use the Multiaxial for segmentation by turning on the `multiaxial` option, please cite this:
 
-Hirsch, L., Huang, Y., Parra, L.C., [Segmentation of MRI head anatomy using deep volumetric networks and multiple spatial priors](https://www.spiedigitallibrary.org/journals/journal-of-medical-imaging/volume-8/issue-3/034001/Segmentation-of-MRI-head-anatomy-using-deep-volumetric-networks-and/10.1117/1.JMI.8.3.034001.short). Journal of Medical Imaging, Vol. 8, Issue 3, 034001 (June 2021).
+Birnbaum, A.M., Buchwald, A., Turkeltaub, P., Jacks, A., Huang, Y., Datta, A., Parra, L.C., Hirsch, L.A., [Full-Head Segmentation of MRI with Abnormal Brain Anatomy: Model and Data Release](https://arxiv.org/abs/2501.18716), arXiv preprint arXiv:2501.18716 (Jan 2025).
 
 ROAST was supported by the NIH through grants R01MH111896, R01MH111439, R01NS095123, R44NS092144, R41NS076123, and by [Soterix Medical Inc](https://soterixmedical.com/).
 
@@ -713,29 +745,34 @@ ROAST was supported by the NIH through grants R01MH111896, R01MH111439, R01NS095
 
 ROAST is NOT backwards compatible in the generated simulation data.
 
-Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). In the upcoming release of these two software it is possible to load the results output from ROAST.
+Starting from Version 3.0, ROAST enforces the [RAS rule](http://www.grahamwideman.com/gw/brain/orientation/orientterms.htm) for the input MRI. So if the input MRI is not in RAS orientation, ROAST will re-orient it into RAS (you'll notice this if you just run ROAST on the default subject: the [MNI152 averaged head](http://nist.mni.mcgill.ca/?p=858), see [Example 1](#example-1), as it's in LAS orientation). This is part of our efforts to make ROAST compatible with [Soterix software HD-Explore and HD-Targets](https://soterixmedical.com/research/software). HD-Explore (v6 and later) and HD-Targets (v5 and later) can load the results output from ROAST. Related to this, there are three spaces involved in ROAST (see below figure). ROAST operates and outputs in the center box (model voxel space).
 
-Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). This model requires a Python Enviornment which should automatically be installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
+![Three spaces involved in ROAST](./3spaces.jpg)
+
+Starting from Version 3.5, ROAST is able to build models for heads with lesions, thanks to the `multipriors` option (in v3.5) and the `multiaxial` option (in v4.0) developed by [Lukas Hirsch](https://github.com/lkshrsch), and integrated into ROAST by [Andrew Birnbaum](https://github.com/birnybaum). 
+These options require Python Enviornment that will be automatically installed. If an error occurs durring installation, usually due to incompatibilites in enviornment versions, making your own enviornment is relatively simple. 
 
 ```
-Creating Multipriors Enviornment
+Creating Multiaxial Enviornment
 
 Create your own conda enviornment with the proper OS tag.
--Windows: multipriorsEnv 
--Linux:  multipriorsEnvLinux 
--Mac:  multipriorsEnvMac
+-Windows: multiaxialEnv 
+-Linux:  multiaxialEnvLinux 
+-Mac:  multiaxialEnvMac
 
 Download the proper dependencies by using Conda or Pip Install:
 -tensorflow
 -scikit-image
 -nibabel
 
-Place the enviornment into your lib/multipriors folder.
+Place the enviornment into your lib/multiaxial folder under ROAST.
 ```
 
-ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only intel will work. An update will be added in the future. 
+ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work.
 
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
+
+ROAST has been adapted to model electric field in the mouse brain under transcranial electrical stimulation. See the [EFMouse toolbox](https://github.com/klabhub/EFMouse) by [the KLab](https://github.com/klabhub).
 
 ## 10. License
 
@@ -749,4 +786,4 @@ ROAST is considered as an "aggregate" rather than "derived work", based on the d
 
 yhuang16@citymail.cuny.edu
 
-April 2024
+August 2025

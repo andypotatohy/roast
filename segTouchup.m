@@ -322,3 +322,5 @@ white.hdr.dime.scl_slope=1; % so that display of NIFTI will not alter the data
 white.fileprefix = [dirname filesep segOutName '_masks'];
 white.hdr.hist.descrip = 'tissue masks';
 save_untouch_nii(white,[dirname filesep segOutName '_masks.nii']);
+for i=1:6, delete([dirname filesep 'c' num2str(i) spmOutName '.nii']); end
+delete([dirname filesep spmOutName '_rmask.mat']);

@@ -1,5 +1,5 @@
-function visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
-% visualizeRes(subj,subjRasRSPD,spmOut,segOut,T2,node,elem,face,inCurrent,hdrInfo,uniTag,showAll,varargin)
+function visualizeRes(subj,mask,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
+% visualizeRes(subj,mask,mri2mni,node,elem,face,inCurrent,imgHdr,uniTag,varargin)
 %
 % Display the simulation results. The 3D rendering is displayed in the
 % world space, while the slice view is done in the voxel space.
@@ -17,69 +17,27 @@ if ndims(varargin{1})==3
 else
     isRoast = 0;
     C = varargin{1}; ef_mag = varargin{2}; ef_all = varargin{3}; targetCoord = varargin{4};
+    indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
 end
 
 [dirname,subjName] = fileparts(subj);
 if isempty(dirname), dirname = pwd; end
 
-[~,spmOutName] = fileparts(spmOut);
-mappingFile = [dirname filesep spmOutName '_seg8.mat'];
-if ~exist(mappingFile,'file')
-    error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-else
-    load(mappingFile,'image','Affine');
-    mri2mni = Affine*image(1).mat;
-    % mapping from MRI voxel space to MNI space
-end
-
-if showAll    
-    if ~strcmp(subjName,'nyhead')
-        disp('showing MRI and segmentations...');
-        data = load_untouch_nii(subjRasRSPD); sliceshow(data.img,[],'gray',[],[],'MRI: Click anywhere to navigate.',[],mri2mni); drawnow
-        
-        if ~isempty(T2) %T2 specified
-            data = load_untouch_nii(T2);
-            sliceshow(data.img,[],'gray',[],[],'MRI: T2. Click anywhere to navigate.',[],mri2mni); drawnow
-        end
-    else
-        disp('NEW YORK HEAD selected, there is NO MRI for it to show.')
-    end    
-end
-
-[~,segOutName] = fileparts(segOut);
-masks = load_untouch_nii([dirname filesep segOutName '_masks.nii']);
-allMask = masks.img;
 numOfTissue = 6; % hard coded across ROAST.  max(allMask(:));
-if isRoast
-    gel = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_gel.nii']);
-    numOfGel = max(gel.img(:));
-    elec = load_untouch_nii([dirname filesep subjName '_' uniTag '_mask_elec.nii']);
-    % numOfElec = max(elec.img(:));
-else
-    numOfGel = length(inCurrent);
-    indMonElec = find(abs(inCurrent)>1e-3); % this is not perfect
-end
-
-if showAll
-    allMaskShow = masks.img;
-    allMaskShow(gel.img>0) = numOfTissue + 1;
-    allMaskShow(elec.img>0) = numOfTissue + 2;
-    sliceshow(allMaskShow,[],[],[],'Tissue index','Segmentation. Click anywhere to navigate.',[],mri2mni)
-    drawnow
-end
-
+numOfGel = length(inCurrent);
+    
 % node = node + 0.5; already done right after mesh
 
 % scrsz = get(groot,'ScreenSize');
 
 disp('generating 3D renderings...')
 
-for i=1:3, node(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+for i=1:3, node(:,i) = node(:,i)/imgHdr(1).mat(i,i); end
 % convert pseudo-world coordinates back to voxel coordinates so that the
 % following conversion to pure-world space is meaningful
 
 voxCoord = [node(:,1:3) ones(size(node,1),1)];
-worldCoord = (hdrInfo.v2w*voxCoord')';
+worldCoord = (imgHdr(1).mat*voxCoord')';
 % do the 3D rendering in world space, to avoid confusion in left-right;
 % sliceshow below is still in voxel space though
 node(:,1:3) = worldCoord(:,1:3);
@@ -229,12 +187,12 @@ end
 
 disp('generating slice views...');
 
-brain = (allMask==1 | allMask==2);
+brain = (mask.img==1 | mask.img==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
 cm = colormap(jet(2^11)); cm = [1 1 1;cm];
-bbox = brainCrop(segOut);
+bbox = brainCrop(mask.img);
 
 if isRoast
     figName = ['Voltage in Simulation: ' uniTag];

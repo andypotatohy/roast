@@ -37,12 +37,12 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% If you also use the Multiaxial for segmentation by turning on the `multiaxial`
 % option, please cite this:
 % 
-% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
-% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
-% Vol. 8, Issue 3, 034001 (June 2021).
+% Birnbaum, A.M., Buchwald, A., Turkeltaub, P., Jacks, A., Huang, Y., Datta, A., 
+% Parra, L.C., Hirsch, L.A., Full-Head Segmentation of MRI with Abnormal Brain
+% Anatomy: Model and Data Release, arXiv preprint arXiv:2501.18716
 % 
 % ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
@@ -64,9 +64,9 @@ function roast_target(subj,simTag,targetCoord,varargin)
 % yhuang16@citymail.cuny.edu
 % September 2019
 % 
-% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% (c) Multiaxial segmentation developed by Lukas Hirsch, and integrated into
 % ROAST by Andrew Birnbaum
-% April 2024
+% June 2025
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -75,7 +75,9 @@ disp('General Public License version 3 or later. It''s supported by')
 disp('both NIH grants and Soterix Medical Inc.')
 disp('=============================================================')
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+if isempty(strfind(path,[fileparts(which(mfilename)) filesep 'lib/']))
+    addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+end
 
 fprintf('\n\n');
 disp('======================================================')
@@ -119,27 +121,7 @@ if ~strcmp(optRoast.configTxt,'leadFieldGeneration')
     error(['Simulation ' simTag ' was NOT run for generating the lead field for subject ' subj '. roast_target() cannot work without a proper lead field. Please run ROAST with ''leadField'' as the recipe first.']);
 end
 
-% to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-if optRoast.isNonRAS
-    subjRas = [dirname filesep subjName '_ras' ext];
-else
-    subjRas = subj;
-end
-[~,subjRasName] = fileparts(subjRas);
-
-if optRoast.resamp
-    subjRasRS = [dirname filesep subjRasName '_1mm' ext];
-else
-    subjRasRS = subjRas;
-end
-[~,subjRasRsName] = fileparts(subjRasRS);
-
-if optRoast.zeroPad>0
-    subjRasRSPD = [dirname filesep subjRasRsName '_padded' num2str(optRoast.zeroPad) ext];
-    %     subjRasRSPD = ['example/nyhead_padded' num2str(paddingAmt) '.nii'];
-else
-    subjRasRSPD = subjRasRS;
-end
+subjRasRSPD = optRoast.subjRasRSPD;
 [~,subjModelName] = fileparts(subjRasRSPD);
 
 if ~isempty(optRoast.T2)
@@ -149,25 +131,35 @@ else
 end
 [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
 
-if optRoast.multipriors
-    subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+if optRoast.multiaxial
+    subjRasRSPDSeg = [dirname filesep subjModelName '_multiaxial' ext];
+    mappingFile = [dirname filesep subjModelName '_niftyReg.mat'];
 else
     subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
+    mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
 end
 [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
+
+if ~exist(mappingFile,'file')
+    error(['Mapping file ' mappingFile ' not found. Please check if you run through STEP 1&2 in ROAST.']);
+else
+    load(mappingFile,'image');
+end
+mri2mni = optRoast.mri2mni; % mapping from MRI voxel space to MNI space
+mni2mri = inv(mri2mni); % mapping from MNI space to individual MRI voxel space
+
+masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
+if ~exist(masksFile,'file')
+    error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
+else
+    mask = load_untouch_nii(masksFile);
+end
 
 meshFile = [dirname filesep subjName '_' simTag '.mat'];
 if ~exist(meshFile,'file')
     error(['Mesh file ' meshFile ' not found. Check if you run through meshing in ROAST.']);
 else
     load(meshFile,'node','elem','face');
-end
-
-hdrFile = [dirname filesep subjModelName '_header.mat'];
-if ~exist(hdrFile,'file')
-    error(['Header file ' hdrFile ' not found. Check if you run through electrode placement in ROAST.']);
-else
-    load(hdrFile,'hdrInfo');
 end
 
 % check target coordinates
@@ -356,19 +348,6 @@ end
 
 if ~exist('tarTag','var'), tarTag = []; end
 
-% to locate related files (e.g. MRI header, *_seg8 mapping, tissue masks)
-
-if strcmpi(coordType,'mni') || needOrigin
-    mappingFile = [dirname filesep subjModelNameAftSpm '_seg8.mat'];
-    if ~exist(mappingFile,'file')
-        error(['Mapping file ' mappingFile ' from SPM not found. Please check if you run through SPM segmentation in ROAST.']);
-    else
-        load(mappingFile,'image','Affine');
-        mni2mri = inv(image(1).mat)*inv(Affine);
-        % mapping from MNI space to individual MRI
-    end
-end
-
 if strcmpi(coordType,'mni')
     targetCoordMNI = targetCoord;
     targetCoordOriginal = [];
@@ -400,8 +379,8 @@ else
     end
 end
 
-if any(targetCoord(:)<=0) || any(targetCoord(:,1)>hdrInfo.dim(1)) || ...
-        any(targetCoord(:,2)>hdrInfo.dim(2)) || any(targetCoord(:,3)>hdrInfo.dim(3))
+if any(targetCoord(:)<=0) || any(targetCoord(:,1)>image(1).dim(1)) || ...
+        any(targetCoord(:,2)>image(1).dim(2)) || any(targetCoord(:,3)>image(1).dim(3))
     error('Voxel coordinates should not go beyond image boundary. Please check if you entered voxel coordinates but specified MNI coordinates, or the other way around.');
 end
 
@@ -416,7 +395,7 @@ p.I_max = 2; % 2 mA
 p.targetCoord = targetCoord;
 p.optType = lower(optType);
 p.elecNum = elecNum;
-p.targetRadius = targetRadius/mean(hdrInfo.pixdim); % to voxel space
+p.targetRadius = targetRadius/mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]); % to voxel space
 p.k = k;
 p.desiredIntensity = desiredIntensity;
 
@@ -524,7 +503,7 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     % convert pseudo-world coordinates back to voxel coordinates for targeting,
     % as targeting code works in the voxel space
     nodeV = zeros(size(node,1),3);
-    for i=1:3, nodeV(:,i) = node(:,i)/hdrInfo.pixdim(i); end
+    for i=1:3, nodeV(:,i) = node(:,i)/image(1).mat(i,i); end
     locs = nodeV(indBrain,1:3);
     
     isNaNinA = isnan(sum(sum(A,3),2)); % make sure no NaN is in matrix A or in locs
@@ -539,7 +518,7 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     % start targeting code
     p = optimize_prepare(p,A,locs);
     
-    if iscell(orient) && ismember('optimal',lower(orient(1)))
+    if iscell(orient) && ischar(orient{1}) && ismember('optimal',lower(orient(1)))
         u = zeros(numOfTargets,3);
         t0 = zeros(numOfTargets,2);
         for i=1:numOfTargets
@@ -564,10 +543,10 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     
     disp('Optimization DONE!');
     disp('======================================================');
-    disp('Results are saved as:');
+    disp('After program finishes, results will be saved as:');
     disp([dirname filesep subjName '_' uniqueTag '_targetResult.mat']);
     disp('======================================================');
-    disp('Stats at target locations are also saved in the log file: ');
+    disp('Stats at target locations will also be saved in the log file: ');
     disp([dirname filesep subjName '_targetLog,']);
     disp(['under tag: ' uniqueTag]);
         
@@ -594,13 +573,13 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     
     % compute the optimized E-field
     disp('Computing the optimized electric field (this may take a while) ...');
-    [xi,yi,zi] = ndgrid(1:hdrInfo.dim(1),1:hdrInfo.dim(2),1:hdrInfo.dim(3));
-    r.ef_all = zeros([hdrInfo.dim 3]);
+    [xi,yi,zi] = ndgrid(1:image(1).dim(1),1:image(1).dim(2),1:image(1).dim(3));
+    r.ef_all = zeros([image(1).dim 3]);
     isNaNinA = isnan(sum(sum(A_all,3),2)); % handle NaN properly
     r.xopt = zeros(sum(~isNaNinA),4);
     r.xopt(:,1) = find(~isNaNinA);
     for i=1:size(A_all,2), r.xopt(:,i+1) = squeeze(A_all(~isNaNinA,i,:))*I_opt; end
-    
+
     F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,2));
     r.ef_all(:,:,:,1) = F(xi,yi,zi);
     F = TriScatteredInterp(nodeV(~isNaNinA,1:3), r.xopt(:,3));
@@ -610,23 +589,26 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_targetResult.mat'],'file')
     r.ef_mag = sqrt(sum(r.ef_all.^2,4));
     
     % output intensities and focalities at targets
-    masksFile = [dirname filesep subjModelNameAftSeg '_masks.nii'];
-    if ~exist(masksFile,'file')
-        error(['Segmentation masks ' masksFile ' not found. Check if you run through MRI segmentation in ROAST.']);
-    else
-        masks = load_untouch_nii(masksFile);
-    end
-    brain = (masks.img==1 | masks.img==2);
+    brain = (mask.img==1 | mask.img==2);
     nan_mask_brain = nan(size(brain));
     nan_mask_brain(find(brain)) = 1;
-    
+
     r.targetMag = zeros(numOfTargets,1); r.targetInt = zeros(numOfTargets,1);
     r.targetMagFoc = zeros(numOfTargets,1);
     ef_mag = r.ef_mag.*nan_mask_brain; ef_magTemp = ef_mag(~isnan(ef_mag(:)));
     for i=1:numOfTargets
-        r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
-        r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean(hdrInfo.pixdim) / 10; % in cm
-        r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
+        if ~isnan(ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3)))
+            r.targetMag(i) = ef_mag(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3));
+            r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]) / 10; % in cm
+            r.targetInt(i) = dot(squeeze(r.ef_all(targetCoord(i,1),targetCoord(i,2),targetCoord(i,3),:))',p.u(i,:));
+        else
+            r.targetMag(i) = getDataAroundTar(ef_mag,targetCoord(i,:),xi,yi,zi,p.targetRadius);
+            r.targetMagFoc(i) = (sum(ef_magTemp(:) >= r.targetMag(i)*0.5))^(1/3) * mean([image(1).mat(1,1),image(1).mat(2,2),image(1).mat(3,3)]) / 10; % in cm
+            ef = [getDataAroundTar(r.ef_all(:,:,:,1).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius),...
+                  getDataAroundTar(r.ef_all(:,:,:,2).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius),...
+                  getDataAroundTar(r.ef_all(:,:,:,3).*nan_mask_brain,targetCoord(i,:),xi,yi,zi,p.targetRadius)];
+            r.targetInt(i) = dot(ef,p.u(i,:));
+        end
     end
     
     r.targetCoord = targetCoord;
@@ -660,6 +642,6 @@ drawnow
 % visualization in ROAST follows ROAST order, i.e., capInfo.xls)
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
 
-visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,optRoast.T2,node,elem,face,mon(indInUsrInput),hdrInfo,uniqueTag,0,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
+visualizeRes(subj,mask,mri2mni,node,elem,face,mon(indInUsrInput),image,uniqueTag,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
 disp('==================ALL DONE ROAST-TARGET=======================');

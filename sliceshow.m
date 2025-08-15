@@ -81,7 +81,7 @@ end
 if nargin<8 || isempty(mri2mni)
     mydata.mri2mni = [];
 else
-    if any(size(mri2mni)~=[4 4]) || any(mri2mni(4,:)~=[0 0 0 1])
+    if any(size(mri2mni)~=[4 4]) || any(round(mri2mni(4,:))~=[0 0 0 1])
         error('Unrecognized format of the voxel-to-MNI mapping.');
     end
     mydata.mri2mni = mri2mni;

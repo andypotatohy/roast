@@ -37,12 +37,12 @@ function roast(subj,recipe,varargin)
 % Annual International Conference of the IEEE Engineering in Medicine and Biology
 % Society, Honolulu, HI, July 2018, 3545-3548
 % 
-% If you also use the MultiPriors for segmentation by turning on the `multipriors`
+% If you also use the Multiaxial for segmentation by turning on the `multiaxial`
 % option, please cite this:
-% 
-% Hirsch, L., Huang, Y., Parra, L.C., Segmentation of MRI head anatomy using 
-% deep volumetric networks and multiple spatial priors, Journal of Medical Imaging,
-% Vol. 8, Issue 3, 034001 (June 2021).
+%
+% Birnbaum, A.M., Buchwald, A., Turkeltaub, P., Jacks, A., Huang, Y., Datta, A., 
+% Parra, L.C., Hirsch, L.A., Full-Head Segmentation of MRI with Abnormal Brain
+% Anatomy: Model and Data Release, arXiv preprint arXiv:2501.18716
 % 
 % ROAST was supported by the NIH through grants R01MH111896, R01MH111439, 
 % R01NS095123, R44NS092144, R41NS076123, and by Soterix Medical Inc.
@@ -64,9 +64,9 @@ function roast(subj,recipe,varargin)
 % yhuang16@citymail.cuny.edu
 % September 2019
 %
-% (c) MultiPriors segmentation developed by Lukas Hirsch, and integrated into
+% (c) Multiaxial segmentation developed by Lukas Hirsch, and integrated into
 % ROAST by Andrew Birnbaum
-% April 2024
+% June 2025
 
 fprintf('\n\n');
 disp('=============================================================')
@@ -75,7 +75,9 @@ disp('General Public License version 3 or later. It''s supported by')
 disp('both NIH grants and Soterix Medical Inc.')
 disp('=============================================================')
 
-addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+if isempty(strfind(path,[fileparts(which(mfilename)) filesep 'lib/']))
+    addpath(genpath([fileparts(which(mfilename)) filesep 'lib/']));
+end
 
 fprintf('\n\n');
 disp('======================================================')
@@ -125,8 +127,11 @@ while indArg <= length(varargin)
         case 't2'
             T2 = varargin{indArg+1};
             indArg = indArg+2;
-        case 'multipriors'
-            multipriors = varargin{indArg+1};
+        case 'multiaxial'
+            multiaxial = varargin{indArg+1};
+            indArg = indArg+2;
+        case 'manualgui'
+            manualGui = varargin{indArg+1};
             indArg = indArg+2;
         case 'meshoptions'
             meshOpt = varargin{indArg+1};
@@ -144,7 +149,7 @@ while indArg <= length(varargin)
             paddingAmt = varargin{indArg+1};
             indArg = indArg+2;
         otherwise
-            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multipriors'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
+            error('Supported options are: ''capType'', ''elecType'', ''elecSize'', ''elecOri'', ''T2'', ''multiaxial'',''manualGui'',''meshOptions'',''conductivities'', ''simulationTag'', ''resampling'', and ''zeroPadding''.');
     end
 end
 
@@ -427,6 +432,8 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
+    warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
+
     fid = fopen('./elec72.loc'); C = textscan(fid,'%d %f %f %s'); fclose(fid);
     elecName = C{4}; for i=1:length(elecName), elecName{i} = strrep(elecName{i},'.',''); end
     capType = '1010';
@@ -451,21 +458,34 @@ else
     % check if bad MRI header    
 end
 
-if ~exist('multipriors','var')
-    multipriors = 0;
+if ~exist('multiaxial','var')
+    multiaxial = 0;
 else
-    if ~ischar(multipriors), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.'); end
-    if strcmpi(multipriors,'off')
-        multipriors = 0;
-    elseif strcmpi(multipriors,'on')
-        multipriors = 1;
+    if ~ischar(multiaxial), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multiaxial''.'); end
+    if strcmpi(multiaxial,'off')
+        multiaxial = 0;
+    elseif strcmpi(multiaxial,'on')
+        multiaxial = 1;
     else
-        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multipriors''.');
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''multiaxial''.');
     end
 end
 
-if multipriors && ~isempty(T2)
-    error('MultiPriors cannot be run with both T1 and T2 images. If you meant to use MultiPriors, please only provide T1 image with option ''multipriors'' turned on.');
+if multiaxial && ~isempty(T2)
+    error('Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please only provide T1 image with option ''multiaxial'' turned on.');
+end
+
+if ~exist('manualGui','var')
+    manualGui = 0;
+else
+    if ~ischar(manualGui), error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manualGui''.'); end
+    if strcmpi(manualGui,'off')
+        manualGui = 0;
+    elseif strcmpi(manualGui,'on')
+        manualGui = 1;
+    else
+        error('Unrecognized option value. Please enter ''on'' or ''off'' for option ''manualGui''.');
+    end
 end
 
 if ~exist('meshOpt','var')
@@ -670,9 +690,9 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     end
     [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
 
-    % check if multipriors is on, and if yes, uses it for segmentation
-    if multipriors 
-        subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_multipriors' ext];
+    % check if multiaxial is on, and if yes, uses it for segmentation
+    if multiaxial 
+        subjRasRSPDSeg = [dirname filesep subjModelName '_multiaxial' ext];
     else
         %if not, uses SPM for segmentation
         subjRasRSPDSeg = [dirname filesep subjModelNameAftSpm '_SPM' ext];
@@ -680,7 +700,9 @@ if ~strcmpi(subj,'example/nyhead.nii') % only when it's not NY head
     [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
 
 else
-    
+   
+    warning('New York head selected. Note the New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
+
     if ~exist('example/nyhead_T1orT2_SPM_masks.nii','file')
         unzip('example/nyhead_T1orT2_SPM_masks.nii.zip','example')
     end
@@ -699,6 +721,12 @@ else
             origin = inv(image.mat)*[0;0;0;1];
             origin = origin(1:3) + paddingAmt;
             image.mat(1:3,4) = [-dot(origin,image.mat(1,1:3));-dot(origin,image.mat(2,1:3));-dot(origin,image.mat(3,1:3))];
+            image.dim = image.dim+paddingAmt*2;
+            image.private.dat.dim = image.private.dat.dim+paddingAmt*2;
+            image.private.hdr.dim(2:4) = image.private.hdr.dim(2:4)+paddingAmt*2;
+            image.private.hdr.srow_x = image.mat(1,:);
+            image.private.hdr.srow_y = image.mat(2,:);
+            image.private.hdr.srow_z = image.mat(3,:);
             save(['example/nyhead_padded' num2str(paddingAmt) '_T1orT2_seg8.mat'],'image','tpm','Affine');
         end
     else
@@ -711,13 +739,21 @@ else
        T2 = [];
     end
 
-    if multipriors
-       warning('New York head selected. Multipriors option will be ignored.');
-       multipriors = 0;
+    if multiaxial
+       warning('New York head selected. Multiaxial option will be ignored.');
+       multiaxial = 0;
     end
 
-    subjRasRSPDspm = 'example/nyhead_T1orT2.nii';
-    subjRasRSPDSeg = 'example/nyhead_T1orT2_SPM.nii';
+    if manualGui
+       warning('New York head selected. The manual GUI will be disabled.');
+       manualGui = 0;
+    end 
+
+    subjRasRSPDspm = ['example/' subjModelName '_T1orT2.nii'];
+    [~,subjModelNameAftSpm] = fileparts(subjRasRSPDspm);
+
+    subjRasRSPDSeg = ['example/' subjModelNameAftSpm '_SPM.nii'];
+    [~,subjModelNameAftSeg] = fileparts(subjRasRSPDSeg);
 
 end
 
@@ -761,7 +797,137 @@ else
     error('Something is wrong!');
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'T2',T2,'multipriors',multipriors,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+% landmarks in eTPM.nii
+landmarksInTPM = [ 61 139  98; % nasion
+                   61   9 100; % inion
+                   11  62  93; % right
+                  111  63  93; % left; note here because eTPM is LAS orientation
+                   61 113   7; % front_neck
+                   61   7  20; % back_neck
+                   61.1698   74.8445  128.6539; % scalp center
+                   61.1266    6.7765  128.3046; % nine 10-10 electrodes on the central sagittal line
+                   61.0821   13.1721  153.1825;
+                   61.0449   26.7791  176.6905;
+                   61.0294   49.4432  192.0928;
+                   61.0444   76.4435  193.3487;
+                   61.0751  101.3033  185.8634;
+                   61.1154  122.7582  172.3329;
+                   61.1658  137.4929  151.4222;
+                   61.2171  141.6240  126.5092];
+
+if ~strcmp(subjName,'nyhead')
+    if ~multiaxial
+        if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
+            disp('======================================================')
+            disp('     STEP 1 (out of 6): SEGMENT THE MRI BY SPM ...    ')
+            disp('======================================================')
+            start_seg(subjRasRSPD,T2);
+            renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
+        else
+            disp('======================================================')
+            disp('         MRI SEGMENTED BY SPM, SKIP STEP 1            ')
+            disp('======================================================')
+        end
+        if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
+            disp('======================================================')
+            disp('    STEP 2 (out of 6): SPM SEGMENTATION TOUCHUP ...   ')
+            disp('======================================================')
+            segTouchup(subjRasRSPDspm,subjRasRSPDSeg);
+        else
+            disp('======================================================')
+            disp('       SEGMENTATION TOUCHUP DONE, SKIP STEP 2         ')
+            disp('======================================================')
+        end
+        load([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
+    else
+        if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
+            disp('======================================================')
+            disp('    STEP 1 (out of 6): MULTIAXIAL SEGMENTATION ...    ')
+            disp('======================================================')
+            runMultiaxial(subjRasRSPD);
+        else
+            disp('======================================================')
+            disp('       MULTIAXIAL SEGMENTATION DONE, SKIP STEP 1      ')
+            disp('======================================================')
+        end
+        if ~exist([dirname filesep subjModelName '_niftyReg.mat'],"file")
+            disp('======================================================')
+            disp('      STEP 2 (out of 6): NIFTYREG REGISTRATION ...    ')
+            disp('======================================================')
+            runNiftyReg(subjRasRSPD);
+        else
+            disp('======================================================')
+            disp('       NIFTYREG REGISTRATION DONE, SKIP STEP 2        ')
+            disp('======================================================')
+        end
+        load([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine');
+    end
+    tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+    landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
+    landmarks = round(landmarks(:,1:3));
+    mri2mni = Affine*image(1).mat; % mapping from MRI voxel space to MNI space
+    segMask = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
+    if manualGui
+        landmarksNew = nan(size(landmarks));
+        landmarksNew(1:4,:) = checkLandmarks(segMask,landmarks(1:4,:));
+        if any(any(landmarksNew(1:4,:)~=landmarks(1:4,:)))
+            disp('======================================================')
+            warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
+            disp('======================================================')
+            disp('RE-RUNNING REGISTRATION ...')
+            % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
+            scalp=segMask.img>0;
+            scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
+            load('./cap1005FullWithExtra.mat','capInfo');
+            [landmarksNew(8:end,:),landmarksNew(7,:)]= fitCap2individual(scalp,scalp_surface,landmarksNew(1:4,:),image,capInfo,[],0,0);
+            % use the 4 manually clicked landmarks, the scalp center, and the fitted 10-10 electrodes on the central sagittal line to estimate the Affine
+            indForAffine = [1:4,7:16];
+            mri2mniVox = [landmarksInTPM(indForAffine,:),ones(size(landmarksInTPM(indForAffine,:),1),1)]'/[landmarksNew(indForAffine,:),ones(size(landmarksNew(indForAffine,:),1),1)]';
+            Affine = tpm(1).mat*mri2mniVox*inv(image(1).mat);
+            disp('======================================================')
+            disp('OVERWRITING COMPUTED REGISTRATION ...')
+            if ~multiaxial
+                save([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
+            else
+                save([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine')
+            end
+            % update landmarksNew(5:6,:) (the neck electrodes, as they're not clicked or fitted)
+            tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+            temp = (tpm2mri * [landmarksInTPM(5:6,:),ones(size(landmarksInTPM(5:6,:),1),1)]')';
+            landmarksNew(5:6,:) = temp(:,1:3);
+            landmarks = round(landmarksNew);
+            mri2mni = Affine*image(1).mat;
+            disp('======================================================')
+            disp('RESETTING HEADERS IN _MNI IMAGES ...')
+            alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
+        end
+    end
+    disp('======================================================')
+    disp('VISUALIZING THE MRI... ')
+    viewMRI(subjRasRSPD,T2,mri2mni);
+else
+    disp('==================================================================')
+    disp(' NEW YORK HEAD SELECTED, SKIPPING SEGMENTATION & REGISTRATION ... ')
+    disp(' ...AND NO MRI TO SHOW')
+    disp('==================================================================')
+    load(['example/' subjModelName '_T1orT2_seg8.mat'],'image','tpm','Affine');
+    tpm2mri = inv(image(1).mat)*inv(Affine)*tpm(1).mat;
+    landmarks = (tpm2mri * [landmarksInTPM,ones(size(landmarksInTPM,1),1)]')';
+    landmarks = round(landmarks(:,1:3));
+    mri2mni = Affine*image(1).mat;
+    segMask = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
+end
+disp('======================================================')
+disp('VISUALIZING THE SEGMENTATION... ')
+viewSeg(segMask,mri2mni);
+
+if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI.nii'],'file')
+    disp('======================================================')
+    disp('RESETTING HEADERS IN _MNI IMAGES ...')
+    alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
+end
+
+options = struct('configTxt',configTxt,'elecPara',elecPara,'subjRasRSPD',subjRasRSPD,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'mri2mni',mri2mni,'landmarks',landmarks,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
 
 % log tracking
 Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);
@@ -800,81 +966,27 @@ disp(['under tag: ' uniqueTag])
 disp('======================================================')
 fprintf('\n\n');
 
-% warn users lead field will take a long time to generate
-if all(strcmpi(recipe,'leadfield'))
-    [~,indRef] = ismember('Iz',elecName);
-    indStimElec = setdiff(1:length(elecName),indRef);
-    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
-    isSolved = zeros(length(indStimElec),1);
-    for i=1:length(indStimElec)
-        if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
-            isSolved(i) = 1;
-        end
-    end
-    % only warn users the first time they run for this subject
-    if all(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
-        warning('You specified the ''recipe'' as the ''lead field generation''. Nice choice! Note all customized options on electrodes are overwritten by the defaults. Refer to the readme file for more details. Also this will usually take a long time (>1 day) to generate the lead field for all the candidate electrodes.');
-        doLFconfirm = input('Do you want to continue? ([Y]/N)','s');
-        if strcmpi(doLFconfirm,'n'), disp('Aborted.'); return; end
-    end
-end
-
-if ~strcmp(subjName,'nyhead')
-    if  ~exist([dirname filesep subjModelNameAftSpm '_seg8.mat'], 'file')
-        disp('======================================================')
-        disp('        STEP 1 (out of 6): SEGMENT THE MRI...         ')
-        disp('======================================================')
-        start_seg(subjRasRSPD,T2);
-        renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
-    else
-        disp('======================================================')
-        disp('         MRI ALREADY SEGMENTED, SKIP STEP 1           ')
-        disp('======================================================')
-    end
-
-    if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
-        if multipriors
-            disp('======================================================')
-            disp('    STEP 2 (out of 6): MULTIPRIORS SEGMENTATION ...   ')
-            disp('======================================================')
-            runMultipriors(subjRasRSPD,subjRasRSPDspm);
-        else
-            disp('======================================================')
-            disp('    STEP 2 (out of 6): SPM SEGMENTATION TOUCHUP ...   ')
-            disp('======================================================')
-            segTouchup(subjRasRSPDspm,subjRasRSPDSeg);
-        end
-    else
-        disp('======================================================')
-        disp('       SEGMENTATION ALREADY DONE, SKIP STEP 2         ')
-        disp('======================================================')
-    end
-    alignHeader2mni(subjRasRSPD,T2,subjRasRSPDspm,subjRasRSPDSeg);
-else
-    disp('======================================================')
-    disp(' NEW YORK HEAD SELECTED, GOING TO STEP 3 DIRECTLY...  ')
-    disp('======================================================')
-    warning('New York head is a 0.5 mm model so is more computationally expensive. Make sure you have a decent machine (>50GB memory) to run ROAST with New York head.')
-end
-
 if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
-    hdrInfo = electrodePlacement(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,elecName,options,uniqueTag);
+    [elec,gel] = electrodePlacement(subj,segMask,image,landmarks,elecName,options,uniqueTag);
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
-%   load([dirname filesep subjName '_' uniqueTag '_labelVol.mat'],'volume_elecLabel','volume_gelLabel');
-    load([dirname filesep subjModelName '_header.mat'],'hdrInfo');
+    elec = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_elec.nii']);
+    gel = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_gel.nii']);
 end
+disp('======================================================')
+disp('VISUALIZING ELECTRODE PLACEMENT... ')
+viewElectrodes(segMask,elec,gel,landmarks,image,uniqueTag);
 
 if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
-    [node,elem,face] = meshByIso2mesh(subj,subjRasRSPDspm,subjRasRSPDSeg,meshOpt,hdrInfo,uniqueTag);
+    [node,elem,face] = meshByIso2mesh(subj,segMask,elec,gel,meshOpt,image,uniqueTag);
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
@@ -883,7 +995,7 @@ else
 end
 
 if any(~strcmpi(recipe,'leadfield'))
-    
+
     if ~exist([dirname filesep subjName '_' uniqueTag '_v.pos'],'file')
         disp('======================================================')
         disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
@@ -897,22 +1009,31 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
-    
+
     if ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
-        [vol_all,ef_mag,ef_all] = postGetDP(subj,subjRasRSPDSeg,node,hdrInfo,uniqueTag);
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,0,vol_all,ef_mag,ef_all);
+        [vol_all,ef_mag,ef_all] = postGetDP(subj,segMask,node,image,uniqueTag);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
         load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
-        visualizeRes(subj,subjRasRSPD,subjRasRSPDspm,subjRasRSPDSeg,T2,node,elem,face,injectCurrent,hdrInfo,uniqueTag,1,vol_all,ef_mag,ef_all);
     end
-    
+    visualizeRes(subj,segMask,mri2mni,node,elem,face,injectCurrent,image,uniqueTag,vol_all,ef_mag,ef_all);
+
 else
+
+    [~,indRef] = ismember('Iz',elecName);
+    indStimElec = setdiff(1:length(elecName),indRef);
+    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
+    isSolved = zeros(length(indStimElec),1);
+    for i=1:length(indStimElec)
+        if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
+            isSolved(i) = 1;
+        end
+    end
     
     if any(~isSolved) && ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('======================================================')
@@ -939,19 +1060,19 @@ else
         disp('======================================================')
         %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
-    
+
     if ~exist([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'file')
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDP(subj,[],node,hdrInfo,uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
+        postGetDP(subj,[],node,[],uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')
         disp(['         FOR SUBJECT ' subj])
         disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
-    end   
+    end
 end
 
 disp('==================ALL DONE ROAST=======================');
