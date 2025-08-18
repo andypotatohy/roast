@@ -14,14 +14,14 @@ unknownElec = 0;
 
 switch lower(para(1).capType)
     case {'1020','1010','1005'}
-        load('./cap1005FullWithExtra.mat','capInfo');
-        elecPool_P = capInfo{1};
+        capInfo = table2cell(readtable('capInfo.xlsx','Sheet','10-05'));
+        elecPool_P = capInfo(:,1);
     case 'biosemi'
-        load('./capBioSemiFullWithExtra.mat','capInfo');
-        elecPool_P = capInfo{1};
+        capInfo = table2cell(readtable('capInfo.xlsx','Sheet','BioSemi'));
+        elecPool_P = capInfo(:,1);
     case 'egi'
-        load('./capEGIfull.mat','capInfo');
-        elecPool_P = capInfo{1};
+        capInfo = table2cell(readtable('capInfo.xlsx','Sheet','EGI'));
+        elecPool_P = capInfo(:,1);
 end
 
 elecPool_N = {'nk1';'nk2';'nk3';'nk4'};
@@ -55,7 +55,7 @@ for i=1:length(elec)
 end
 
 if unknownElec>0
-    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you picked up one of the electrodes that falls on the ears or eyes (which are removed, see capInfo.xls); 4) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, EGI, nor your customized electrodes).');
+    error('Unrecognized electrodes found. It may come from the following mistakes: 1) you specified one cap type (e.g. 1010) but asked the electrode name in the other system (e.g. BioSemi); 2) you defined some customized electrode location but forgot to put ''custom'' as a prefix in the electrode name; 3) you picked up one of the electrodes that falls on the ears or eyes (which are removed, see capLayout.pdf); 4) you asked ROAST to do an electrode that does not belong to any system (neither 1005, BioSemi, EGI, nor your customized electrodes).');
 end
 
 if doPredefined

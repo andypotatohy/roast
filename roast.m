@@ -878,7 +878,7 @@ if ~strcmp(subjName,'nyhead')
             % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
             scalp=segMask.img>0;
             scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
-            load('./cap1005FullWithExtra.mat','capInfo');
+            capInfo = table2cell(readtable('capInfo.xlsx','Sheet','10-05'));
             [landmarksNew(8:end,:),landmarksNew(7,:)]= fitCap2individual(scalp,scalp_surface,landmarksNew(1:4,:),image,capInfo,[],0,0);
             % use the 4 manually clicked landmarks, the scalp center, and the fitted 10-10 electrodes on the central sagittal line to estimate the Affine
             indForAffine = [1:4,7:16];

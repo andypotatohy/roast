@@ -25,15 +25,15 @@ indC = elecPara(1).indC;
 if ~isempty(indP)
    switch lower(elecPara(1).capType)
        case {'1020','1010','1005'}
-           load('./cap1005FullWithExtra.mat','capInfo');
+           capInfo = table2cell(readtable('capInfo.xlsx','Sheet','10-05'));
            isBiosemi = 0;
            isEGI = 0;
        case 'biosemi'
-           load('./capBioSemiFullWithExtra.mat','capInfo');
+           capInfo = table2cell(readtable('capInfo.xlsx','Sheet','BioSemi'));
            isBiosemi = 1;
            isEGI = 0;
        case 'egi'
-           load('./capEGIfull.mat','capInfo');
+           capInfo = table2cell(readtable('capInfo.xlsx','Sheet','EGI'));
            isBiosemi = 0;
            isEGI = 1;
    end

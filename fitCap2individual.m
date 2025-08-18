@@ -76,7 +76,7 @@ if ~isEGI
 end
 
 disp('wearing the cap...')
-elec = capInfo{1};
+elec = capInfo(:,1);
 if ~isEGI
     if ~isBiosemi
         centralElec = {'Oz';'POz';'Pz';'CPz';'Cz';'FCz';'Fz';'AFz';'Fpz'};
@@ -89,7 +89,7 @@ else
 end
 
 indFit = cat(1,indCentralElec,indNeed); % only fit those elec specified by users (to save time)
-elec_template = cell2mat(capInfo(2:4));
+elec_template = cell2mat(capInfo(:,2:4));
 elec_template = elec_template(indFit,:);
 elec_template = elec_template./repmat([hdrInfo(1).mat(1,1),hdrInfo(1).mat(2,2),hdrInfo(1).mat(3,3)],length(indFit),1);
 % account for MRI resolution (so can do non-1mm, anisotropic MRI accurately)
