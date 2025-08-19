@@ -773,10 +773,6 @@ if any(~strcmpi(recipe,'leadfield'))
     
 else
     
-    elecNameOri = elecName; % back up for re-ordering solutions back to .loc file order;
-                            % this is ugly, as .loc file has a different order of electrodes
-                            % for historical reasons;
-                            % HDE follows .loc file; ROAST follows capInfo.xls
     elecName = elecName(indInUsrInput);
     configTxt = 'leadFieldGeneration';
     
@@ -1027,7 +1023,6 @@ else
 
     [~,indRef] = ismember('Iz',elecName);
     indStimElec = setdiff(1:length(elecName),indRef);
-    [isInRoastCore,indInRoastCore] = ismember(elecNameOri,elecName(indStimElec));
     isSolved = zeros(length(indStimElec),1);
     for i=1:length(indStimElec)
         if exist([dirname filesep subjName '_' uniqueTag '_e' num2str(indStimElec(i)) '.pos'],'file')
@@ -1065,7 +1060,7 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
-        postGetDP(subj,[],node,[],uniqueTag,indStimElec,indInRoastCore(isInRoastCore));
+        postGetDP(subj,[],node,[],uniqueTag,indStimElec);
     else
         disp('======================================================')
         disp('         ALL STEPS DONE, READY TO DO TARGETING        ')

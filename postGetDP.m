@@ -1,5 +1,5 @@
-function [vol_all,ef_mag,ef_all] = postGetDP(subj,template,node,imgHdr,uniTag,indSolved,indInCore)
-% [vol_all,ef_mag,ef_all] = postGetDP(subj,template,node,imgHdr,uniTag,indSolved,indInCore)
+function [vol_all,ef_mag,ef_all] = postGetDP(subj,template,node,imgHdr,uniTag,indSolved)
+% [vol_all,ef_mag,ef_all] = postGetDP(subj,template,node,imgHdr,uniTag,indSolved)
 %
 % Post processing after solving the model / generating the lead field.
 % Save the result in Matlab format in the MRI voxel space. For the lead
@@ -136,10 +136,6 @@ else % for roast_target()
 %     
 %     locs = node(indBrain,1:3);
 %     locs = locs(indAdata,:); % ...also applies to mesh coordinates
-    
-    % re-ordering to match the electrode order in .loc file
-%     A = A(:,indInCore);
-    A_all = A_all(:,:,indInCore);
     
     disp('saving the final results...')
 %     save([dirname filesep subjName '_' uniTag '_roastResult.mat'],'A','locs','-v7.3');

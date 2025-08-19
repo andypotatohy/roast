@@ -10,6 +10,10 @@ Improved visualization.
 
 Output the mri2mni matrix so that users can use it for post-processing.
 
+Moved all the drawings of electrode layouts out of capInfo.xlsx into capLayout.pdf.
+
+(For developers only) Re-ordered the electrodes in elec72.loc to match the order of 10-10 electrodes in capInfo.xlsx, so that the hack to re-order electrodes when 'leadField' is specified can be removed.
+
 
 ROAST V3.5 (codename: Dumbo) -- 2024/04/25:
 
