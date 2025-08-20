@@ -638,9 +638,7 @@ title(hc,'Injected current (mA)','FontSize',18);
 caxis([min(mon) max(mon)]);
 drawnow
 
-% process electrodes to make order consistent (A and I_opt follow .loc;
-% visualization in ROAST follows ROAST order, i.e., capInfo.xls)
-[~,indInUsrInput] = elecPreproc(subj,elecName,elecPara);
+[~,indInUsrInput] = elecPreproc(subj,elecName,elecPara); % do not really need this after unified order in .loc and capInfo.xlsx, but keep it to make it more robust % ANDY 2025-08-20
 
 visualizeRes(subj,mask,mri2mni,node,elem,face,mon(indInUsrInput),image,uniqueTag,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 

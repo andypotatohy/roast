@@ -7,7 +7,7 @@
 3. [How to use `roast_target`](#3-how-to-use-roast_target)
    - [3.1 Synopsis of `roast_target`](#31-synopsis-of-roast_target)
    - [3.2 Examples on `roast_target`](#32-examples-on-roast_target)
-4. [More notes on the `capLayout.pdf` file](#4-more-notes-on-the-capLayout-file)
+4. [More notes on the `capLayout.pdf` file](#4-more-notes-on-the-capLayoutpdf-file)
 5. [Outputs of ROAST software](#5-outputs-of-roast-software)
    - [5.1 Outputs of `roast`](#51-outputs-of-roast)
    - [5.2 Outputs of `roast_target`](#52-outputs-of-roast_target)
@@ -706,7 +706,7 @@ Review the results from running targeting `'mixed_orient'` in [Example 34](#exam
 
 ## 7. How to ask questions
 
-Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 25](#example-25) and [Example 34](#example-34) for quick references. Do not forget to check out the [`capLayout.pdf`](#4-more-notes-on-the-capLayout-file) file.
+Please read the [Getting started](#1-getting-started) and the Synopsis section of each main function. It'll only cost you 10 minutes. If you're lazy or tired, just go to [Example 25](#example-25) and [Example 34](#example-34) for quick references. Do not forget to check out the [`capLayout.pdf`](#4-more-notes-on-the-capLayoutpdf-file) file.
 
 If ROAST crashes, first check if there are any warning messages output in the command window. If there are, check if there are any suggestions in the warning messages and if yes, follow those suggestions. This will usually fix the problems and let you run through to get your model.
 

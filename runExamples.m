@@ -378,5 +378,27 @@ end
 % pause
 close all
 
-% add test on roast_target, reviewRes
-% add test on manual gui and align
+try
+    roast_target([],'LFwithMA',[],'targetingtag','basic')
+catch ME
+    fid=fopen('errLog.txt','a');
+    fprintf(fid,'error at running cmd 34:\n');
+    fprintf(fid,'%s\n',ME.message);
+    fclose(fid);
+end
+% pause
+close all
+
+try
+    roast_target([],'LFwithMA',[52 184 72;25 80 72;139 171 72],'coordType','voxel','optType','wls-l1','k',0.002,'targetradius',4,'targetingTag','3targets_radialIn')
+catch ME
+    fid=fopen('errLog.txt','a');
+    fprintf(fid,'error at running cmd 35:\n');
+    fprintf(fid,'%s\n',ME.message);
+    fclose(fid);
+end
+% pause
+close all
+
+% add test on roast manual gui and align
+% add test on reviewRes
