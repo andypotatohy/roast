@@ -130,7 +130,7 @@ place any electrodes on the lower head or on the neck. But if you have to do thi
 `'manualGui'` -- 3D GUI that allows users to manually check and select anatomical landmarks.  
 `'on' | 'off' (default)`  
 For heads with abnormal anatomies such as a lesion, you may want to manually check if the automated registration from 
-either SPM or NiftyReg worked well. To do this, you can open an interactive 3D graphical user interface (GUI) that allows you to 
+either SPM or NiftyReg worked well. To do this, you can open [an interactive 3D graphical user interface (GUI)](./manualGui.png) that allows you to 
 visually check if the landmarks look good on the individual head ([Example 18](#example-18)). If not, it means the registration 
 did not work well, and you can adjust it by clicking the "Modify" button in the GUI to manually click the anatomical landmarks 
 (Nasion, Inion, Right Ear, Left Ear, just follow the program step by step). Note if you manually select the landmarks, ROAST will 
@@ -367,10 +367,12 @@ deep convolutional neural networks known as the Multiaxial.
     roast('example/subject1.nii',[],'multiaxial','on','manualGui','on')
 
 Run simulation on subject1 with default recipe. Segmentaion will be done by 
-deep convolutional neural networks known as the Multiaxial. A 3D GUI will be 
+deep convolutional neural networks known as the Multiaxial. A 3D GUI shown below will be 
 open to allow users to inspect the registration and to either confirm it or 
 modify it by manually selecting the anatomical landmarks. Useful when running 
 ROAST on a lesioned head for the first time to confirm if registration worked well.
+
+![manualGui](./manualGui.png)
 
 #### Example 19
 
