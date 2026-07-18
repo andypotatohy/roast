@@ -769,7 +769,7 @@ Download the proper dependencies by using Conda or Pip Install:
 Place the enviornment into your lib/multiaxial folder under ROAST.
 ```
 
-ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work. We tested on macOS Sonoma with Matlab 2022b, but we cannot guarantee it will work on other macOS versions.
+ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work. We tested on macOS Sonoma with Matlab 2022b, but we cannot guarantee it will work on other macOS versions. There is ongoing efforts to get Mac Silicon work though, see [this Issue](https://github.com/andypotatohy/roast/issues/43#issuecomment-5008349975).
 
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
 
