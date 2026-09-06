@@ -7,9 +7,9 @@ two open technical risks (the CGAL mesher and SPM segmentation are not
 plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
-**Status: Phase 0 (I/O) started. Everything else is not yet implemented.**
-This is not a working `roast()` replacement yet — do not use it for actual
-simulations.
+**Status: Phase 0 (I/O) and Phase 1 (segmentation) done. Phases 2+ not yet
+implemented.** This is not a working `roast()` replacement yet — do not use
+it for actual simulations.
 
 ## What's here so far
 
@@ -34,11 +34,51 @@ in the repo's `example/` directory (not synthetic fixtures), so they
 double as a numerical-parity check against ROAST's own documented example
 data.
 
+## Segmentation (Phase 1)
+
+Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
+3=csf, 4=bone, 5=skin, 6=air, 0=background):
+
+- **`roast_py/segmentation/multiaxial.py` (default).** Ports
+  `lib/multiaxial/{SEGMENT.py,preprocessing_lib.py,utils.py}` — already
+  pure Python/TensorFlow — into an in-process function, replacing MATLAB's
+  `runMultiaxial.m` + subprocess-into-a-separate-conda-env with a plain
+  function call. **Verified end-to-end** against the real bundled model
+  weights and `example/subject1.nii` (see `tests/test_multiaxial.py`,
+  `@pytest.mark.slow`, ~2-3 min on CPU) — produces an anatomically sane
+  6-tissue segmentation. Needs the legacy Keras 2 runtime to load the
+  bundled `.h5` models under Keras 3 (`pip install roast_py[multiaxial]`;
+  see `roast_py/segmentation/_keras_compat.py` for why).
+
+  A Python-native alternative to SPM was considered for the *default* path
+  too: nothing widely used does ROAST's exact 6-class full-head
+  segmentation (ANTsPyNet/FSL only segment brain tissue, not skull/scalp/
+  air, which matter for TES modeling; SimNIBS's `charm` is the closest real
+  alternative but would mean importing a second large third-party
+  simulation codebase). The already-bundled multiaxial CNN turns out to
+  already be exactly that Python-native alternative, which is why it's the
+  default rather than a fallback.
+
+- **`roast_py/segmentation/spm_standalone.py` (optional/parity path).**
+  Drives SPM12's official standalone build (compiled against the free
+  MATLAB Runtime, no MATLAB license) to reproduce `start_seg.m`'s New
+  Segment step, then ports `segTouchup.m`'s cleanup pipeline
+  (`roast_py/segmentation/touchup.py`, unit-tested with synthetic data) to
+  turn SPM's raw tissue-probability maps into the same 6-label scheme.
+  **Not runtime-tested** — SPM standalone + the MATLAB Runtime aren't
+  installable in this environment. **Known gap:** `segTouchup.m`'s three
+  final patching passes (gray-matter/CSF/bone) depend on `eyes_vol`,
+  `holes_vol`, and `WMexclude_vol` — extra volumes computed by ROAST's own
+  patched copy of SPM's `lib/spm12/spm_preproc_write8.m` from extra classes
+  in the extended `eTPM.nii` atlas. `touchup.py` implements everything else
+  in the pipeline (smoothing, binarization, CSF-continuity fix,
+  disconnected-voxel pruning, empty-voxel relabeling) but not those three
+  passes yet — tracked as a follow-up task.
+
 ## Remaining phases (see the full plan for detail)
 
-0. ~~I/O & preprocessing~~ (in progress)
-1. Segmentation — port `lib/multiaxial` (already pure Python/TensorFlow) as
-   the default path; SPM12-standalone as an optional secondary path
+0. ~~I/O & preprocessing~~ done
+1. ~~Segmentation~~ done (see above)
 2. Electrode placement (`fitCap2individual.m`, `electrodePlacement.m`)
 3. Meshing — resolve the CGAL-mesher-is-a-MEX-file-not-a-binary risk
 4. FEM solve — `.pro` generation + `getdp` subprocess + `.pos` parsing

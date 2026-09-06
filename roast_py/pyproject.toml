@@ -10,6 +10,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+multiaxial = ["tensorflow>=2.16", "tf-keras", "scikit-image>=0.21"]
 targeting = ["cvxpy>=1.4"]
 viz = ["matplotlib>=3.7", "pyvista>=0.43"]
 mesh = ["meshio>=5.3"]
@@ -21,3 +22,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["roast_py*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: full end-to-end tests (e.g. real model inference) that take more than a few seconds",
+]
