@@ -7,9 +7,9 @@ two open technical risks (the CGAL mesher and SPM segmentation are not
 plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
-**Status: Phase 0 (I/O) and Phase 1 (segmentation) done. Phases 2+ not yet
-implemented.** This is not a working `roast()` replacement yet — do not use
-it for actual simulations.
+**Status: Phases 0-2 (I/O, segmentation, electrode placement) done. Phases
+3+ not yet implemented.** This is not a working `roast()` replacement yet —
+do not use it for actual simulations.
 
 ## What's here so far
 
@@ -75,11 +75,56 @@ Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
   disconnected-voxel pruning, empty-voxel relabeling) but not those three
   passes yet — tracked as a follow-up task.
 
+## Electrode placement & cap fitting (Phase 2)
+
+`roast_py/geometry/` ports the whole electrode-placement pipeline:
+
+| MATLAB | Python |
+|---|---|
+| `mask2EdgePointCloud.m`, `project2ClosestSurfacePoints.m`, `map2Points.m`, `convertToRASpointCloud.m` | `geometry/point_cloud.py` |
+| `cylinder2P.m`, `drawCylinder.m`, `drawCuboid.m`, `drawLine.m` | `geometry/shapes.py` |
+| `lib/ncs2daprox/ncs2dapprox.m` (+ its Merge/MaxSqDist helpers) | `geometry/spline.py` |
+| `capInfo.xlsx` reader (`readtable(...)` calls) | `geometry/cap_info.py` |
+| `fitCap2individual.m` | `geometry/cap_fitting.py` |
+| `cleanScalp.m` | `geometry/scalp.py` |
+| `placeNeckElec.m`, `generateElecMask.m`, `placeAndModelElectrodes.m`, `electrodePlacement.m`, `elecPreproc.m`'s classification | `geometry/placement.py` |
+
+One deliberate API change from the MATLAB original: `electrode_placement()`
+takes `elec_names`/`elec_paras` in whatever order the caller wants (it
+internally reorders into MATLAB's predefined/neck/custom pool-sorted order
+the way `elecPreproc.m`'s `ind2UI` does, then relabels the result back) —
+a caller never has to pre-sort anything, unlike MATLAB's version, which
+expects its caller (`roast.m`) to have already applied that permutation.
+This is exercised in `tests/test_placement_integration.py` by
+deliberately requesting electrodes out of pool order.
+
+**Verified two ways:**
+- `tests/test_cap_fitting.py`: a synthetic ellipsoid "head" with hand-placed
+  landmarks — checks fitted electrodes land on the surface and that
+  anatomically-named points end up anatomically placed (Fpz frontal, Oz
+  occipital, Cz at the vertex, Fp1 left of Fp2).
+- `tests/test_placement_integration.py` (`@pytest.mark.slow`, ~2.5 min):
+  full pipeline (multiaxial segmentation → electrode placement) on the real
+  `example/subject1.nii`, with landmarks derived heuristically from the
+  segmentation's bounding box (real landmark detection isn't ported yet —
+  see Remaining phases). Confirms Cz is the highest point, Fpz is more
+  anterior than Oz, and gel never overlaps electrodes or other tissue.
+
+One correctness fix worth calling out: `cleanScalp.m`'s morphological
+close/open operations use structuring elements that grow up to `ones(30,30,30)`
+or larger, applied directly to a MATLAB image — at full head resolution
+(e.g. 192×256×256) a literal cube that size is computationally intractable
+in scipy. `geometry/scalp.py` decomposes each into repeated
+dilation/erosion with a 3×3×3 cube (`scipy.ndimage`'s optimized `iterations`
+path), which is mathematically identical for an all-ones cube structuring
+element but tractable — confirmed by the real-data test above completing in
+seconds rather than hanging.
+
 ## Remaining phases (see the full plan for detail)
 
 0. ~~I/O & preprocessing~~ done
 1. ~~Segmentation~~ done (see above)
-2. Electrode placement (`fitCap2individual.m`, `electrodePlacement.m`)
+2. ~~Electrode placement & cap fitting~~ done (see above)
 3. Meshing — resolve the CGAL-mesher-is-a-MEX-file-not-a-binary risk
 4. FEM solve — `.pro` generation + `getdp` subprocess + `.pos` parsing
 5. End-to-end numerical validation against MATLAB ROAST (gate before continuing)
