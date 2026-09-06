@@ -1,0 +1,23 @@
+[project]
+name = "roast-py"
+version = "0.0.1"
+description = "Python port of ROAST's core TES simulation pipeline (no MATLAB required)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "nibabel>=5.0",
+]
+
+[project.optional-dependencies]
+targeting = ["cvxpy>=1.4"]
+viz = ["matplotlib>=3.7", "pyvista>=0.43"]
+mesh = ["meshio>=5.3"]
+dev = ["pytest>=7.4"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["roast_py*"]
