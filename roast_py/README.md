@@ -7,9 +7,9 @@ two open technical risks (the CGAL mesher and SPM segmentation are not
 plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
-**Status: Phases 0-3 (I/O, segmentation, electrode placement, meshing)
-done. Phases 4+ not yet implemented.** This is not a working `roast()`
-replacement yet — do not use it for actual simulations.
+**Status: Phases 0-4 (I/O, segmentation, electrode placement, meshing, FEM
+solve) done. Phases 5+ not yet implemented.** This is not a working
+`roast()` replacement yet — do not use it for actual simulations.
 
 ## What's here so far
 
@@ -167,13 +167,71 @@ would be a real bottleneck at the ~11 million numbers a real head mesh
 involves. Both now parse/write in bulk via numpy (`str.split()` + single
 `np.array(..., dtype=...)` calls for reading, `np.savetxt` for writing).
 
+## FEM solve (Phase 4)
+
+`roast_py/fem/` ports boundary-condition setup, the `.pro` (getDP problem
+script) generation, the getdp subprocess, and `.pos` post-processing:
+
+| MATLAB | Python |
+|---|---|
+| `prepareForGetDP.m` (boundary extraction: `TriRep`/`freeBoundary`) | `fem/boundary.py`, `fem/prepare.py` |
+| `solveByGetDP.m`'s `.pro` generation | `fem/pro_writer.py` |
+| `solveByGetDP.m`'s `system(cmd)` call | `fem/getdp_runner.py` |
+| `postGetDP.m` (`.pos` parsing + `TriScatteredInterp`) | `fem/pos_parser.py` |
+| the roast() (non-lead-field) path end to end | `fem/solve.py` |
+
+This was the plan's flagged highest-precision-risk phase (PDE assembly,
+boundary tags, element ordering all have to actually match, not just
+"look right"), so it got the most direct kind of check available without
+a MATLAB reference to diff against: **does the real getdp binary actually
+solve the problem this code hands it, and is the answer physically
+correct?**
+
+`fem/boundary.py` replaces MATLAB's `TriRep(tets, node)` + `freeBoundary`
+(which finds a tet subset's free surface, returning it in a locally
+renumbered point list) with a from-scratch implementation that skips that
+renumbering — every boundary face is built directly from the tet list's
+own global node references, so there's no reason to translate to a local
+numbering only to translate back for the `.msh` boundary-element section,
+which needs global references anyway. Verified against a small hand-built
+two-cube conforming mesh (`tests/test_fem_boundary.py`): a unit cube's
+free boundary is exactly its 12 surface triangles (area 6), and excluding
+an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
+
+**Verified two ways:**
+- `tests/test_fem_solve.py` (`@pytest.mark.slow`, ~3s): a small synthetic
+  two-electrode "head" (6 concentric tissue shells so all tissue labels
+  are present with no gaps, plus disc-shaped gel/electrode pads poking
+  outward on opposite sides — closer to `placeAndModelElectrodes.m`'s real
+  electrode geometry than a fully gel-enclosed electrode, which turned out
+  to produce zero usable outer surface area and caught a real geometry bug
+  in an early draft of this test). Runs the **real getdp binary** through
+  the full chain — mesh → boundary extraction → `.pro` → solve → `.pos`
+  parsing → voxel-grid interpolation — and asserts the solved potential is
+  actually higher near the current-injecting anode than the current-
+  sinking cathode, which only holds if the boundary condition sign, region
+  wiring, and area computation all have the right sign and magnitude
+  together, not just individually.
+- Manually run against the real pipeline output: Phase 1-3's segmented,
+  electrode-placed, meshed `example/subject1.nii` (223,926 nodes, ~1.33M
+  elements), solved with a real 3-electrode montage. An early version of
+  this run also caught a real modeling mistake worth noting: the first
+  synthetic sphere's tissue-label ordering put "air" (conductivity
+  2.5e-14 S/m, about 10 orders of magnitude lower than any other tissue)
+  as the *outermost* shell directly touching the current-injecting gel,
+  which is anatomically backwards (air pockets are internal, e.g.
+  sinuses) and produced absurd voltages (10^10-scale) as the solver forced
+  current through a nearly-insulating boundary layer — not a bug in the
+  Python code, but a reminder that this pipeline's numerical results are
+  only as physically sane as the tissue geometry handed to it.
+
 ## Remaining phases (see the full plan for detail)
 
 0. ~~I/O & preprocessing~~ done
 1. ~~Segmentation~~ done (see above)
 2. ~~Electrode placement & cap fitting~~ done (see above)
 3. ~~Meshing~~ done (see above)
-4. FEM solve — `.pro` generation + `getdp` subprocess + `.pos` parsing
+4. ~~FEM solve~~ done (see above)
 5. End-to-end numerical validation against MATLAB ROAST (gate before continuing)
 6. Targeting (`roast_target()`, CVX → cvxpy)
 7. Visualization (`reviewRes()`) & packaging
