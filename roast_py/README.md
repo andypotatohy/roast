@@ -214,16 +214,26 @@ an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
   together, not just individually.
 - Manually run against the real pipeline output: Phase 1-3's segmented,
   electrode-placed, meshed `example/subject1.nii` (223,926 nodes, ~1.33M
-  elements), solved with a real 3-electrode montage. An early version of
-  this run also caught a real modeling mistake worth noting: the first
-  synthetic sphere's tissue-label ordering put "air" (conductivity
-  2.5e-14 S/m, about 10 orders of magnitude lower than any other tissue)
-  as the *outermost* shell directly touching the current-injecting gel,
-  which is anatomically backwards (air pockets are internal, e.g.
-  sinuses) and produced absurd voltages (10^10-scale) as the solver forced
-  current through a nearly-insulating boundary layer — not a bug in the
-  Python code, but a reminder that this pipeline's numerical results are
-  only as physically sane as the tissue geometry handed to it.
+  elements), solved with a real 3-electrode montage (a 1mA/-0.5mA/-0.5mA
+  Oz/Fpz/Cz montage). **Completed successfully end to end** — meshed in
+  ~80s, real getdp solve in ~101s, voltage interpolated onto the full
+  192×256×256 grid in ~20s, landing in a physically sane range (0 to
+  ~268 mV after re-referencing) — not the 10^10-scale nonsense the
+  synthetic test's bad tissue geometry produced below. A full Python
+  `roast()`-equivalent run (segmentation + placement + meshing + solve) on
+  this subject now takes roughly 6 minutes total, no MATLAB involved
+  anywhere.
+
+  An early version of the small synthetic test above also caught a real
+  modeling mistake worth noting: the first synthetic sphere's tissue-label
+  ordering put "air" (conductivity 2.5e-14 S/m, about 10 orders of
+  magnitude lower than any other tissue) as the *outermost* shell directly
+  touching the current-injecting gel, which is anatomically backwards (air
+  pockets are internal, e.g. sinuses) and produced absurd voltages
+  (10^10-scale) as the solver forced current through a nearly-insulating
+  boundary layer — not a bug in the Python code, but a reminder that this
+  pipeline's numerical results are only as physically sane as the tissue
+  geometry handed to it.
 
 ## Remaining phases (see the full plan for detail)
 
