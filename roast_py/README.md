@@ -7,9 +7,9 @@ two open technical risks (the CGAL mesher and SPM segmentation are not
 plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
-**Status: Phases 0-2 (I/O, segmentation, electrode placement) done. Phases
-3+ not yet implemented.** This is not a working `roast()` replacement yet —
-do not use it for actual simulations.
+**Status: Phases 0-3 (I/O, segmentation, electrode placement, meshing)
+done. Phases 4+ not yet implemented.** This is not a working `roast()`
+replacement yet — do not use it for actual simulations.
 
 ## What's here so far
 
@@ -120,12 +120,59 @@ path), which is mathematically identical for an all-ones cube structuring
 element but tractable — confirmed by the real-data test above completing in
 seconds rather than hanging.
 
+## Meshing (Phase 3)
+
+`roast_py/meshing/` ports the volumetric mesh generation step:
+
+| MATLAB | Python |
+|---|---|
+| `saveinr.m`, `readmedit.m`, `sortmesh.m`, `savemsh.m` | `meshing/mesh_io.py` |
+| `cgalv2m.m`, `meshByIso2mesh.m` | `meshing/cgal_mesher.py` |
+
+**The CGAL-mesher risk flagged in the original plan turned out not to be
+real.** `lib/iso2mesh/bin/cgalmesh.mexa64` *looks* like a MATLAB MEX shared
+library from its extension (iso2mesh's own naming convention), but `file`/
+`readelf` show it's actually a plain, statically-linked, directly
+executable ELF binary — confirmed by running it directly (`./cgalmesh.mexa64`
+prints a usage message and exits 0). MATLAB's own `cgalv2m.m` already
+invokes it via `system()`, exactly like the getdp/NiftyReg subprocess
+wrappers elsewhere in this port, so `cgal_mesher.py` does the same — no
+fallback mesher (pygalmesh/TetGen) was needed after all.
+
+One real behavior worth documenting (found empirically, not a bug):
+cgalmesh assigns output region ids by *sorted distinct nonzero input
+label*, not by literal label value — an input using only labels `{1, 7}`
+comes back with elements labeled `{1, 2}`. `mesh_by_iso2mesh()`'s region
+numbering (1-6 tissue, then gel, then electrodes) only lines up correctly
+because a real head's 6 tissue labels are essentially always all present
+with no gaps; this is an existing latent assumption in MATLAB ROAST too
+(same underlying binary), not something the port introduced or needs to
+work around.
+
+**Verified two ways:**
+- `tests/test_cgal_mesher.py` (`@pytest.mark.slow`, ~1s): runs the real
+  bundled binary on small synthetic multi-region volumes, checking the
+  produced tetrahedra are valid (positive volume, in-range node
+  references) and that region numbering behaves as documented above.
+- Manually verified against the real pipeline output: `example/subject1.nii`
+  segmented (Phase 1) → 3 electrodes placed (Phase 2) → meshed at ROAST's
+  default `maxvol=10` produced 223,926 nodes / ~1.33M tetrahedra / 897,814
+  triangles across all 12 expected regions (6 tissue + 3 gel + 3
+  electrode), in about a minute.
+
+That real run also caught a genuine performance bug before it shipped:
+`read_medit()`'s and `save_msh()`'s initial implementations converted
+node/element data token-by-token / row-by-row in plain Python loops, which
+would be a real bottleneck at the ~11 million numbers a real head mesh
+involves. Both now parse/write in bulk via numpy (`str.split()` + single
+`np.array(..., dtype=...)` calls for reading, `np.savetxt` for writing).
+
 ## Remaining phases (see the full plan for detail)
 
 0. ~~I/O & preprocessing~~ done
 1. ~~Segmentation~~ done (see above)
 2. ~~Electrode placement & cap fitting~~ done (see above)
-3. Meshing — resolve the CGAL-mesher-is-a-MEX-file-not-a-binary risk
+3. ~~Meshing~~ done (see above)
 4. FEM solve — `.pro` generation + `getdp` subprocess + `.pos` parsing
 5. End-to-end numerical validation against MATLAB ROAST (gate before continuing)
 6. Targeting (`roast_target()`, CVX → cvxpy)
