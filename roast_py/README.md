@@ -8,8 +8,54 @@ plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
 **Status: Phases 0-4 (I/O, segmentation, electrode placement, meshing, FEM
-solve) done. Phases 5+ not yet implemented.** This is not a working
-`roast()` replacement yet — do not use it for actual simulations.
+solve) done, wired into a top-level `roast()` (see Quickstart below).
+Phases 5+ not yet implemented.** Runs end to end and produces physically
+sane output, but **has not yet been numerically validated against MATLAB
+ROAST** (that's Phase 5 — the actual accuracy gate) and landmark placement
+is still an interim heuristic (see `geometry/landmarks.py`), not real
+landmark detection. Don't use it for real simulations until Phase 5 passes.
+
+## Quickstart
+
+Python equivalent of MATLAB's `roast('example/subject1.nii')` (default
+recipe: anode Fp1 1 mA, cathode P4 -1 mA):
+
+```python
+from roast_py import roast
+
+result = roast("/path/to/subject1.nii")  # copy it out of example/ first -- see examples/quickstart.py
+```
+
+That's the whole call — `roast()` chains segmentation → electrode
+placement → meshing → FEM solve and saves `<subj>_v.nii` (voltage),
+`<subj>_e.nii` (E-field, 3 components) and `<subj>_emag.nii` (E-field
+magnitude) next to the input, exactly like MATLAB's `postGetDP.m`. It also
+returns a `RoastResult` with those same volumes as numpy arrays
+(`result.vol_v`, `result.vol_e`, `result.ef_mag`) plus the intermediate
+tissue/electrode/gel masks, for inspection without re-reading the NIfTI
+files.
+
+A custom montage is just a dict of electrode name → current in mA (must
+sum to ~0):
+
+```python
+result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
+```
+
+Runnable end-to-end example: `examples/quickstart.py` (install with
+`pip install -e ".[multiaxial]"` first). Takes several minutes on CPU —
+~2-3 min for segmentation, ~1-2 min for meshing + the FEM solve at full
+head resolution; verified in `tests/test_roast.py` (`@pytest.mark.slow`)
+and by manually running exactly this call during development (see the FEM
+solve section below for the numbers that run produced).
+
+Current limitations of `roast()` itself, beyond Phase 5 validation:
+input must already be RAS-oriented (run `roast_py.io.nifti.convert_to_ras`
+first if not — `example/subject1.nii` already is); only disc electrodes
+via the 10-05 cap are wired into `roast()`'s own keyword arguments so far
+(pad/ring electrodes work at the `geometry.placement.ElectrodeParams`
+level but aren't exposed as `roast()` options yet); no neck/custom
+electrodes, no T2-assisted segmentation, no zero-padding option.
 
 ## What's here so far
 
