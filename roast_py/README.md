@@ -43,11 +43,14 @@ result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
 ```
 
 Runnable end-to-end example: `examples/quickstart.py` (install with
-`pip install -e ".[multiaxial]"` first). Takes several minutes on CPU —
-~2-3 min for segmentation, ~1-2 min for meshing + the FEM solve at full
-head resolution; verified in `tests/test_roast.py` (`@pytest.mark.slow`)
-and by manually running exactly this call during development (see the FEM
-solve section below for the numbers that run produced).
+`pip install -e ".[multiaxial]"` first). Verified in `tests/test_roast.py`
+(`@pytest.mark.slow`) and by actually running `roast("subject1.nii")` with
+the default recipe during development: **408.8s (~6.8 min) total** on CPU,
+producing a voltage volume of 0 to 362 mV and an E-field magnitude up to
+31 V/m across the full 192×256×256 grid — physically sane magnitudes for a
+1 mA montage (not the 10^10-scale nonsense a mis-set-up model produces,
+see the FEM solve section below), with `subject1_v.nii`/`_e.nii`/`_emag.nii`
+written out alongside the intermediate `.msh`/`.pro`/`.pos` files.
 
 Current limitations of `roast()` itself, beyond Phase 5 validation:
 input must already be RAS-oriented (run `roast_py.io.nifti.convert_to_ras`
