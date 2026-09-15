@@ -84,6 +84,7 @@ disp('======================================================')
 disp('CHECKING INPUTS...')
 disp('======================================================')
 fprintf('\n');
+roastGuiProgress(0,6,'Checking inputs');
 
 % warning('on');
 
@@ -475,6 +476,10 @@ if multiaxial && ~isempty(T2)
     error('Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please only provide T1 image with option ''multiaxial'' turned on.');
 end
 
+if ~multiaxial
+    roastEnsureSpmMex();
+end
+
 if ~exist('manualGui','var')
     manualGui = 0;
 else
@@ -817,22 +822,28 @@ if ~strcmp(subjName,'nyhead')
             disp('======================================================')
             disp('     STEP 1 (out of 6): SEGMENT THE MRI BY SPM ...    ')
             disp('======================================================')
+            roastGuiProgress(0.5,6,'Step 1/6: segmenting MRI by SPM');
             start_seg(subjRasRSPD,T2);
             renameSPMres(subjRasRSPD,subjRasRSPDspm); % rename SPM outputs properly
+            roastGuiProgress(1,6,'Step 1/6 complete: MRI segmented');
         else
             disp('======================================================')
             disp('         MRI SEGMENTED BY SPM, SKIP STEP 1            ')
             disp('======================================================')
+            roastGuiProgress(1,6,'Step 1/6 complete: MRI segmentation found');
         end
         if ~exist([dirname filesep subjModelNameAftSeg '_masks.nii'], 'file')
             disp('======================================================')
             disp('    STEP 2 (out of 6): SPM SEGMENTATION TOUCHUP ...   ')
             disp('======================================================')
+            roastGuiProgress(1.5,6,'Step 2/6: segmentation touchup');
             segTouchup(subjRasRSPDspm,subjRasRSPDSeg);
+            roastGuiProgress(2,6,'Step 2/6 complete: segmentation touchup done');
         else
             disp('======================================================')
             disp('       SEGMENTATION TOUCHUP DONE, SKIP STEP 2         ')
             disp('======================================================')
+            roastGuiProgress(2,6,'Step 2/6 complete: segmentation touchup found');
         end
         load([dirname filesep subjModelNameAftSpm '_seg8.mat'],'image','tpm','Affine');
     else
@@ -840,21 +851,27 @@ if ~strcmp(subjName,'nyhead')
             disp('======================================================')
             disp('    STEP 1 (out of 6): MULTIAXIAL SEGMENTATION ...    ')
             disp('======================================================')
+            roastGuiProgress(0.5,6,'Step 1/6: multiaxial segmentation');
             runMultiaxial(subjRasRSPD);
+            roastGuiProgress(1,6,'Step 1/6 complete: multiaxial segmentation done');
         else
             disp('======================================================')
             disp('       MULTIAXIAL SEGMENTATION DONE, SKIP STEP 1      ')
             disp('======================================================')
+            roastGuiProgress(1,6,'Step 1/6 complete: multiaxial segmentation found');
         end
         if ~exist([dirname filesep subjModelName '_niftyReg.mat'],"file")
             disp('======================================================')
             disp('      STEP 2 (out of 6): NIFTYREG REGISTRATION ...    ')
             disp('======================================================')
+            roastGuiProgress(1.5,6,'Step 2/6: NiftyReg registration');
             runNiftyReg(subjRasRSPD);
+            roastGuiProgress(2,6,'Step 2/6 complete: NiftyReg registration done');
         else
             disp('======================================================')
             disp('       NIFTYREG REGISTRATION DONE, SKIP STEP 2        ')
             disp('======================================================')
+            roastGuiProgress(2,6,'Step 2/6 complete: NiftyReg registration found');
         end
         load([dirname filesep subjModelName '_niftyReg.mat'],'image','tpm','Affine');
     end
@@ -864,6 +881,7 @@ if ~strcmp(subjName,'nyhead')
     mri2mni = Affine*image(1).mat; % mapping from MRI voxel space to MNI space
     segMask = load_untouch_nii([dirname filesep subjModelNameAftSeg '_masks.nii']);
     if manualGui
+        roastGuiProgress(2.1,6,'Checking manual landmarks');
         landmarksNew = nan(size(landmarks));
         landmarksNew(1:4,:) = checkLandmarks(segMask,landmarks(1:4,:));
         if any(any(landmarksNew(1:4,:)~=landmarks(1:4,:)))
@@ -871,6 +889,7 @@ if ~strcmp(subjName,'nyhead')
             warning('New landmarks detected. ROAST will use these new landmarks to re-run registration, overwrite the registration computed by SPM or niftyReg, and reset the headers in _MNI images.');
             disp('======================================================')
             disp('RE-RUNNING REGISTRATION ...')
+            roastGuiProgress(2.2,6,'Updating registration from manual landmarks');
             % get the scalp center, and the fitted 10-10 electrodes on the central sagittal line, to help estimate the Affine
             scalp=segMask.img>0;
             scalp_surface = mask2EdgePointCloud(scalp,'erode',ones(3,3,3));
@@ -895,11 +914,13 @@ if ~strcmp(subjName,'nyhead')
             mri2mni = Affine*image(1).mat;
             disp('======================================================')
             disp('RESETTING HEADERS IN _MNI IMAGES ...')
+            roastGuiProgress(2.3,6,'Resetting MNI image headers');
             alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
         end
     end
     disp('======================================================')
     disp('VISUALIZING THE MRI... ')
+    roastGuiProgress(2.35,6,'Preparing MRI view');
     viewMRI(subjRasRSPD,T2,mri2mni);
 else
     disp('==================================================================')
@@ -915,11 +936,13 @@ else
 end
 disp('======================================================')
 disp('VISUALIZING THE SEGMENTATION... ')
+roastGuiProgress(2.65,6,'Preparing segmentation view');
 viewSeg(segMask,mri2mni);
 
 if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI.nii'],'file')
     disp('======================================================')
     disp('RESETTING HEADERS IN _MNI IMAGES ...')
+    roastGuiProgress(2.75,6,'Resetting MNI image headers');
     alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
 end
 
@@ -966,27 +989,34 @@ if ~exist([dirname filesep subjName '_' uniqueTag '_mask_elec.nii'],'file')
     disp('======================================================')
     disp('      STEP 3 (out of 6): ELECTRODE PLACEMENT...       ')
     disp('======================================================')
+    roastGuiProgress(3,6,'Step 3/6: placing electrodes');
     [elec,gel] = electrodePlacement(subj,segMask,image,landmarks,elecName,options,uniqueTag);
+    roastGuiProgress(3.25,6,'Step 3/6 complete: electrodes placed');
 else
     disp('======================================================')
     disp('         ELECTRODE ALREADY PLACED, SKIP STEP 3        ')
     disp('======================================================')
+    roastGuiProgress(3.25,6,'Step 3/6 complete: electrode placement found');
     elec = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_elec.nii']);
     gel = load_untouch_nii([dirname filesep subjName '_' uniqueTag '_mask_gel.nii']);
 end
 disp('======================================================')
 disp('VISUALIZING ELECTRODE PLACEMENT... ')
+roastGuiProgress(3.45,6,'Preparing electrode placement view');
 viewElectrodes(segMask,elec,gel,landmarks,image,uniqueTag);
 
 if ~exist([dirname filesep subjName '_' uniqueTag '.mat'],'file')
     disp('======================================================')
     disp('        STEP 4 (out of 6): MESH GENERATION...         ')
     disp('======================================================')
+    roastGuiProgress(4,6,'Step 4/6: generating mesh');
     [node,elem,face] = meshByIso2mesh(subj,segMask,elec,gel,meshOpt,image,uniqueTag);
+    roastGuiProgress(4.5,6,'Step 4/6 complete: mesh generated');
 else
     disp('======================================================')
     disp('          MESH ALREADY GENERATED, SKIP STEP 4         ')
     disp('======================================================')
+    roastGuiProgress(4.5,6,'Step 4/6 complete: mesh found');
     load([dirname filesep subjName '_' uniqueTag '.mat'],'node','elem','face');
 end
 
@@ -996,13 +1026,16 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('       STEP 5 (out of 6): SOLVING THE MODEL...        ')
         disp('======================================================')
+        roastGuiProgress(5,6,'Step 5/6: solving model');
         prepareForGetDP(subj,node,elem,elecName,uniqueTag);
         indElecSolve = 1:length(elecName);
         solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,'');
+        roastGuiProgress(5.5,6,'Step 5/6 complete: model solved');
     else
         disp('======================================================')
         disp('           MODEL ALREADY SOLVED, SKIP STEP 5          ')
         disp('======================================================')
+        roastGuiProgress(5.5,6,'Step 5/6 complete: model solution found');
         %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
 
@@ -1010,13 +1043,16 @@ if any(~strcmpi(recipe,'leadfield'))
         disp('======================================================')
         disp('STEP 6 (final step): SAVING AND VISUALIZING RESULTS...')
         disp('======================================================')
+        roastGuiProgress(5.75,6,'Step 6/6: saving results');
         [vol_all,ef_mag,ef_all] = postGetDP(subj,segMask,node,image,uniqueTag);
     else
         disp('======================================================')
         disp('  ALL STEPS DONE, LOADING RESULTS FOR VISUALIZATION   ')
         disp('======================================================')
+        roastGuiProgress(5.75,6,'Step 6/6: loading saved results');
         load([dirname filesep subjName '_' uniqueTag '_roastResult.mat'],'vol_all','ef_mag','ef_all');
     end
+    roastGuiProgress(5.9,6,'Preparing result views');
     visualizeRes(subj,segMask,mri2mni,node,elem,face,injectCurrent,image,uniqueTag,vol_all,ef_mag,ef_all);
 
 else
@@ -1035,6 +1071,7 @@ else
         disp('    STEP 5 (out of 6): GENERATING THE LEAD FIELD...   ')
         disp('           NOTE THIS WILL TAKE SOME TIME...           ')
         disp('======================================================')
+        roastGuiProgress(4.5,6,'Step 5/6: generating lead field');
         prepareForGetDP(subj,node,elem,elecName,uniqueTag);
         injectCurrent = ones(length(elecName),1); % 1 mA at each candidate electrode
         injectCurrent(indRef) = -1;
@@ -1043,16 +1080,21 @@ else
                 fprintf('\n======================================================\n');
                 disp(['SOLVING FOR ELECTRODE ' num2str(i) ' OUT OF ' num2str(length(indStimElec)) ' ...']);
                 fprintf('======================================================\n\n');
+                roastGuiProgress(4.5 + i/length(indStimElec),6, ...
+                    sprintf('Step 5/6: lead field electrode %d of %d', i, length(indStimElec)));
                 indElecSolve = [indStimElec(i) indRef];
                 solveByGetDP(subj,injectCurrent,conductivities,indElecSolve,uniqueTag,num2str(indStimElec(i)));
             else
                 disp(['ELECTRODE ' num2str(i) ' HAS BEEN SOLVED, SKIPPING...']);
+                roastGuiProgress(4.5 + i/length(indStimElec),6, ...
+                    sprintf('Step 5/6: lead field electrode %d of %d already solved', i, length(indStimElec)));
             end
         end
     else
         disp('======================================================')
         disp('       LEAD FIELD ALREADY GENERATED, SKIP STEP 5      ')
         disp('======================================================')
+        roastGuiProgress(5.5,6,'Step 5/6 complete: lead field found');
         %     load([dirname filesep subjName '_' uniqueTag '_elecMeshLabels.mat'],'label_elec');
     end
 
@@ -1060,6 +1102,7 @@ else
         disp('========================================================')
         disp('STEP 6 (final step): ASSEMBLING AND SAVING LEAD FIELD...')
         disp('========================================================')
+        roastGuiProgress(5.75,6,'Step 6/6: assembling lead field');
         postGetDP(subj,[],node,[],uniqueTag,indStimElec);
     else
         disp('======================================================')
@@ -1067,7 +1110,9 @@ else
         disp(['         FOR SUBJECT ' subj])
         disp(['         USING TAG ' uniqueTag])
         disp('======================================================')
+        roastGuiProgress(6,6,'Lead field ready for targeting');
     end
 end
 
 disp('==================ALL DONE ROAST=======================');
+roastGuiProgress(6,6,'ROAST complete');

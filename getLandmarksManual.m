@@ -1,7 +1,7 @@
 function [landmarks, smoothLandmarks] = getLandmarksManual(mask)
 % [landmarks, smoothLandmarks] = getLandmarksManual(mask)
-% 
-% Interactive GUI for manual selection of five anatomical landmarks 
+%
+% Interactive GUI for manual selection of five anatomical landmarks
 % (Nasion, Right Ear, Left Ear, and two Inion points) from a segmented MRI.
 % Visualizes the 3D skin and skull surfaces and guides the user step-by-step.
 %
@@ -23,22 +23,39 @@ skull = single(mask.img == 4); % Skull layer
 skinSmooth = imgaussfilt3(skin, 1);
 skullSmooth = imgaussfilt3(skull, 1);
 
-% Get screen size
-screenSize = get(0, 'ScreenSize');
-figWidth = 1200;  % Increased width
-figHeight = 800;  % Increased height
-figX = (screenSize(3) - figWidth) / 2;
-figY = (screenSize(4) - figHeight) / 2;
+embedded = false;
+oldWindowButtonDownFcn = [];
+if isappdata(0, 'ROAST_GUI_PLOT_TARGET')
+    [hostPanel, fig] = roastGuiAddPlot('Manual landmarks', 'interactive');
+    if ~isempty(hostPanel)
+        embedded = true;
+        oldWindowButtonDownFcn = get(fig, 'WindowButtonDownFcn');
+        set(hostPanel, 'BackgroundColor', 'white');
+    end
+end
 
-% Create figure and axes
-fig = figure('Name', 'Selecting Landmarks ...', ...
-             'NumberTitle', 'off', ...
-             'Position', [figX, figY, figWidth, figHeight], 'MenuBar', 'none');
+if ~embedded
+    screenSize = get(0, 'ScreenSize');
+    figWidth = 1200;
+    figHeight = 800;
+    figX = (screenSize(3) - figWidth) / 2;
+    figY = (screenSize(4) - figHeight) / 2;
+    fig = figure('Name', 'Selecting Landmarks ...', ...
+                 'NumberTitle', 'off', ...
+                 'Position', [figX, figY, figWidth, figHeight], 'MenuBar', 'none');
+    hostPanel = fig;
+end
 
-ax = axes('Parent', fig, 'NextPlot', 'add', 'DataAspectRatio', [1 1 1], 'Position', [0.05, 0.1, 0.7, 0.8]);
+if embedded
+    axPosition = [0.04, 0.08, 0.66, 0.84];
+else
+    axPosition = [0.05, 0.1, 0.7, 0.8];
+end
+ax = axes('Parent', hostPanel, 'NextPlot', 'add', 'DataAspectRatio', [1 1 1], 'Position', axPosition);
 hold(ax, 'on');
 axis(ax, 'off');
 grid off;
+axes(ax);
 
 % Render segmentation (Skin first)
 skinPatch = patch(isosurface(skinSmooth, 0.5,'noshare'));
@@ -46,7 +63,7 @@ skinPatch.FaceColor = '#E5B5A1'; % Skin is brown
 skinPatch.EdgeColor = 'none';
 
 % Render skull (after skin)
-skullPatch = patch(isosurface(skullSmooth, 0.5,'noshare')); 
+skullPatch = patch(isosurface(skullSmooth, 0.5,'noshare'));
 skullPatch.FaceColor = '#F1D691'; % Skull is light yellow
 skullPatch.EdgeColor = 'none';
 
@@ -71,18 +88,26 @@ lastClickedPointSmooth  = [];
 lastClickedPointSkull = [];
 scatterHandle = []; % Handle for the scatter plot
 % Button to submit selection
-submitButton = uicontrol('Style', 'pushbutton', 'String', 'Submit', ...
+if embedded
+    submitButton = uicontrol(hostPanel, 'Style', 'pushbutton', 'String', 'Submit', ...
+                         'Units', 'normalized', 'Position', [0.32 0.02 0.12 0.05], ...
+                         'FontSize', 12, ...
+                         'Callback', @submitSelection, ...
+                         'Enable', 'off');
+else
+    submitButton = uicontrol('Style', 'pushbutton', 'String', 'Submit', ...
                          'Position', [570 5 100 40], ...
                          'FontSize', 16, ...
                          'Callback', @submitSelection, ...
                          'Enable', 'off');
+end
 
-panel = uipanel('Parent', fig, 'Position', [0.7, 0.4, 0.3, 0.5], 'BorderType', 'none'); 
+panel = uipanel('Parent', hostPanel, 'Position', [0.72, 0.36, 0.26, 0.50], 'BorderType', 'none');
 
 % Create a centered title ABOVE the panel
-titleText = uicontrol('Parent', fig, 'Style', 'text', ...
+titleText = uicontrol('Parent', hostPanel, 'Style', 'text', ...
     'String', 'Example Selection', 'Units', 'normalized', ...
-    'Position', [0.7, 0.87, 0.3, 0.05], ... % Positioned above the panel
+    'Position', [0.72, 0.87, 0.26, 0.05], ...
     'FontSize', 16, 'FontWeight', 'bold', ...
     'HorizontalAlignment', 'center');
 
@@ -92,6 +117,11 @@ updateInstructions('lib/screenshots/Nasion_New.png');
 
 % Callback for mouse click
 set(fig, 'WindowButtonDownFcn', @onMouseClick);
+if embedded
+    roastGuiShowPlot(hostPanel);
+else
+    drawnow;
+end
 
 function onMouseClick(~, ~)
     clickPoint = get(ax, 'CurrentPoint');
@@ -130,7 +160,7 @@ function onMouseClick(~, ~)
                     % Find the first background (zero) point after the skull
                     if ~isempty(nonZeroSkullPoints) && ~isempty(zeroPointsSmooth)
                      % Search for the first zero after the skull point
-                     yBackground = find(zeroPointsSmooth < ySkull, 1, 'last'); 
+                     yBackground = find(zeroPointsSmooth < ySkull, 1, 'last');
                      ySmooth = zeroPointsSmooth(yBackground)+1;
                     end
                 end
@@ -146,13 +176,13 @@ function onMouseClick(~, ~)
                     % Find the first background (zero) point after the skull
                     if ~isempty(nonZeroSkullPoints) && ~isempty(zeroPoints)
                      % Search for the first zero after the skull point
-                     yBackground = find(zeroPoints < ySkull, 1, 'last'); 
+                     yBackground = find(zeroPoints < ySkull, 1, 'last');
                      y  = zeroPoints(yBackground)+1;
                     end
-        
+
                 end
             end
-            
+
 
             % Remove previous scatter plot if it exists
             if ~isempty(scatterHandle) && isvalid(scatterHandle)
@@ -163,7 +193,7 @@ function onMouseClick(~, ~)
             scatterHandle = scatter3(ySmooth, x, z, 100, 'blue', 'filled');
 
             % Store both smooth and non-smooth selections
-            lastClickedPoint = [x, y, z];  
+            lastClickedPoint = [x, y, z];
             lastClickedPointSmooth = [x, ySmooth, z];
 
             disp("Clicked at:"); disp(lastClickedPoint);
@@ -213,7 +243,7 @@ function onMouseClick(~, ~)
                     x = min(nonZeroPoints);
                 end
             end
-            
+
             % Remove previous scatter plot if it exists
             if ~isempty(scatterHandle) && isvalid(scatterHandle)
                 delete(scatterHandle);
@@ -229,7 +259,7 @@ function onMouseClick(~, ~)
             scatterHandle = scatter3(y, xSmooth, z, 100, 'blue', 'filled');
 
             % Store both smooth and non-smooth selections
-            lastClickedPoint = [x, y, z];  
+            lastClickedPoint = [x, y, z];
             lastClickedPointSmooth = [xSmooth, y, z];
 
             disp("Clicked at:"); disp(lastClickedPoint);
@@ -255,7 +285,7 @@ function drawGridLines(z)
     % Draw grid lines only along the axes, no diagonals
     hold on;
     % Horizontal line at the selected point
-    plot3(xLimits(1):xLimits(2),ones(xLimits(2),1),ones(xLimits(2),1)*z,'--k','linewidth',2); 
+    plot3(xLimits(1):xLimits(2),ones(xLimits(2),1),ones(xLimits(2),1)*z,'--k','linewidth',2);
     plot3(ones(yLimits(2),1),yLimits(1):yLimits(2),ones(yLimits(2),1)*z,'--k','linewidth',2);
     % this is much faster than the surf command
 end
@@ -305,14 +335,15 @@ function submitSelection(~, ~)
             case 4
                 selectionPhase = 5;
                 set(submitButton, 'Enable', 'off');
-                close(gcf);
+                finishSelection();
 
         end
     end
 end
 
 function updateLighting(position)
-    delete(findall(gcf, 'Type', 'light')); % Clear previous lights
+    delete(findall(ax, 'Type', 'light')); % Clear previous lights
+    axes(ax);
     light('Position', position, 'Style', 'local');
     camlight;
     lighting gouraud; % Smoother lighting
@@ -324,6 +355,25 @@ function updateInstructions(imagePath)
 end
 
 uiwait(fig); % Wait for the figure to close before returning landmarks
+if isRoastGuiCancelRequested() || (embedded && ~ishandle(fig))
+    error('ROAST run cancelled from ROAST Launcher.');
+end
+if embedded && ishandle(fig)
+    set(fig, 'WindowButtonDownFcn', oldWindowButtonDownFcn);
+    roastGuiRemovePlot(hostPanel);
+end
 landmarks = selectedPoint;
 smoothLandmarks = selectedPointSmooth;
+
+function finishSelection()
+    if embedded
+        uiresume(fig);
+    else
+        close(fig);
+    end
+end
+end
+
+function tf = isRoastGuiCancelRequested()
+tf = isappdata(0, 'ROAST_GUI_CANCEL_REQUESTED');
 end

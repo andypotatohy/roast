@@ -27,7 +27,13 @@ After you download the zip file, unzip it, launch your Matlab, make sure you are
 
 This will demo a modeling process on the MNI152 head. Specifically, it will use the T1 image of the [6th gen MNI-152 head](http://nist.mni.mcgill.ca/?p=858) to build a TES model with anode on Fp1 (1 mA) and cathode on P4 (-1 mA).
 
-There are 3 main functions that you can call: `roast()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#2-how-to-use-roast), [Section 3](#3-how-to-use-roast_target), and [Section 6](#6-review-of-simulation-data), respectively.
+If you prefer a graphical launcher for setting the common ROAST options, enter:
+
+`roastGui`
+
+The launcher builds a normal `roast(...)` command, shows the command before running, and then calls ROAST with those settings.
+
+There are 4 main functions that you can call: `roast()`, `roastGui()`, `roast_target()` and `reviewRes()`, which will be covered in [Section 2](#2-how-to-use-roast), [Section 2.3](#23-graphical-launcher), [Section 3](#3-how-to-use-roast_target), and [Section 6](#6-review-of-simulation-data), respectively.
 
 ## 2. How to use `roast`
 
@@ -453,6 +459,14 @@ All the options can be combined to meet your specific simulation needs.
 
 Now you should know what this will do.
 
+### 2.3 Graphical launcher
+
+You can launch a small graphical interface for the common `roast()` settings with:
+
+    roastGui
+
+The launcher lets you choose the subject MRI and optional T2 image, edit the stimulation recipe, select cap and electrode options, choose SPM or Multiaxial segmentation, set resampling, zero padding, mesh options, conductivities, and a simulation tag. It shows the exact `roast(...)` command that will run, so command-line and GUI workflows remain equivalent. When ROAST is launched from `roastGui`, slice viewers and electrode placement views are drawn into the launcher `Plots` tab; command-line ROAST calls continue to open the normal standalone MATLAB windows.
+
 ## 3. How to use `roast_target`
 
 From ROAST v3.0, users can perform targeted TES (AKA optimized TES) by calling the `roast_target()` function. To be able to do targeting, you have to first run `roast()` with `leadField` as the value for argument `recipe`, i.e.,
@@ -759,17 +773,18 @@ Creating Multiaxial Enviornment
 Create your own conda enviornment with the proper OS tag.
 -Windows: multiaxialEnv 
 -Linux:  multiaxialEnvLinux 
--Mac:  multiaxialEnvMac
+-Intel Mac:  multiaxialEnvMac (auto-created in `~/.roast/multiaxialEnvMac` on macOS)
+-Apple Silicon Mac:  multiaxialEnvMacAppleSilicon (auto-created in `~/.roast/multiaxialEnvMacAppleSilicon` on macOS)
 
 Download the proper dependencies by using Conda or Pip Install:
 -tensorflow
 -scikit-image
 -nibabel
 
-Place the enviornment into your lib/multiaxial folder under ROAST.
+Place the enviornment into your lib/multiaxial folder under ROAST, or set `ROAST_MULTIAXIAL_ENV_DIR` to the full path of the environment.
 ```
 
-ROAST will not be able to run on Mac computers that have a silicon chip (M1/M2/M3), only Intel will work. We tested on macOS Sonoma with Matlab 2022b, but we cannot guarantee it will work on other macOS versions. There is ongoing efforts to get Mac Silicon work though, see [this Issue](https://github.com/andypotatohy/roast/issues/43#issuecomment-5008349975).
+Native Apple Silicon MATLAB is supported. ROAST bundles SPM12 Apple Silicon MEX files (`*.mexmaca64`) alongside the existing Intel Mac (`*.mexmaci64`), Windows, and Linux binaries, so the default SPM segmentation path and `roast([], [], 'multiaxial', 'on')` work the same way as on the other supported platforms. Apple Silicon NiftyReg binaries and their runtime libraries are bundled under `lib/NiftyReg/mac-arm64`. If you need to replace the bundled SPM or external executable files, ROAST also checks `ROAST_SPM12_MEX_DIR`, `ROAST_SPM12_DIR`, `ROAST_GETDP`, `ROAST_REG_ALADIN`, and `PATH`. Intel MATLAB under Rosetta can continue to use the bundled Intel Mac binaries.
 
 If you do not have Matlab, there is [a Docker version](https://hub.docker.com/r/amiklos/roast/).
 

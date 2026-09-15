@@ -627,15 +627,34 @@ end
 
 % visualize the results
 disp('Visualizing the results...')
-cm_mon = colormap(jet(64));
-if strcmpi(optType,'max-l1') || strcmpi(optType,'max-l1per')
-    cm_mon(3:62,:) = ones(60,3);
+cm_mon = jet(64);
+cm_mon(3:62,:) = ones(60,3);
+isEmbeddedMontage = roastTargetUseEmbeddedPlot(['Montage in Targeting: ' uniqueTag]);
+currentAx = gca;
+colormap(currentAx,cm_mon);
+roastTargetPlotMontage(currentAx,mon,'./elec72.loc',cm_mon);
+maxCurrent = max(abs(mon));
+if maxCurrent == 0
+    maxCurrent = 1;
 end
-figure('Name',['Montage in Targeting: ' uniqueTag],'NumberTitle','off');
-mytopoplot(mon,'./elec72.loc','numcontour',0,'plotrad',0.9,'shading','flat','gridscale',1000,'whitebk','off','colormap',cm_mon);
-hc = colorbar; set(hc,'FontSize',18,'YAxisLocation','right');
-title(hc,'Injected current (mA)','FontSize',18);
-caxis([min(mon) max(mon)]);
+colormap(currentAx,cm_mon);
+if isEmbeddedMontage
+    parentPanel = ancestor(currentAx,'uipanel');
+    if ~isempty(parentPanel) && ishandle(parentPanel)
+        setappdata(parentPanel,'ROAST_GUI_PANEL_COLORMAP',cm_mon);
+    end
+end
+caxis(currentAx,[-maxCurrent maxCurrent]);
+hc = colorbar(currentAx);
+if isEmbeddedMontage
+    set(currentAx,'Units','normalized','Position',[0.14 0.16 0.64 0.76]);
+    set(hc,'Units','normalized','Position',[0.84 0.22 0.026 0.60], ...
+        'FontSize',10,'YAxisLocation','right');
+    title(hc,'Current (mA)','FontSize',11);
+else
+    set(hc,'FontSize',18,'YAxisLocation','right');
+    title(hc,'Injected current (mA)','FontSize',18);
+end
 drawnow
 
 [~,indInUsrInput] = elecPreproc(subj,elecName,elecPara); % do not really need this after unified order in .loc and capInfo.xlsx, but keep it to make it more robust % ANDY 2025-08-20
@@ -643,3 +662,63 @@ drawnow
 visualizeRes(subj,mask,mri2mni,node,elem,face,mon(indInUsrInput),image,uniqueTag,r.xopt,r.ef_mag,r.ef_all,r.targetCoord);
 
 disp('==================ALL DONE ROAST-TARGET=======================');
+end
+
+function isEmbedded = roastTargetUseEmbeddedPlot(plotName)
+isEmbedded = false;
+if isappdata(0, 'ROAST_GUI_PLOT_TARGET')
+    [panel, figHandle] = roastGuiAddPlot(plotName, 'slice');
+    if ~isempty(panel) && ishandle(panel)
+        axes('Parent', panel, 'Units', 'normalized', 'Position', [0.14 0.16 0.64 0.76]);
+        if ishandle(figHandle)
+            rotate3d(figHandle, 'off');
+        end
+        isEmbedded = true;
+        return;
+    end
+end
+
+figure('Name', plotName, 'NumberTitle', 'off');
+set(gcf, 'Color', 'w');
+end
+
+function roastTargetPlotMontage(ax,mon,locFile,cm)
+cla(ax);
+hold(ax,'on');
+locs = readTargetLocs(locFile);
+theta = locs(:,1) * pi / 180;
+radius = locs(:,2);
+x = radius .* sin(theta);
+y = radius .* cos(theta);
+
+circle = linspace(0,2*pi,240);
+plot(ax,0.5*cos(circle),0.5*sin(circle),'k','LineWidth',2.2);
+plot(ax,0.56*cos(circle),0.56*sin(circle),'Color',[0.93 0.97 1],'LineWidth',12);
+plot(ax,[-0.08 0 0.08],[0.5 0.575 0.5],'k','LineWidth',2.2);
+plot(ax,[-0.5 -0.535 -0.545 -0.52 -0.5],[0.08 0.05 0 -0.05 -0.08], ...
+    'k','LineWidth',2.2);
+plot(ax,[0.5 0.535 0.545 0.52 0.5],[0.08 0.05 0 -0.05 -0.08], ...
+    'k','LineWidth',2.2);
+
+active = abs(mon) > 1e-3;
+if any(active)
+    scatter(ax,x(active),y(active),130,mon(active),'filled', ...
+        'MarkerEdgeColor',[0.08 0.08 0.08],'LineWidth',0.6);
+end
+
+axis(ax,'equal');
+axis(ax,[-0.68 0.68 -0.68 0.68]);
+axis(ax,'off');
+colormap(ax,cm);
+hold(ax,'off');
+
+function locs = readTargetLocs(locFile)
+fid = fopen(locFile,'r');
+if fid < 0
+    error('Could not open electrode location file: %s',locFile);
+end
+data = textscan(fid,'%f %f %f %s');
+fclose(fid);
+locs = [data{2} data{3}];
+end
+end

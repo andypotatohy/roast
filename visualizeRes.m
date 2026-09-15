@@ -69,8 +69,8 @@ if isRoast
     dataShow = [node(:,1:3) color];
     
     figName = ['Voltage in Simulation: ' uniTag];
-    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-    set(gcf,'color','w');
+    [fh,ax,axParent] = roastPlotAxes([figName '. Move your mouse to rotate.']);
+    axes(ax);
     colormap(jet);
     plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
     dataShowRange = [min(dataShow(unique(indNode_grayElm(:)),4)) max(dataShow(unique(indNode_grayElm(:)),4))];
@@ -82,7 +82,7 @@ if isRoast
     end % to show injected current intensities properly
     hold on;
     plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
-    axis off; rotate3d on;
+    axis off; roastEnableRotate(fh,ax);
     % set(hp1,'SpecularColorReflectance',0,'SpecularExponent',50);
     caxis(dataShowRange);
     lightangle(-90,45)
@@ -91,12 +91,13 @@ if isRoast
     hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
     title(hc1,'Voltage (mV)','FontSize',18);
     a1 = gca;
-    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    a2 = axes('Parent',axParent,'Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
     axis off;
     hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
     title(hc2,'Injected current (mA)','FontSize',18);
     caxis(inCurrentRange);
     axes(a1);
+    roastFormatEmbedded3D(axParent,a1,hc1,hc2);
     drawnow
     
     fid = fopen([dirname filesep subjName '_' uniTag '_e.pos']);
@@ -110,8 +111,8 @@ if isRoast
     dataShow = [node(:,1:3) color];
     
     figName = ['Electric field in Simulation: ' uniTag];
-    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-    set(gcf,'color','w');
+    [fh,ax,axParent] = roastPlotAxes([figName '. Move your mouse to rotate.']);
+    axes(ax);
     colormap(jet);
     plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
 %     dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
@@ -124,7 +125,7 @@ if isRoast
     end % to show injected current intensities properly
     hold on;
     plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
-    axis off; rotate3d on;
+    axis off; roastEnableRotate(fh,ax);
     % set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
     caxis(dataShowRange);
     lightangle(-90,45)
@@ -133,12 +134,13 @@ if isRoast
     hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
     title(hc1,'Electric field (V/m)','FontSize',18);
     a1 = gca;
-    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    a2 = axes('Parent',axParent,'Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
     axis off;
     hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
     title(hc2,'Injected current (mA)','FontSize',18);
     caxis(inCurrentRange);
     axes(a1);
+    roastFormatEmbedded3D(axParent,a1,hc1,hc2);
     drawnow
     
 else
@@ -152,8 +154,8 @@ else
     dataShow = [node(:,1:3) color];
     
     figName = ['Electric field in Targeting: ' uniTag];
-    figure('Name',[figName '. Move your mouse to rotate.'],'NumberTitle','off');
-    set(gcf,'color','w');
+    [fh,ax,axParent] = roastPlotAxes([figName '. Move your mouse to rotate.']);
+    axes(ax);
     colormap(jet);
     plotmesh(dataShow,indNode_grayFace,indNode_grayElm,'LineStyle','none');
 %     dataShowVal = dataShow(unique(indNode_grayElm(:)),4);
@@ -166,7 +168,7 @@ else
     end % to show injected current intensities properly
     hold on;
     plotmesh(dataShow,indNode_elecFace,indNode_elecElm,'LineStyle','none');
-    axis off; rotate3d on;
+    axis off; roastEnableRotate(fh,ax);
     % set(hp2,'SpecularColorReflectance',0,'SpecularExponent',50);
     caxis(dataShowRange);
     lightangle(-90,45)
@@ -175,12 +177,13 @@ else
     hc1 = colorbar; set(hc1,'FontSize',18,'YAxisLocation','right');
     title(hc1,'Electric field (V/m)','FontSize',18);
     a1 = gca;
-    a2 = axes('Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
+    a2 = axes('Parent',axParent,'Color','none','Position',get(a1,'Position'),'XLim',get(a1,'XLim'),'YLim',get(a1,'YLim'),'ZLim',get(a1,'ZLim'));
     axis off;
     hc2 = colorbar; set(hc2,'FontSize',18,'YAxisLocation','right','Location','westoutside');
     title(hc2,'Injected current (mA)','FontSize',18);
     caxis(inCurrentRange);
     axes(a1);
+    roastFormatEmbedded3D(axParent,a1,hc1,hc2);
     drawnow
     
 end
@@ -191,7 +194,7 @@ brain = (mask.img==1 | mask.img==2);
 nan_mask_brain = nan(size(brain));
 nan_mask_brain(find(brain)) = 1;
 
-cm = colormap(jet(2^11)); cm = [1 1 1;cm];
+cm = jet(2^11); cm = [1 1 1;cm];
 bbox = brainCrop(mask.img);
 
 if isRoast
@@ -211,4 +214,99 @@ else
         figName = ['Electric field at Target ' num2str(i) ' in Targeting: ' uniTag];
         sliceshow(ef_mag,targetCoord(i,:),cm,[min(dataShowVal) prctile(dataShowVal,95)],'Electric field (V/m)',[figName '. Click anywhere to navigate.'],ef_all,mri2mni,bbox); drawnow
     end
+end
+end
+
+function [fh,ax,axParent] = roastPlotAxes(figName)
+embeddedTabs = [];
+embeddedTarget = [];
+if isappdata(0, 'ROAST_GUI_PLOT_TARGET')
+    embeddedTarget = getappdata(0, 'ROAST_GUI_PLOT_TARGET');
+end
+if isappdata(0, 'ROAST_GUI_SLICE_TABS')
+    embeddedTabs = getappdata(0, 'ROAST_GUI_SLICE_TABS');
+    if ~ishandle(embeddedTabs)
+        embeddedTabs = [];
+    end
+end
+
+if ~isempty(embeddedTarget)
+    [axParent, fh] = roastGuiAddPlot(shortTabTitle(figName), '3d');
+    if isempty(axParent)
+        embeddedTarget = [];
+    else
+        ax = axes('Parent', axParent, 'Units', 'normalized', 'Position', [0.08 0.08 0.82 0.84]);
+        setappdata(ax, 'ROAST_GUI_EMBEDDED_AXES', true);
+    end
+end
+
+if isempty(embeddedTarget) && ~isempty(embeddedTabs)
+    tab = uitab(embeddedTabs, 'Title', shortTabTitle(figName));
+    setappdata(tab, 'ROAST_GUI_PLOT_MODE', '3d');
+    axParent = uipanel(tab, 'Units', 'normalized', 'Position', [0 0 1 1], ...
+        'BorderType', 'none', 'BackgroundColor', 'white');
+    ax = axes('Parent', axParent, 'Units', 'normalized', 'Position', [0.08 0.08 0.82 0.84]);
+    setappdata(ax, 'ROAST_GUI_EMBEDDED_AXES', true);
+    fh = ancestor(axParent, 'figure');
+    set(embeddedTabs, 'SelectedTab', tab);
+elseif isempty(embeddedTarget)
+    fh = figure('Name',figName,'NumberTitle','off');
+    set(fh,'color','w');
+    axParent = fh;
+    ax = axes('Parent', fh);
+end
+end
+
+function roastEnableRotate(fh,ax)
+if isappdata(ax, 'ROAST_GUI_EMBEDDED_AXES')
+    rotate3d(fh,'on');
+    try
+        ax.Interactions = [rotateInteraction zoomInteraction dataTipInteraction];
+    catch
+        try
+            enableDefaultInteractivity(ax);
+        catch
+        end
+    end
+else
+    rotate3d(fh,'on');
+end
+end
+
+function roastFormatEmbedded3D(axParent,mainAx,rightColorbar,leftColorbar)
+if ~ishandle(axParent) || ~isappdata(mainAx, 'ROAST_GUI_EMBEDDED_AXES')
+    return;
+end
+set(mainAx,'Units','normalized','Position',[0.23 0.08 0.54 0.84]);
+axis(mainAx,'vis3d');
+axis(mainAx,'tight');
+try
+    camtarget(mainAx, mean([xlim(mainAx); ylim(mainAx); zlim(mainAx)],2)');
+catch
+end
+formatEmbeddedColorbar(rightColorbar,[0.80 0.18 0.024 0.64]);
+formatEmbeddedColorbar(leftColorbar,[0.14 0.18 0.024 0.64]);
+end
+
+function formatEmbeddedColorbar(cb,pos)
+if ~ishandle(cb)
+    return;
+end
+set(cb,'Units','normalized','Position',pos,'FontSize',10);
+try
+    cb.Title.FontSize = 11;
+    titleText = cb.Title.String;
+    if contains(titleText,'Injected current')
+        cb.Title.String = 'Current (mA)';
+    elseif contains(titleText,'Electric field')
+        cb.Title.String = 'E-field (V/m)';
+    end
+catch
+end
+end
+
+function titleText = shortTabTitle(figName)
+titleText = regexprep(figName, '\. Move your mouse to rotate\.$', '');
+titleText = regexprep(titleText, '^Electric field', 'E-field');
+titleText = strtrim(titleText);
 end
