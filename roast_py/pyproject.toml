@@ -3,18 +3,29 @@ name = "roast-py"
 version = "0.0.1"
 description = "Python port of ROAST's core TES simulation pipeline (no MATLAB required)"
 requires-python = ">=3.10"
+# Everything roast() needs at runtime. These were previously split across
+# optional extras, which meant `pip install -e .` produced an install that
+# couldn't actually run a simulation. Kept in sync with
+# roast_py/dependencies.py -- tests/test_dependencies.py fails if they drift.
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "nibabel>=5.0",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "scikit-image>=0.21",
+    "tensorflow>=2.16",
+    # The bundled lib/multiaxial/*.h5 models were saved under Keras 2 and
+    # cannot be loaded by Keras 3 (TF >= 2.16's default). See
+    # roast_py/segmentation/_keras_compat.py.
+    "tf-keras",
 ]
 
 [project.optional-dependencies]
-multiaxial = ["tensorflow>=2.16", "tf-keras", "scikit-image>=0.21"]
-placement = ["pandas>=2.0", "openpyxl>=3.1"]
+# Phases that aren't implemented yet -- listed so the intent is on record,
+# but not required to run roast().
 targeting = ["cvxpy>=1.4"]
 viz = ["matplotlib>=3.7", "pyvista>=0.43"]
-mesh = ["meshio>=5.3"]
 dev = ["pytest>=7.4"]
 
 [build-system]

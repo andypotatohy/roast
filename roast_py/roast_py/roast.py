@@ -20,13 +20,18 @@ from dataclasses import dataclass
 import nibabel as nib
 import numpy as np
 
+from .dependencies import check_dependencies
 from .fem.pro_writer import Conductivities
 from .fem.solve import solve_and_postprocess
 from .geometry.cap_info import load_cap_info
 from .geometry.landmarks import heuristic_landmarks
 from .geometry.placement import ElectrodeParams, electrode_placement
 from .meshing.cgal_mesher import mesh_by_iso2mesh
-from .segmentation.multiaxial import segment
+
+# roast_py.segmentation.multiaxial is imported inside roast() rather than
+# here: it pulls in TensorFlow, which costs seconds and must not be
+# imported before segmentation/_keras_compat.py gets to set
+# TF_USE_LEGACY_KERAS. Importing this module stays cheap.
 
 # Matches ROAST's own default recipe (anode Fp1 1 mA, cathode P4 -1 mA).
 DEFAULT_RECIPE = {"Fp1": 1.0, "P4": -1.0}
@@ -72,6 +77,8 @@ def roast(
     returns them directly (along with the intermediate tissue/electrode/
     gel masks) for inspection.
     """
+    check_dependencies()  # fail fast and completely, before any long work
+
     if recipe is None:
         recipe = DEFAULT_RECIPE
     total_current = sum(recipe.values())
@@ -94,6 +101,8 @@ def roast(
     voxel_size = np.abs(np.diag(t1_img.affine)[:3])
 
     print(f"[1/5] Segmenting {subj} ...")
+    from .segmentation.multiaxial import segment  # imports TensorFlow; see note at top
+
     mask_path = segment(subj, model_dir=model_dir)
     tissue_img = nib.load(mask_path)
     tissue_labels = np.asarray(tissue_img.dataobj, dtype=np.uint8)

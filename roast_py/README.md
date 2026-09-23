@@ -15,6 +15,35 @@ ROAST** (that's Phase 5 — the actual accuracy gate) and landmark placement
 is still an interim heuristic (see `geometry/landmarks.py`), not real
 landmark detection. Don't use it for real simulations until Phase 5 passes.
 
+## Install
+
+```
+cd roast_py
+pip install -e .
+```
+
+That installs everything `roast()` needs (numpy, scipy, nibabel, pandas,
+openpyxl, scikit-image, tensorflow, tf-keras). TensorFlow makes this a
+~1GB download.
+
+To check an existing environment, or fix one that's missing packages:
+
+```
+python -m roast_py.dependencies            # report what's missing
+python -m roast_py.dependencies --install  # pip-install what's missing
+```
+
+`roast_py` also reports every missing dependency at once — with the exact
+`pip install` line for your interpreter — rather than failing on whichever
+import happens to come first. Note that `import roast_py` itself is
+deliberately cheap and never needs the heavy dependencies, so the checker
+above stays usable in exactly the broken environment it exists to fix.
+
+On conda: `pip install -e .` works, but pip-installing into a conda
+environment can shadow conda-managed packages. If you'd rather keep those
+under conda, install numpy/scipy/pandas/scikit-image with conda first,
+then `pip install -e .` picks up only what's left.
+
 ## Quickstart
 
 Python equivalent of MATLAB's `roast('example/subject1.nii')` (default
@@ -42,8 +71,18 @@ sum to ~0):
 result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
 ```
 
-Runnable end-to-end example: `examples/quickstart.py` (install with
-`pip install -e ".[multiaxial]"` first). Verified in `tests/test_roast.py`
+Runnable end-to-end example: `examples/quickstart.py`. It works straight
+from a git clone with no install step — it puts the package root on
+`sys.path` itself, and `--install-deps` will install anything missing
+before running:
+
+```
+python examples/quickstart.py                 # run the simulation
+python examples/quickstart.py --install-deps  # install missing deps first, then run
+python examples/quickstart.py --check-deps    # just report what's missing
+```
+
+Verified in `tests/test_roast.py`
 (`@pytest.mark.slow`) and by actually running `roast("subject1.nii")` with
 the default recipe during development: **408.8s (~6.8 min) total** on CPU,
 producing a voltage volume of 0 to 362 mV and an E-field magnitude up to
