@@ -2,11 +2,13 @@
 name = "roast-py"
 version = "0.0.1"
 description = "Python port of ROAST's core TES simulation pipeline (no MATLAB required)"
-requires-python = ">=3.10"
-# Everything roast() needs at runtime. These were previously split across
-# optional extras, which meant `pip install -e .` produced an install that
-# couldn't actually run a simulation. Kept in sync with
-# roast_py/dependencies.py -- tests/test_dependencies.py fails if they drift.
+requires-python = ">=3.11,<3.14"
+# Everything roast() needs at runtime, as ranges so `pip install -e .` can
+# coexist with other packages. The exact versions roast_py was verified
+# with are in requirements-lock.txt (== TESTED_ENVIRONMENT in
+# roast_py/dependencies.py), and roast() installs those before it runs.
+# Kept in sync with roast_py/dependencies.py -- tests/test_dependencies.py
+# fails if they drift.
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
@@ -25,8 +27,7 @@ dependencies = [
     # TensorFlow fails with a bare AttributeError on import. Unpinned, pip
     # will happily backtrack to those releases when it can't reconcile an
     # already-installed (e.g. conda-managed) TensorFlow. tf-keras X.Y must
-    # match tensorflow X.Y -- roast_py.dependencies pins it to whatever
-    # TensorFlow is actually present at install time.
+    # match tensorflow X.Y; requirements-lock.txt pins both to 2.21.
     "tf-keras>=2.16",
 ]
 

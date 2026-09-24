@@ -53,10 +53,11 @@ def ensure_legacy_keras() -> None:
         # older than 2.16 beside a newer TensorFlow fails here on
         # tf.compat.v2.__internal__.register_load_context_function, which
         # TensorFlow removed in 2.16.
-        from ..dependencies import tensorflow_keras_mismatch, tf_keras_spec
+        from ..dependencies import tensorflow_keras_mismatch
 
         detail = tensorflow_keras_mismatch() or (
             "tf-keras appears to be incompatible with the installed "
-            f"TensorFlow. Re-install it pinned with: pip install '{tf_keras_spec()}'"
+            "TensorFlow. Install roast_py's tested versions of both with:\n\n"
+            "    python -m roast_py.dependencies --install"
         )
         raise ImportError(f"{detail}\n\n(original error: {e})") from e

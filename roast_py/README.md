@@ -17,65 +17,68 @@ landmark detection. Don't use it for real simulations until Phase 5 passes.
 
 ## Install
 
-**You don't have to install anything up front.** `roast()` installs its own
-missing dependencies the first time you call it — conda plus pip inside a
-conda environment, pip otherwise:
+roast_py runs on **one exact, tested environment**: the package versions
+that were installed when `roast("../example/subject1.nii")` last ran end to
+end, segmentation through FEM solve. They are listed in
+`requirements-lock.txt` (identical to `TESTED_ENVIRONMENT` in
+`roast_py/dependencies.py`):
+
+| | |
+|---|---|
+| Python | **3.11.15** (3.11–3.13 supported; 3.10 and 3.14 are not) |
+| Installer | **pip only** — no conda packages; conda, if used, only provides Python |
+| Key packages | tensorflow 2.21.0, tf-keras 2.21.0, keras 3.15.1, numpy 2.4.6, scipy 1.17.1, nibabel 5.4.2, pandas 3.0.5, openpyxl 3.1.5, scikit-image 0.26.0, h5py 3.14.0 (+ their dependencies, 42 pins total) |
+| Platforms with wheels | Linux x86_64/aarch64 (glibc ≥ 2.27), macOS on Apple silicon, Windows x86_64 — **not** Intel Macs (no TensorFlow 2.21 build) |
+
+**Recommended setup** — a fresh environment on the tested Python:
+
+```
+conda create -n roast_py python=3.11 -y
+conda activate roast_py
+```
+
+then just call `roast()`:
 
 ```python
 from roast_py import roast      # works with nothing installed
-result = roast("subject1.nii")  # installs what's missing, then runs
+result = roast("../example/subject1.nii")
 ```
+
+Before doing any work, `roast()` compares the running interpreter against
+the tested environment and installs anything missing or at a different
+version, with a single `python -m pip install name==version ...` into that
+interpreter. It refuses up front (with the commands above) on an
+unsupported Python. After installing it re-checks every version and
+test-imports TensorFlow + tf-keras in a fresh process, so a broken install
+fails right away with an explanation, not minutes into segmentation.
 
 Importing `roast_py` deliberately needs nothing but the standard library,
 which is what makes that possible: if getting hold of `roast` required the
 packages it installs, the auto-install could never run.
 
-To install up front instead:
+To install up front instead (all equivalent):
 
 ```
 cd roast_py
-pip install -e .                      # pip
-conda env create -f environment.yml   # or conda (conda-forge + pip for TensorFlow)
+python -m roast_py.dependencies --install   # into the current interpreter
+pip install -r requirements-lock.txt        # same pins, by hand
+conda env create -f environment.yml         # new env: python=3.11 + the lock via pip
 ```
 
-or fix an existing environment:
+`python -m roast_py.dependencies` on its own reports how the current
+environment differs from the tested one.
 
-```
-python -m roast_py.dependencies            # report what's missing
-python -m roast_py.dependencies --install  # install what's missing
-```
+**Opting out of auto-install** (CI, an environment you manage yourself):
+pass `roast(..., install_missing=False)` or set
+`ROAST_PY_NO_AUTO_INSTALL=1`. Missing packages and a mismatched
+TensorFlow/tf-keras pair then raise an actionable error; other version
+differences only warn.
 
-Either way roast_py reports every missing dependency at once — with the
-exact command for *your* interpreter — rather than failing on whichever
-import happens to come first.
+### Why exact pins, and why pip rather than conda
 
-**Opting out of auto-install** (CI, locked environments, reproducible
-builds): pass `roast(..., install_missing=False)` or set
-`ROAST_PY_NO_AUTO_INSTALL=1`. You then get the actionable error instead.
-
-### What gets installed, and from where
-
-numpy, scipy, nibabel, pandas, openpyxl, scikit-image, tensorflow,
-tf-keras. TensorFlow makes this a ~1GB download.
-
-In a conda environment the scientific stack is installed with `conda
-install -c conda-forge`, and TensorFlow + tf-keras with pip — conda first,
-pip last, which is the recommended ordering when mixing the two. pip is
-TensorFlow's official distribution channel, and tf-keras (the Keras 2
-compatibility package the bundled `.h5` models need) is recent enough that
-this code doesn't assume it's on conda-forge. Anything conda fails to
-install is retried with pip, so a wrong guess about channel contents
-self-corrects rather than dead-ending.
-
-Both installers target the environment of the *running interpreter*
-explicitly — `--prefix sys.prefix` for conda, `sys.executable -m pip` for
-pip — rather than whatever environment happens to be activated, which
-aren't always the same thing.
-
-### TensorFlow and tf-keras have to match
-
-`tf-keras` X.Y only works with `tensorflow` X.Y.\* — it declares
-`tensorflow>=X.Y,<X.(Y+1)`. A mismatched pair fails at import, classically
+The bundled segmentation models are Keras 2 `.h5` files, loadable only
+through the `tf-keras` compatibility package, and `tf-keras` X.Y only works
+with `tensorflow` X.Y.\*. A mismatched pair fails at import, classically
 with:
 
 ```
@@ -84,26 +87,17 @@ has no attribute 'register_load_context_function'
 ```
 
 (tf-keras < 2.16 calls that function; TensorFlow removed it in 2.16.)
+Version ranges kept producing such pairs in practice — e.g. conda-forge
+shipping TensorFlow 2.22 while the newest tf-keras on PyPI is 2.21, so no
+matching tf-keras exists at all. Pinning every package to the combination
+that actually ran removes that whole class of problem, and pip is where
+that combination came from (TensorFlow's official channel, and the only
+one that publishes tf-keras reliably).
 
-roast_py keeps the two aligned for you: it pins tf-keras to the installed
-TensorFlow, and repairs an already-mismatched pair before running rather
-than dying at model load minutes into a job.
-
-The awkward case is a TensorFlow **newer than any released tf-keras** —
-tf-keras trails TensorFlow, and conda-forge sometimes ships a TensorFlow
-ahead of PyPI (e.g. conda TensorFlow 2.22 when the newest tf-keras is
-2.21). There is no tf-keras to pin to, so roast_py falls back to letting
-pip resolve both together, which caps TensorFlow at whatever the newest
-tf-keras supports — downgrading it if necessary, since the bundled Keras 2
-models can't be loaded otherwise. If even that fails you get an
-explanation and both manual options (a conda downgrade, or the pip
-resolve), not a bare `CalledProcessError`.
-
-> Caveat on the conda path: the container this port was developed in has
-> no conda and blocks `api.anaconda.org`, so the conda branch is covered by
-> unit tests (env detection, command construction, the pip fallback)
-> against a simulated conda environment, but has not been run against a
-> real conda install. The pip path has.
+If your existing environment already has a conda-installed TensorFlow,
+`roast()` will try to replace it with the pip build and tell you it's doing
+so; if that can't be done cleanly it stops and points you at the fresh
+environment above, which is the reliable route.
 
 ## Quickstart
 
@@ -134,17 +128,19 @@ result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
 
 Runnable end-to-end example: `examples/quickstart.py`. It works straight
 from a git clone with no install step — it puts the package root on
-`sys.path` itself, and `roast()` installs anything missing:
+`sys.path` itself, and `roast()` installs the tested environment if needed:
 
 ```
-python examples/quickstart.py                    # install anything missing, then run
-python examples/quickstart.py --check-deps       # just report what's missing
-python examples/quickstart.py --no-install-deps  # fail instead of installing
+python examples/quickstart.py                    # install the tested env if needed, then run
+python examples/quickstart.py --check-deps       # just report what differs from it
+python examples/quickstart.py --no-install-deps  # don't install anything
 ```
 
-Verified in `tests/test_roast.py`
-(`@pytest.mark.slow`) and by actually running `roast("subject1.nii")` with
-the default recipe during development: **408.8s (~6.8 min) total** on CPU,
+Verified in `tests/test_roast.py` (`@pytest.mark.slow`) and by running
+exactly `roast("../example/subject1.nii")` from `roast_py/` with the default
+recipe: **~5.5–6.5 min total** on CPU (331 s in the tested environment; 377 s
+in a fresh venv that started out with a broken TensorFlow 2.20 + tf-keras
+2.15 pair, which `roast()` replaced with the pinned versions before running),
 producing a voltage volume of 0 to 362 mV and an E-field magnitude up to
 31 V/m across the full 192×256×256 grid — physically sane magnitudes for a
 1 mA montage (not the 10^10-scale nonsense a mis-set-up model produces,
@@ -195,7 +191,7 @@ Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
   weights and `example/subject1.nii` (see `tests/test_multiaxial.py`,
   `@pytest.mark.slow`, ~2-3 min on CPU) — produces an anatomically sane
   6-tissue segmentation. Needs the legacy Keras 2 runtime to load the
-  bundled `.h5` models under Keras 3 (`pip install roast_py[multiaxial]`;
+  bundled `.h5` models under Keras 3 (tf-keras, part of the tested environment;
   see `roast_py/segmentation/_keras_compat.py` for why).
 
   A Python-native alternative to SPM was considered for the *default* path

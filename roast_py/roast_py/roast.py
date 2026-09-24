@@ -79,15 +79,17 @@ def roast(
     returns them directly (along with the intermediate tissue/electrode/
     gel masks) for inspection.
 
-    Missing Python dependencies are installed automatically before any
-    work starts (conda + pip in a conda environment, pip otherwise -- see
-    roast_py.dependencies). Set `install_missing=False`, or the
-    ROAST_PY_NO_AUTO_INSTALL environment variable, to get an actionable
-    error listing them instead.
+    Before any work starts, the running interpreter is checked against
+    roast_py's tested environment (exact package versions that ran this
+    pipeline end to end, see roast_py.dependencies) and anything missing or
+    at a different version is installed with pip. Needs Python 3.11-3.13.
+    Set `install_missing=False`, or the ROAST_PY_NO_AUTO_INSTALL
+    environment variable, to install nothing: missing packages then raise
+    an actionable error and other version differences only warn.
     """
-    # Install anything missing before starting several minutes of work,
-    # rather than failing partway through. Pass install_missing=False (or
-    # set ROAST_PY_NO_AUTO_INSTALL) to get an actionable error instead.
+    # Match the tested environment before starting several minutes of
+    # work, rather than failing partway through. Pass install_missing=False
+    # (or set ROAST_PY_NO_AUTO_INSTALL) to install nothing.
     ensure_dependencies(install_missing=install_missing)
 
     # Imported here, not at module scope -- see the note at the top of this

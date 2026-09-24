@@ -4,13 +4,15 @@ MATLAB's `roast('example/subject1.nii')`.
 
 Run from the roast_py/ directory:
 
-    python examples/quickstart.py                    # install anything missing, then run
-    python examples/quickstart.py --check-deps       # just report what's missing
-    python examples/quickstart.py --no-install-deps  # fail instead of installing
+    python examples/quickstart.py                    # install the tested env if needed, then run
+    python examples/quickstart.py --check-deps       # just report what differs from it
+    python examples/quickstart.py --no-install-deps  # don't install anything
 
-Works straight from a git clone: no `pip install` step needed, and roast()
-installs its own missing dependencies (conda + pip in a conda environment,
-pip otherwise).
+Works straight from a git clone: no `pip install` step needed. roast()
+installs roast_py's tested environment (exact versions, with pip) into the
+running interpreter when anything is missing or at a different version.
+Needs Python 3.11-3.13; `conda create -n roast_py python=3.11` gives you
+the exact Python it was tested on.
 
 Takes several minutes on CPU: ~2-3 min for segmentation, ~1-2 min for
 meshing + the FEM solve, plus the dependency install on first run. See the
@@ -35,7 +37,13 @@ if importlib.util.find_spec("roast_py") is None:
 
 # Importing roast_py never requires the heavy dependencies -- that is what
 # lets this script (and roast() itself) install them when they're missing.
-from roast_py.dependencies import format_missing, missing_dependencies  # noqa: E402
+from roast_py.dependencies import (  # noqa: E402
+    format_drift,
+    format_missing,
+    missing_dependencies,
+    python_version_problem,
+    version_drift,
+)
 
 
 def main() -> int:
@@ -43,10 +51,12 @@ def main() -> int:
     parser.add_argument(
         "--no-install-deps",
         action="store_true",
-        help="fail with an actionable message instead of installing missing dependencies",
+        help="install nothing: fail if dependencies are missing, warn if versions differ",
     )
     parser.add_argument(
-        "--check-deps", action="store_true", help="report missing dependencies and exit"
+        "--check-deps",
+        action="store_true",
+        help="report how this environment differs from the tested one, then exit",
     )
     parser.add_argument(
         "--work-dir",
@@ -55,15 +65,19 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    missing = missing_dependencies()
-
     if args.check_deps:
-        if missing:
-            print(format_missing(missing))
+        problem = python_version_problem()
+        if problem:
+            print(problem)
             return 1
-        print("All roast_py dependencies are installed.")
+        drift = version_drift()
+        if drift:
+            print(format_drift(drift))
+            return 1
+        print("roast_py's tested environment is installed.")
         return 0
 
+    missing = missing_dependencies()
     if missing and args.no_install_deps:
         print(format_missing(missing))
         return 1
@@ -78,7 +92,8 @@ def main() -> int:
     subj = work_dir / "subject1.nii"
     shutil.copy(SUBJECT1, subj)
 
-    result = roast(str(subj))  # recipe defaults to {'Fp1': 1.0, 'P4': -1.0}
+    # recipe defaults to {'Fp1': 1.0, 'P4': -1.0}
+    result = roast(str(subj), install_missing=not args.no_install_deps)
 
     print(f"Voltage volume:  {result.vol_v.shape}")
     print(f"E-field volume:  {result.vol_e.shape}")
