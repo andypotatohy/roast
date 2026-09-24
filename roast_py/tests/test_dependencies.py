@@ -391,3 +391,121 @@ def test_conda_failure_falls_back_to_pip_for_those_packages(simulated_conda_env,
     # The package conda failed on must appear in the pip retry.
     assert "not-real-xyz" in pip_cmd
     assert "also-not-real" in pip_cmd
+
+
+# --------------------------------------------------------------------------
+# TensorFlow / tf-keras version pairing
+#
+# tf-keras X.Y requires tensorflow X.Y.*, and tf-keras < 2.16 calls
+# tf.compat.v2.__internal__.register_load_context_function, which
+# TensorFlow removed in 2.16. A mismatched pair therefore fails with a bare
+# AttributeError at import time.
+# --------------------------------------------------------------------------
+
+
+def _fake_versions(monkeypatch, tf_version, keras_version):
+    def fake(dist):
+        return {"tensorflow": tf_version, "tf-keras": keras_version}.get(dist)
+
+    monkeypatch.setattr("roast_py.dependencies.installed_version", fake)
+
+
+def test_tf_keras_spec_pins_to_the_installed_tensorflow(monkeypatch):
+    from roast_py.dependencies import tf_keras_spec
+
+    _fake_versions(monkeypatch, "2.16.1", None)
+    assert tf_keras_spec() == "tf-keras>=2.16,<2.17"
+
+    _fake_versions(monkeypatch, "2.19.0", None)
+    assert tf_keras_spec() == "tf-keras>=2.19,<2.20"
+
+
+def test_tf_keras_spec_falls_back_to_a_floor_when_tensorflow_is_absent(monkeypatch):
+    from roast_py.dependencies import MIN_TF_KERAS, tf_keras_spec
+
+    _fake_versions(monkeypatch, None, None)
+    assert tf_keras_spec() == f"tf-keras>={MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
+    # Never below 2.16, whose predecessors call the removed TF internal.
+    assert MIN_TF_KERAS >= (2, 16)
+
+
+def test_matching_versions_are_not_reported_as_a_mismatch(monkeypatch):
+    from roast_py.dependencies import tensorflow_keras_mismatch
+
+    _fake_versions(monkeypatch, "2.21.0", "2.21.0")
+    assert tensorflow_keras_mismatch() is None
+    # Patch releases may differ; only major.minor has to agree.
+    _fake_versions(monkeypatch, "2.16.2", "2.16.0")
+    assert tensorflow_keras_mismatch() is None
+
+
+def test_the_reported_error_case_is_detected(monkeypatch):
+    """Old tf-keras beside a modern TensorFlow: the register_load_context_function case."""
+    from roast_py.dependencies import tensorflow_keras_mismatch
+
+    _fake_versions(monkeypatch, "2.19.0", "2.15.0")
+    problem = tensorflow_keras_mismatch()
+
+    assert problem is not None
+    assert "2.19.0" in problem and "2.15.0" in problem
+    assert "register_load_context_function" in problem  # names the symptom
+    assert "tf-keras>=2.19,<2.20" in problem  # and the exact fix
+
+
+def test_mismatch_is_not_reported_when_one_side_is_absent(monkeypatch):
+    from roast_py.dependencies import tensorflow_keras_mismatch
+
+    _fake_versions(monkeypatch, "2.19.0", None)
+    assert tensorflow_keras_mismatch() is None
+    _fake_versions(monkeypatch, None, "2.15.0")
+    assert tensorflow_keras_mismatch() is None
+
+
+def test_pip_install_command_pins_tf_keras(monkeypatch):
+    from roast_py.dependencies import REQUIRED, pip_install_command
+
+    _fake_versions(monkeypatch, "2.18.0", None)
+    tf_keras_dep = next(d for d in REQUIRED if d.pip_name == "tf-keras")
+    cmd = pip_install_command([tf_keras_dep])
+    assert cmd[-1] == "tf-keras>=2.18,<2.19", "must pin, or pip can backtrack to a broken release"
+
+
+def test_check_dependencies_raises_on_a_version_mismatch(monkeypatch):
+    _fake_versions(monkeypatch, "2.19.0", "2.15.0")
+    with pytest.raises(ImportError, match="register_load_context_function"):
+        check_dependencies()
+
+
+def test_ensure_dependencies_repairs_a_mismatch_when_allowed(monkeypatch):
+    """The user's case: everything installed, but TF and tf-keras disagree."""
+    _fake_versions(monkeypatch, "2.19.0", "2.15.0")
+    monkeypatch.delenv(NO_AUTO_INSTALL_ENV_VAR, raising=False)
+
+    runs = []
+
+    class Result:
+        returncode = 0
+
+    def fake_run(cmd, **kwargs):
+        runs.append(cmd)
+        # After the repair, report matching versions.
+        _fake_versions(monkeypatch, "2.19.0", "2.19.0")
+        return Result()
+
+    monkeypatch.setattr("roast_py.dependencies.subprocess.run", fake_run)
+
+    ensure_dependencies(install_missing=True, quiet=True)
+
+    assert len(runs) == 1, "expected exactly one repair install"
+    assert "tf-keras>=2.19,<2.20" in runs[0]
+
+
+def test_ensure_dependencies_reports_mismatch_instead_of_repairing_when_opted_out(monkeypatch):
+    _fake_versions(monkeypatch, "2.19.0", "2.15.0")
+    monkeypatch.setattr(
+        "roast_py.dependencies.subprocess.run",
+        lambda *a, **k: pytest.fail("must not install when opted out"),
+    )
+
+    with pytest.raises(ImportError, match="register_load_context_function"):
+        ensure_dependencies(install_missing=False)

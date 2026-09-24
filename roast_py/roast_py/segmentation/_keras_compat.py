@@ -46,5 +46,17 @@ def ensure_legacy_keras() -> None:
         raise ImportError(
             "roast_py's multiaxial segmentation needs the legacy Keras 2 "
             "runtime to load the bundled .h5 models. Install it with "
-            "`pip install tf-keras` (or `pip install roast_py[multiaxial]`)."
+            "`python -m roast_py.dependencies --install`."
         ) from e
+    except AttributeError as e:
+        # tf-keras and TensorFlow must match on major.minor. A tf-keras
+        # older than 2.16 beside a newer TensorFlow fails here on
+        # tf.compat.v2.__internal__.register_load_context_function, which
+        # TensorFlow removed in 2.16.
+        from ..dependencies import tensorflow_keras_mismatch, tf_keras_spec
+
+        detail = tensorflow_keras_mismatch() or (
+            "tf-keras appears to be incompatible with the installed "
+            f"TensorFlow. Re-install it pinned with: pip install '{tf_keras_spec()}'"
+        )
+        raise ImportError(f"{detail}\n\n(original error: {e})") from e

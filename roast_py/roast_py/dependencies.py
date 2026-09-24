@@ -38,6 +38,7 @@ wrong guess about channel contents self-corrects instead of dead-ending.
 
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import os
 import shutil
@@ -45,6 +46,22 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+# tf-keras X.Y is built against tensorflow X.Y and declares
+# `tensorflow>=X.Y,<X.(Y+1)`; the two must match on major.minor or imports
+# fail on symbols one side no longer has. tf-keras < 2.16 in particular
+# calls tf.compat.v2.__internal__.register_load_context_function, which
+# TensorFlow removed in 2.16, producing:
+#
+#   AttributeError: module 'tensorflow._api.v2.compat.v2.__internal__'
+#   has no attribute 'register_load_context_function'
+#
+# pip can land you there on its own: asked for an unpinned tf-keras
+# alongside a TensorFlow it can't change (a conda-installed one, say), its
+# resolver backtracks to ever older tf-keras releases looking for one
+# whose requirement it can satisfy. So tf-keras is always installed with
+# an explicit pin derived from the TensorFlow actually present.
+MIN_TF_KERAS = (2, 16)
 
 # Set this to disable roast()'s automatic installation (for CI, locked
 # environments, reproducible builds).
@@ -110,6 +127,73 @@ def missing_dependencies(required: tuple[Dependency, ...] | None = None) -> list
     return missing
 
 
+def installed_version(dist_name: str) -> str | None:
+    """Version of an installed distribution, or None.
+
+    Reads package metadata rather than importing, so this stays fast and
+    -- for tensorflow especially -- avoids resolving Keras before
+    segmentation/_keras_compat.py can set TF_USE_LEGACY_KERAS.
+    """
+    try:
+        return importlib.metadata.version(dist_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def _major_minor(version: str | None) -> tuple[int, int] | None:
+    if not version:
+        return None
+    parts = version.split(".")
+    try:
+        return int(parts[0]), int(parts[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def tf_keras_spec() -> str:
+    """The pip spec for tf-keras, pinned to the installed TensorFlow.
+
+    With TensorFlow 2.16.1 installed this returns 'tf-keras>=2.16,<2.17',
+    so pip can neither backtrack to an ancient tf-keras nor silently
+    upgrade TensorFlow out from under conda. With no TensorFlow installed
+    it returns a floor of >=2.16, and pip resolves a matching pair itself.
+    """
+    tf_mm = _major_minor(installed_version("tensorflow"))
+    if tf_mm is None:
+        return f"tf-keras>={MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
+    major, minor = tf_mm
+    return f"tf-keras>={major}.{minor},<{major}.{minor + 1}"
+
+
+def tensorflow_keras_mismatch() -> str | None:
+    """Describes a TensorFlow/tf-keras version mismatch, or None if fine.
+
+    Both installed but disagreeing on major.minor is the failure behind
+    the `register_load_context_function` AttributeError, and it is worth
+    catching before roast() spends minutes segmenting only to die on the
+    model load.
+    """
+    tf_version = installed_version("tensorflow")
+    keras_version = installed_version("tf-keras")
+    if not tf_version or not keras_version:
+        return None
+
+    tf_mm, keras_mm = _major_minor(tf_version), _major_minor(keras_version)
+    if tf_mm is None or keras_mm is None or tf_mm == keras_mm:
+        return None
+
+    return (
+        f"tensorflow {tf_version} and tf-keras {keras_version} are incompatible "
+        f"(tf-keras {keras_mm[0]}.{keras_mm[1]} requires tensorflow "
+        f"{keras_mm[0]}.{keras_mm[1]}.*).\n\n"
+        "This is what produces errors like:\n"
+        "    AttributeError: module 'tensorflow._api.v2.compat.v2.__internal__'\n"
+        "    has no attribute 'register_load_context_function'\n\n"
+        "Fix it with:\n\n"
+        f"    {' '.join(pip_install_command_for_specs([tf_keras_spec()]))}"
+    )
+
+
 def in_conda_environment() -> bool:
     """Whether the *running interpreter* lives in a conda environment.
 
@@ -158,9 +242,25 @@ def use_conda_for(deps: list[Dependency]) -> tuple[list[Dependency], list[Depend
 # --------------------------------------------------------------------------
 
 
+def pip_install_command_for_specs(specs: list[str]) -> list[str]:
+    """The pip command that installs raw requirement specs into this interpreter."""
+    return [sys.executable, "-m", "pip", "install", *specs]
+
+
+def pip_spec_for(dep: Dependency) -> str:
+    """The requirement spec to install `dep` with.
+
+    Only tf-keras needs more than its bare name: it must be pinned to the
+    installed TensorFlow's major.minor (see MIN_TF_KERAS above).
+    """
+    if dep.pip_name == "tf-keras":
+        return tf_keras_spec()
+    return dep.pip_name
+
+
 def pip_install_command(deps: list[Dependency]) -> list[str]:
     """The pip command that installs `deps` into *this* interpreter."""
-    return [sys.executable, "-m", "pip", "install", *(d.pip_name for d in deps)]
+    return pip_install_command_for_specs([pip_spec_for(d) for d in deps])
 
 
 def conda_install_command(deps: list[Dependency], conda_exe: str | None = None) -> list[str]:
@@ -217,7 +317,7 @@ def format_missing(deps: list[Dependency]) -> str:
 
 
 def check_dependencies(raise_on_missing: bool = True) -> list[Dependency]:
-    """Reports every missing dependency at once.
+    """Reports every missing dependency at once, plus version conflicts.
 
     Without this, a fresh environment surfaces them one at a time: you
     install the package the first ImportError named, re-run the several-
@@ -226,6 +326,11 @@ def check_dependencies(raise_on_missing: bool = True) -> list[Dependency]:
     missing = missing_dependencies()
     if missing and raise_on_missing:
         raise ImportError(format_missing(missing))
+
+    if raise_on_missing:
+        mismatch = tensorflow_keras_mismatch()
+        if mismatch:
+            raise ImportError(mismatch)
     return missing
 
 
@@ -302,13 +407,32 @@ def ensure_dependencies(install_missing: bool = True, quiet: bool = False) -> No
     raises the usual actionable ImportError instead of installing.
     """
     missing = missing_dependencies()
-    if not missing:
-        return
+    opted_out = not install_missing or auto_install_disabled()
 
-    if not install_missing or auto_install_disabled():
-        raise ImportError(format_missing(missing))
+    if missing:
+        if opted_out:
+            raise ImportError(format_missing(missing))
+        install_dependencies(missing, quiet=quiet)
 
-    install_dependencies(missing, quiet=quiet)
+    # Everything can be present and still not work together: an old
+    # tf-keras beside a newer TensorFlow imports, then dies on a symbol
+    # TensorFlow removed. Re-pinning tf-keras to the installed TensorFlow
+    # repairs it.
+    mismatch = tensorflow_keras_mismatch()
+    if mismatch:
+        if opted_out:
+            raise ImportError(mismatch)
+        if not quiet:
+            print(mismatch.split("\n\n")[0])
+            print("Repairing by re-installing tf-keras to match TensorFlow ...")
+        cmd = pip_install_command_for_specs([tf_keras_spec()])
+        if not quiet:
+            print("  " + " ".join(cmd))
+        subprocess.run(cmd, check=True)
+
+        still_wrong = tensorflow_keras_mismatch()
+        if still_wrong:
+            raise RuntimeError("TensorFlow/tf-keras are still mismatched:\n\n" + still_wrong)
 
 
 def _main(argv: list[str] | None = None) -> int:
