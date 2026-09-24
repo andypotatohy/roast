@@ -4,7 +4,14 @@ built to remove the MATLAB dependency. See /roast_py/README.md for status and sc
 
 import importlib
 
-__all__ = ["roast", "RoastResult", "DEFAULT_RECIPE", "check_dependencies", "install_dependencies"]
+__all__ = [
+    "roast",
+    "RoastResult",
+    "DEFAULT_RECIPE",
+    "check_dependencies",
+    "install_dependencies",
+    "ensure_dependencies",
+]
 
 _LAZY = {
     "roast": ".roast",
@@ -12,6 +19,7 @@ _LAZY = {
     "DEFAULT_RECIPE": ".roast",
     "check_dependencies": ".dependencies",
     "install_dependencies": ".dependencies",
+    "ensure_dependencies": ".dependencies",
 }
 
 
@@ -29,13 +37,10 @@ def __getattr__(name: str):
     if module_name is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    if module_name == ".roast":
-        # One clear message listing every missing dependency, instead of a
-        # raw ImportError for whichever happens to be imported first.
-        from .dependencies import check_dependencies
-
-        check_dependencies()
-
+    # No dependency check here on purpose: `from roast_py import roast`
+    # must succeed in an environment with nothing installed, because
+    # roast() is what installs the missing dependencies. roast.py keeps
+    # its own imports inside the function body to make that possible.
     module = importlib.import_module(module_name, __name__)
     value = getattr(module, name)
     # Cache in the package namespace. This also has to *overwrite* the

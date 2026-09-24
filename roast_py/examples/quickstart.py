@@ -4,13 +4,17 @@ MATLAB's `roast('example/subject1.nii')`.
 
 Run from the roast_py/ directory:
 
-    python examples/quickstart.py                 # run the simulation
-    python examples/quickstart.py --install-deps  # install missing deps first, then run
-    python examples/quickstart.py --check-deps    # just report what's missing
+    python examples/quickstart.py                    # install anything missing, then run
+    python examples/quickstart.py --check-deps       # just report what's missing
+    python examples/quickstart.py --no-install-deps  # fail instead of installing
+
+Works straight from a git clone: no `pip install` step needed, and roast()
+installs its own missing dependencies (conda + pip in a conda environment,
+pip otherwise).
 
 Takes several minutes on CPU: ~2-3 min for segmentation, ~1-2 min for
-meshing + the FEM solve. See the top-level README for what each phase
-does and how it's been verified.
+meshing + the FEM solve, plus the dependency install on first run. See the
+top-level README for what each phase does and how it's been verified.
 """
 
 import argparse
@@ -29,22 +33,17 @@ SUBJECT1 = REPO_ROOT / "example" / "subject1.nii"
 if importlib.util.find_spec("roast_py") is None:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
-# Importing roast_py is cheap and never requires the heavy dependencies --
-# only resolving roast_py.roast does. That's what lets this script check
-# for (and install) them before touching the pipeline.
-from roast_py.dependencies import (  # noqa: E402
-    format_missing,
-    install_dependencies,
-    missing_dependencies,
-)
+# Importing roast_py never requires the heavy dependencies -- that is what
+# lets this script (and roast() itself) install them when they're missing.
+from roast_py.dependencies import format_missing, missing_dependencies  # noqa: E402
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument(
-        "--install-deps",
+        "--no-install-deps",
         action="store_true",
-        help="pip-install any missing dependencies before running (downloads ~1GB: TensorFlow is large)",
+        help="fail with an actionable message instead of installing missing dependencies",
     )
     parser.add_argument(
         "--check-deps", action="store_true", help="report missing dependencies and exit"
@@ -65,17 +64,11 @@ def main() -> int:
         print("All roast_py dependencies are installed.")
         return 0
 
-    if missing:
-        if args.install_deps:
-            install_dependencies(missing)
-        else:
-            print(format_missing(missing))
-            print("\nOr re-run this script with --install-deps to do that automatically.")
-            return 1
+    if missing and args.no_install_deps:
+        print(format_missing(missing))
+        return 1
 
-    # Imported only after the dependency check, so a missing dependency
-    # produces the message above rather than a raw ImportError.
-    from roast_py import roast
+    from roast_py import roast  # importable even with nothing installed
 
     # roast() writes its outputs (.msh, .pro, .pos, and the final _v/_e/_emag
     # .nii files) next to the input, so copy subject1.nii out of the repo's

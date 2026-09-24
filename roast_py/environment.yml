@@ -1,0 +1,32 @@
+# Conda environment for roast_py.
+#
+#     conda env create -f environment.yml
+#     conda activate roast_py
+#
+# The scientific stack comes from conda-forge; TensorFlow and tf-keras come
+# from pip, which is TensorFlow's official distribution channel (conda
+# builds lag and solve slowly) and where tf-keras is reliably published.
+# pip entries come last so conda's solver sees the environment first.
+#
+# You don't have to use this file: `pip install -e .` works, and roast()
+# installs anything missing on its own. This is here for people who prefer
+# a declared environment up front.
+name: roast_py
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - numpy>=1.24
+  - scipy>=1.10
+  - nibabel>=5.0
+  - pandas>=2.0
+  - openpyxl>=3.1
+  - scikit-image>=0.21
+  - pip
+  - pip:
+      - tensorflow>=2.16
+      # The bundled lib/multiaxial/*.h5 models were saved under Keras 2 and
+      # cannot be loaded by Keras 3 (TF >= 2.16's default). See
+      # roast_py/segmentation/_keras_compat.py.
+      - tf-keras
+      - -e .

@@ -17,32 +17,66 @@ landmark detection. Don't use it for real simulations until Phase 5 passes.
 
 ## Install
 
+**You don't have to install anything up front.** `roast()` installs its own
+missing dependencies the first time you call it — conda plus pip inside a
+conda environment, pip otherwise:
+
+```python
+from roast_py import roast      # works with nothing installed
+result = roast("subject1.nii")  # installs what's missing, then runs
+```
+
+Importing `roast_py` deliberately needs nothing but the standard library,
+which is what makes that possible: if getting hold of `roast` required the
+packages it installs, the auto-install could never run.
+
+To install up front instead:
+
 ```
 cd roast_py
-pip install -e .
+pip install -e .                      # pip
+conda env create -f environment.yml   # or conda (conda-forge + pip for TensorFlow)
 ```
 
-That installs everything `roast()` needs (numpy, scipy, nibabel, pandas,
-openpyxl, scikit-image, tensorflow, tf-keras). TensorFlow makes this a
-~1GB download.
-
-To check an existing environment, or fix one that's missing packages:
+or fix an existing environment:
 
 ```
 python -m roast_py.dependencies            # report what's missing
-python -m roast_py.dependencies --install  # pip-install what's missing
+python -m roast_py.dependencies --install  # install what's missing
 ```
 
-`roast_py` also reports every missing dependency at once — with the exact
-`pip install` line for your interpreter — rather than failing on whichever
-import happens to come first. Note that `import roast_py` itself is
-deliberately cheap and never needs the heavy dependencies, so the checker
-above stays usable in exactly the broken environment it exists to fix.
+Either way roast_py reports every missing dependency at once — with the
+exact command for *your* interpreter — rather than failing on whichever
+import happens to come first.
 
-On conda: `pip install -e .` works, but pip-installing into a conda
-environment can shadow conda-managed packages. If you'd rather keep those
-under conda, install numpy/scipy/pandas/scikit-image with conda first,
-then `pip install -e .` picks up only what's left.
+**Opting out of auto-install** (CI, locked environments, reproducible
+builds): pass `roast(..., install_missing=False)` or set
+`ROAST_PY_NO_AUTO_INSTALL=1`. You then get the actionable error instead.
+
+### What gets installed, and from where
+
+numpy, scipy, nibabel, pandas, openpyxl, scikit-image, tensorflow,
+tf-keras. TensorFlow makes this a ~1GB download.
+
+In a conda environment the scientific stack is installed with `conda
+install -c conda-forge`, and TensorFlow + tf-keras with pip — conda first,
+pip last, which is the recommended ordering when mixing the two. pip is
+TensorFlow's official distribution channel, and tf-keras (the Keras 2
+compatibility package the bundled `.h5` models need) is recent enough that
+this code doesn't assume it's on conda-forge. Anything conda fails to
+install is retried with pip, so a wrong guess about channel contents
+self-corrects rather than dead-ending.
+
+Both installers target the environment of the *running interpreter*
+explicitly — `--prefix sys.prefix` for conda, `sys.executable -m pip` for
+pip — rather than whatever environment happens to be activated, which
+aren't always the same thing.
+
+> Caveat on the conda path: the container this port was developed in has
+> no conda and blocks `api.anaconda.org`, so the conda branch is covered by
+> unit tests (env detection, command construction, the pip fallback)
+> against a simulated conda environment, but has not been run against a
+> real conda install. The pip path has.
 
 ## Quickstart
 
@@ -73,13 +107,12 @@ result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
 
 Runnable end-to-end example: `examples/quickstart.py`. It works straight
 from a git clone with no install step — it puts the package root on
-`sys.path` itself, and `--install-deps` will install anything missing
-before running:
+`sys.path` itself, and `roast()` installs anything missing:
 
 ```
-python examples/quickstart.py                 # run the simulation
-python examples/quickstart.py --install-deps  # install missing deps first, then run
-python examples/quickstart.py --check-deps    # just report what's missing
+python examples/quickstart.py                    # install anything missing, then run
+python examples/quickstart.py --check-deps       # just report what's missing
+python examples/quickstart.py --no-install-deps  # fail instead of installing
 ```
 
 Verified in `tests/test_roast.py`

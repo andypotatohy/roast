@@ -16,22 +16,23 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-import nibabel as nib
-import numpy as np
+from .dependencies import ensure_dependencies
 
-from .dependencies import check_dependencies
-from .fem.pro_writer import Conductivities
-from .fem.solve import solve_and_postprocess
-from .geometry.cap_info import load_cap_info
-from .geometry.landmarks import heuristic_landmarks
-from .geometry.placement import ElectrodeParams, electrode_placement
-from .meshing.cgal_mesher import mesh_by_iso2mesh
+# Every third-party and pipeline import lives inside roast() rather than
+# here, so that importing this module -- and therefore getting hold of the
+# roast function at all -- needs nothing but the standard library. That is
+# what lets roast() install its own missing dependencies when it is
+# called: an import at module scope would fail first and leave the user
+# with no way to reach the installer. (It also keeps TensorFlow out of the
+# process until it is actually needed, which matters beyond speed:
+# segmentation/_keras_compat.py has to set TF_USE_LEGACY_KERAS before
+# anything imports tensorflow.)
+if TYPE_CHECKING:  # annotations only; `from __future__ import annotations` keeps these lazy
+    import numpy as np
 
-# roast_py.segmentation.multiaxial is imported inside roast() rather than
-# here: it pulls in TensorFlow, which costs seconds and must not be
-# imported before segmentation/_keras_compat.py gets to set
-# TF_USE_LEGACY_KERAS. Importing this module stays cheap.
+    from .fem.pro_writer import Conductivities
 
 # Matches ROAST's own default recipe (anode Fp1 1 mA, cathode P4 -1 mA).
 DEFAULT_RECIPE = {"Fp1": 1.0, "P4": -1.0}
@@ -64,6 +65,7 @@ def roast(
     model_dir=None,
     cgalmesh_bin=None,
     getdp_bin=None,
+    install_missing: bool = True,
 ) -> RoastResult:
     """roast_py's equivalent of `roast(subj, recipe, ...)`.
 
@@ -76,8 +78,29 @@ def roast(
     (or in `work_dir` if given), matching postGetDP.m's outputs, and
     returns them directly (along with the intermediate tissue/electrode/
     gel masks) for inspection.
+
+    Missing Python dependencies are installed automatically before any
+    work starts (conda + pip in a conda environment, pip otherwise -- see
+    roast_py.dependencies). Set `install_missing=False`, or the
+    ROAST_PY_NO_AUTO_INSTALL environment variable, to get an actionable
+    error listing them instead.
     """
-    check_dependencies()  # fail fast and completely, before any long work
+    # Install anything missing before starting several minutes of work,
+    # rather than failing partway through. Pass install_missing=False (or
+    # set ROAST_PY_NO_AUTO_INSTALL) to get an actionable error instead.
+    ensure_dependencies(install_missing=install_missing)
+
+    # Imported here, not at module scope -- see the note at the top of this
+    # module. By this point ensure_dependencies() has guaranteed they exist.
+    import nibabel as nib
+    import numpy as np
+
+    from .fem.pro_writer import Conductivities
+    from .fem.solve import solve_and_postprocess
+    from .geometry.cap_info import load_cap_info
+    from .geometry.landmarks import heuristic_landmarks
+    from .geometry.placement import ElectrodeParams, electrode_placement
+    from .meshing.cgal_mesher import mesh_by_iso2mesh
 
     if recipe is None:
         recipe = DEFAULT_RECIPE
