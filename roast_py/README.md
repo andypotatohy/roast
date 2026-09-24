@@ -72,6 +72,33 @@ explicitly — `--prefix sys.prefix` for conda, `sys.executable -m pip` for
 pip — rather than whatever environment happens to be activated, which
 aren't always the same thing.
 
+### TensorFlow and tf-keras have to match
+
+`tf-keras` X.Y only works with `tensorflow` X.Y.\* — it declares
+`tensorflow>=X.Y,<X.(Y+1)`. A mismatched pair fails at import, classically
+with:
+
+```
+AttributeError: module 'tensorflow._api.v2.compat.v2.__internal__'
+has no attribute 'register_load_context_function'
+```
+
+(tf-keras < 2.16 calls that function; TensorFlow removed it in 2.16.)
+
+roast_py keeps the two aligned for you: it pins tf-keras to the installed
+TensorFlow, and repairs an already-mismatched pair before running rather
+than dying at model load minutes into a job.
+
+The awkward case is a TensorFlow **newer than any released tf-keras** —
+tf-keras trails TensorFlow, and conda-forge sometimes ships a TensorFlow
+ahead of PyPI (e.g. conda TensorFlow 2.22 when the newest tf-keras is
+2.21). There is no tf-keras to pin to, so roast_py falls back to letting
+pip resolve both together, which caps TensorFlow at whatever the newest
+tf-keras supports — downgrading it if necessary, since the bundled Keras 2
+models can't be loaded otherwise. If even that fails you get an
+explanation and both manual options (a conda downgrade, or the pip
+resolve), not a bare `CalledProcessError`.
+
 > Caveat on the conda path: the container this port was developed in has
 > no conda and blocks `api.anaconda.org`, so the conda branch is covered by
 > unit tests (env detection, command construction, the pip fallback)

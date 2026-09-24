@@ -157,12 +157,36 @@ def tf_keras_spec() -> str:
     so pip can neither backtrack to an ancient tf-keras nor silently
     upgrade TensorFlow out from under conda. With no TensorFlow installed
     it returns a floor of >=2.16, and pip resolves a matching pair itself.
+
+    Note this pin is only satisfiable if a tf-keras was actually released
+    for that TensorFlow. tf-keras trails TensorFlow, and conda-forge
+    sometimes ships a TensorFlow newer than anything on PyPI, so a pin
+    like 'tf-keras>=2.22,<2.23' can name a version that does not exist --
+    see tensorflow_alignment_specs(), which is the fallback for that.
     """
     tf_mm = _major_minor(installed_version("tensorflow"))
     if tf_mm is None:
         return f"tf-keras>={MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
     major, minor = tf_mm
     return f"tf-keras>={major}.{minor},<{major}.{minor + 1}"
+
+
+def tensorflow_alignment_specs() -> list[str]:
+    """Specs that let pip pick a compatible tensorflow/tf-keras pair itself.
+
+    Used when pinning tf-keras to the installed TensorFlow fails because
+    no such tf-keras exists (a TensorFlow newer than any tf-keras release,
+    which is what a conda-forge TensorFlow can give you). Floors both and
+    pins neither: every tf-keras declares `tensorflow>=X.Y,<X.(Y+1)`, so
+    pip's resolver transitively caps TensorFlow at whatever the newest
+    tf-keras supports -- no ceiling has to be hard-coded here, and none
+    goes stale when a new tf-keras ships.
+
+    This can downgrade TensorFlow, which is the point: the bundled Keras 2
+    models cannot be loaded without a tf-keras that matches it.
+    """
+    floor = f"{MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
+    return [f"tensorflow>={floor}", f"tf-keras>={floor}"]
 
 
 def tensorflow_keras_mismatch() -> str | None:
@@ -339,6 +363,61 @@ def check_dependencies(raise_on_missing: bool = True) -> list[Dependency]:
 # --------------------------------------------------------------------------
 
 
+def install_matching_tf_keras(quiet: bool = False) -> None:
+    """Gets tensorflow and tf-keras onto matching major.minor versions.
+
+    Escalates rather than giving up, because the straightforward pin can
+    name a version that was never released:
+
+    1. Pin tf-keras to the installed TensorFlow. Cheapest, and leaves
+       TensorFlow alone -- which matters when it is conda-managed.
+    2. If that fails, let pip resolve both together. tf-keras's own
+       `tensorflow<X.(Y+1)` requirement then caps TensorFlow at whatever
+       the newest tf-keras supports, downgrading it if necessary.
+    3. If that fails too, explain both manual options instead of surfacing
+       a bare CalledProcessError from pip.
+    """
+    attempts = [
+        ("pinning tf-keras to the installed TensorFlow", [tf_keras_spec()]),
+        ("letting pip choose a matching tensorflow/tf-keras pair", tensorflow_alignment_specs()),
+    ]
+
+    for description, specs in attempts:
+        cmd = pip_install_command_for_specs(specs)
+        if not quiet:
+            print(f"  {description}:")
+            print("    " + " ".join(cmd))
+        if subprocess.run(cmd).returncode == 0 and tensorflow_keras_mismatch() is None:
+            return
+        if not quiet:
+            print("    ...did not work, trying the next approach")
+
+    tf_version = installed_version("tensorflow") or "(not installed)"
+    keras_version = installed_version("tf-keras") or "(not installed)"
+    newest_supported = f"{MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
+    raise RuntimeError(
+        "Could not get tensorflow and tf-keras onto compatible versions "
+        f"automatically (tensorflow {tf_version}, tf-keras {keras_version}).\n\n"
+        "roast_py needs tf-keras to load the bundled Keras 2 .h5 segmentation "
+        "models, and tf-keras X.Y only works with tensorflow X.Y.*. tf-keras "
+        "trails TensorFlow, so a very new TensorFlow (conda-forge sometimes "
+        "ships one ahead of PyPI) can have no matching tf-keras at all.\n\n"
+        "Fix it by moving TensorFlow down to a version tf-keras supports:\n\n"
+        f"    conda install -c conda-forge 'tensorflow<{_next_minor(tf_version)}'   # if TensorFlow came from conda\n"
+        f"    {' '.join(pip_install_command_for_specs(tensorflow_alignment_specs()))}   # or let pip align both\n\n"
+        f"(tf-keras releases start at {newest_supported}; check "
+        "https://pypi.org/project/tf-keras/ for the newest one and match "
+        "TensorFlow to it.)"
+    )
+
+
+def _next_minor(version: str) -> str:
+    mm = _major_minor(version)
+    if mm is None:
+        return "2.22"
+    return f"{mm[0]}.{mm[1]}"
+
+
 def auto_install_disabled() -> bool:
     return os.environ.get(NO_AUTO_INSTALL_ENV_VAR, "").strip() not in ("", "0", "false", "False")
 
@@ -386,10 +465,20 @@ def install_dependencies(
             pip_deps = conda_deps + pip_deps
 
     if pip_deps:
-        cmd = pip_install_command(pip_deps)
-        if not quiet:
-            print("  " + " ".join(cmd))
-        subprocess.run(cmd, check=True)
+        # tf-keras goes through its own escalating install: its pin is
+        # derived from the installed TensorFlow and can name a release
+        # that doesn't exist (see install_matching_tf_keras).
+        tf_keras_deps = [d for d in pip_deps if d.pip_name == "tf-keras"]
+        other_pip_deps = [d for d in pip_deps if d.pip_name != "tf-keras"]
+
+        if other_pip_deps:
+            cmd = pip_install_command(other_pip_deps)
+            if not quiet:
+                print("  " + " ".join(cmd))
+            subprocess.run(cmd, check=True)
+
+        if tf_keras_deps:
+            install_matching_tf_keras(quiet=quiet)
 
     still_missing = missing_dependencies(tuple(deps))
     if still_missing:
@@ -424,15 +513,8 @@ def ensure_dependencies(install_missing: bool = True, quiet: bool = False) -> No
             raise ImportError(mismatch)
         if not quiet:
             print(mismatch.split("\n\n")[0])
-            print("Repairing by re-installing tf-keras to match TensorFlow ...")
-        cmd = pip_install_command_for_specs([tf_keras_spec()])
-        if not quiet:
-            print("  " + " ".join(cmd))
-        subprocess.run(cmd, check=True)
-
-        still_wrong = tensorflow_keras_mismatch()
-        if still_wrong:
-            raise RuntimeError("TensorFlow/tf-keras are still mismatched:\n\n" + still_wrong)
+            print("Repairing TensorFlow/tf-keras versions ...")
+        install_matching_tf_keras(quiet=quiet)
 
 
 def _main(argv: list[str] | None = None) -> int:

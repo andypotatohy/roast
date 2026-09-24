@@ -509,3 +509,100 @@ def test_ensure_dependencies_reports_mismatch_instead_of_repairing_when_opted_ou
 
     with pytest.raises(ImportError, match="register_load_context_function"):
         ensure_dependencies(install_missing=False)
+
+
+# --------------------------------------------------------------------------
+# TensorFlow newer than any released tf-keras
+#
+# tf-keras trails TensorFlow, and conda-forge can ship a TensorFlow ahead of
+# PyPI, so pinning tf-keras to the installed TensorFlow's minor can name a
+# release that does not exist (e.g. TF 2.22 -> 'tf-keras>=2.22,<2.23',
+# which pip fails on).
+# --------------------------------------------------------------------------
+
+
+def test_alignment_specs_pin_neither_side(monkeypatch):
+    from roast_py.dependencies import MIN_TF_KERAS, tensorflow_alignment_specs
+
+    specs = tensorflow_alignment_specs()
+    floor = f"{MIN_TF_KERAS[0]}.{MIN_TF_KERAS[1]}"
+    assert specs == [f"tensorflow>={floor}", f"tf-keras>={floor}"]
+    # No hard-coded ceiling: tf-keras's own tensorflow<X.(Y+1) requirement
+    # caps TensorFlow, so this can't go stale when a new tf-keras ships.
+    assert not any("<" in s for s in specs)
+
+
+def test_unsatisfiable_pin_falls_back_to_joint_resolution(monkeypatch):
+    """The reported failure: pip install 'tf-keras>=2.22,<2.23' exits 1."""
+    from roast_py.dependencies import install_matching_tf_keras
+
+    _fake_versions(monkeypatch, "2.22.0", None)
+    runs = []
+    state = {"aligned": False}
+
+    class Result:
+        def __init__(self, rc):
+            self.returncode = rc
+
+    def fake_run(cmd, **kwargs):
+        runs.append(cmd)
+        if "tf-keras>=2.22,<2.23" in cmd:
+            return Result(1)  # no such release
+        # The joint resolve succeeds and lands on a matching pair.
+        state["aligned"] = True
+        _fake_versions(monkeypatch, "2.21.0", "2.21.0")
+        return Result(0)
+
+    monkeypatch.setattr("roast_py.dependencies.subprocess.run", fake_run)
+
+    install_matching_tf_keras(quiet=True)
+
+    assert len(runs) == 2, "expected the pin attempt, then the joint resolve"
+    assert "tf-keras>=2.22,<2.23" in runs[0]
+    assert "tensorflow>=2.16" in runs[1] and "tf-keras>=2.16" in runs[1]
+    assert state["aligned"]
+
+
+def test_both_approaches_failing_explains_instead_of_raising_calledprocesserror(monkeypatch):
+    from roast_py.dependencies import install_matching_tf_keras
+
+    _fake_versions(monkeypatch, "2.22.0", None)
+
+    class Result:
+        returncode = 1
+
+    monkeypatch.setattr("roast_py.dependencies.subprocess.run", lambda *a, **k: Result())
+
+    with pytest.raises(RuntimeError) as excinfo:
+        install_matching_tf_keras(quiet=True)
+
+    message = str(excinfo.value)
+    assert "2.22.0" in message
+    assert "conda install" in message  # conda-native way down
+    assert "tensorflow>=2.16" in message  # and the pip way
+    assert "pypi.org/project/tf-keras" in message
+    # Must not be a bare subprocess error.
+    assert "non-zero exit status" not in message
+
+
+def test_a_pin_that_works_does_not_touch_tensorflow(monkeypatch):
+    """Don't downgrade a (possibly conda-managed) TensorFlow unnecessarily."""
+    from roast_py.dependencies import install_matching_tf_keras
+
+    _fake_versions(monkeypatch, "2.19.0", None)
+    runs = []
+
+    class Result:
+        returncode = 0
+
+    def fake_run(cmd, **kwargs):
+        runs.append(cmd)
+        _fake_versions(monkeypatch, "2.19.0", "2.19.0")
+        return Result()
+
+    monkeypatch.setattr("roast_py.dependencies.subprocess.run", fake_run)
+    install_matching_tf_keras(quiet=True)
+
+    assert len(runs) == 1, "a working pin should not escalate"
+    assert "tf-keras>=2.19,<2.20" in runs[0]
+    assert not any("tensorflow" in part for part in runs[0][4:]), "must not reinstall tensorflow"
