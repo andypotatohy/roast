@@ -65,17 +65,25 @@ SUPPORTED_PYTHON = ((3, 11), (3, 13))
 # last ran end to end: roast_py's direct dependencies plus everything they
 # pull in, as reported by importlib.metadata. setuptools, wheel, packaging
 # and six are left out on purpose -- they're interpreter plumbing that
-# came with the base Python and nothing here depends on their version.
+# came with the base Python and nothing here depends on their version. So
+# is pyobjc-framework-Cocoa, which PyVista pulls in on macOS only; pip
+# picks its version there.
 #
 # Kept identical to requirements-lock.txt; tests/test_dependencies.py
 # fails if the two drift apart.
 TESTED_ENVIRONMENT: dict[str, str] = {
     "absl-py": "2.5.0",
     "astunparse": "1.6.3",
+    "attrs": "26.1.0",
     "certifi": "2026.2.25",
     "charset-normalizer": "3.4.6",
+    "contourpy": "1.3.3",
+    "cycler": "0.12.1",
+    "cyclopts": "5.1.0",
+    "docstring-parser": "0.18.0",
     "et-xmlfile": "2.0.0",
     "flatbuffers": "25.12.19",
+    "fonttools": "4.66.1",
     "gast": "0.7.0",
     "google-pasta": "0.2.0",
     "grpcio": "1.83.1",
@@ -84,9 +92,11 @@ TESTED_ENVIRONMENT: dict[str, str] = {
     "imageio": "2.37.4",
     "importlib-resources": "7.1.0",
     "keras": "3.15.1",
+    "kiwisolver": "1.5.1",
     "lazy-loader": "0.5",
     "libclang": "18.1.1",
     "markdown-it-py": "4.2.0",
+    "matplotlib": "3.11.2",
     "mdurl": "0.1.2",
     "ml-dtypes": "0.6.0",
     "namex": "0.1.0",
@@ -98,19 +108,27 @@ TESTED_ENVIRONMENT: dict[str, str] = {
     "optree": "0.20.0",
     "pandas": "3.0.5",
     "pillow": "12.3.0",
+    "platformdirs": "4.12.2",
+    "pooch": "1.9.0",
     "protobuf": "7.36.1",
     "pygments": "2.21.0",
+    "pyparsing": "3.1.1",
     "python-dateutil": "2.9.0.post0",
+    "pyvista": "0.49.0",
+    "pyvista-validation": "0.2.2",
     "requests": "2.33.1",
     "rich": "15.0.0",
+    "rich-rst": "2.2.0",
     "scikit-image": "0.26.0",
     "scipy": "1.17.1",
+    "scooby": "0.12.0",
     "tensorflow": "2.21.0",
     "termcolor": "3.3.0",
     "tf-keras": "2.21.0",
     "tifffile": "2026.3.3",
     "typing-extensions": "4.16.0",
     "urllib3": "2.6.3",
+    "vtk": "9.7.1",
     "wrapt": "2.4.0",
 }
 
@@ -142,6 +160,8 @@ REQUIRED: tuple[Dependency, ...] = (
     # cannot be loaded by Keras 3 (TF >= 2.16's default) -- see
     # segmentation/_keras_compat.py.
     Dependency("tf_keras", "tf-keras", "legacy Keras 2 runtime for the bundled .h5 models"),
+    Dependency("matplotlib", "matplotlib", "slice viewers (sliceshow, viewMRI, viewSeg)"),
+    Dependency("pyvista", "pyvista", "3D renderings (viewElectrodes, visualizeRes)"),
 )
 
 
@@ -324,7 +344,8 @@ def check_dependencies(raise_on_missing: bool = True) -> list[Dependency]:
 
 _SMOKE_TEST = (
     "import os; os.environ['TF_USE_LEGACY_KERAS'] = '1'; "
-    "import tensorflow, tf_keras, nibabel, scipy, skimage, pandas, openpyxl"
+    "import tensorflow, tf_keras, nibabel, scipy, skimage, pandas, openpyxl, "
+    "matplotlib, pyvista"
 )
 
 

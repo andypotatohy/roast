@@ -22,7 +22,7 @@ def test_roast_default_recipe_on_subject1(tmp_path):
     subj = tmp_path / "subject1.nii"
     shutil.copy(SUBJECT1, subj)
 
-    result = roast(str(subj))
+    result = roast(str(subj), visualize=False)
 
     assert result.vol_v.shape == result.tissue_labels.shape
     assert result.vol_e.shape == (*result.tissue_labels.shape, 3)
@@ -42,6 +42,10 @@ def test_roast_default_recipe_on_subject1(tmp_path):
     assert (tmp_path / "subject1_v.nii").exists()
     assert (tmp_path / "subject1_emag.nii").exists()
     assert (tmp_path / "subject1_e.nii").exists()
+
+    # Everything review_res() needs to redraw the results later.
+    for name in ("roastOptions.json", "mask_elec.nii", "mask_gel.nii", "mesh.npz", "v.pos", "e.pos"):
+        assert (tmp_path / f"subject1_{name}").exists(), name
 
     # Both DEFAULT_RECIPE electrodes should have been placed.
     assert set(np.unique(result.elec_mask).tolist()) <= {0, 1, 2}

@@ -11,6 +11,7 @@ __all__ = [
     "check_dependencies",
     "install_dependencies",
     "ensure_dependencies",
+    "review_res",
 ]
 
 _LAZY = {
@@ -20,6 +21,7 @@ _LAZY = {
     "check_dependencies": ".dependencies",
     "install_dependencies": ".dependencies",
     "ensure_dependencies": ".dependencies",
+    "review_res": ".viz.review",
 }
 
 

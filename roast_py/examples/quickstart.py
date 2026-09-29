@@ -7,6 +7,7 @@ Run from the roast_py/ directory:
     python examples/quickstart.py                    # install the tested env if needed, then run
     python examples/quickstart.py --check-deps       # just report what differs from it
     python examples/quickstart.py --no-install-deps  # don't install anything
+    python examples/quickstart.py --no-visualize     # skip the result figures
 
 Works straight from a git clone: no `pip install` step needed. roast()
 installs roast_py's tested environment (exact versions, with pip) into the
@@ -59,6 +60,11 @@ def main() -> int:
         help="report how this environment differs from the tested one, then exit",
     )
     parser.add_argument(
+        "--no-visualize",
+        action="store_true",
+        help="skip the result figures roast() shows at the end",
+    )
+    parser.add_argument(
         "--work-dir",
         default="/tmp/roast_py_quickstart",
         help="where to copy the subject and write outputs (default: %(default)s)",
@@ -93,7 +99,9 @@ def main() -> int:
     shutil.copy(SUBJECT1, subj)
 
     # recipe defaults to {'Fp1': 1.0, 'P4': -1.0}
-    result = roast(str(subj), install_missing=not args.no_install_deps)
+    result = roast(
+        str(subj), install_missing=not args.no_install_deps, visualize=not args.no_visualize
+    )
 
     print(f"Voltage volume:  {result.vol_v.shape}")
     print(f"E-field volume:  {result.vol_e.shape}")
@@ -101,6 +109,7 @@ def main() -> int:
     print(f"  {subj.stem}_v.nii     -- voltage (mV)")
     print(f"  {subj.stem}_e.nii     -- E-field, 3 components (V/m)")
     print(f"  {subj.stem}_emag.nii  -- E-field magnitude (V/m)")
+    print(f"Redraw the figures any time with: roast_py.review_res({str(subj)!r})")
     return 0
 
 

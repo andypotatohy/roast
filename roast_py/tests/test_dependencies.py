@@ -422,7 +422,7 @@ def test_dependencies_module_imports_without_any_third_party_packages():
 
 
 def test_roast_is_importable_with_no_dependencies_installed():
-    """`from roast_py import roast` must work in a bare environment.
+    """`from roast_py import roast` (and review_res) must work in a bare environment.
 
     roast() is what installs the dependencies, so if importing it required
     them first, the auto-install could never run. This is the property
@@ -430,7 +430,8 @@ def test_roast_is_importable_with_no_dependencies_installed():
     """
     code = f"""
 import sys
-BLOCKED = {{"numpy","scipy","nibabel","pandas","openpyxl","skimage","tensorflow","tf_keras"}}
+BLOCKED = {{"numpy","scipy","nibabel","pandas","openpyxl","skimage","tensorflow","tf_keras",
+           "matplotlib","pyvista","vtk"}}
 class Blocker:
     def find_spec(self, name, path=None, target=None):
         if name.split(".")[0] in BLOCKED:
@@ -438,12 +439,13 @@ class Blocker:
         return None
 sys.meta_path.insert(0, Blocker())
 sys.path.insert(0, {str(PROJECT_ROOT)!r})
-from roast_py import roast
-print(type(roast).__name__)
+from roast_py import roast, review_res
+import roast_py.viz
+print(type(roast).__name__, type(review_res).__name__)
 """
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "function"
+    assert result.stdout.strip() == "function function"
 
 
 def test_lazy_attribute_access_returns_the_function_not_the_submodule():

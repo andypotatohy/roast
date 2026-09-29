@@ -10,12 +10,18 @@ function's own keyword arguments yet; neck/custom electrodes, T2-assisted
 segmentation, and zero-padding aren't wired in either). Landmarks are
 estimated with the interim heuristic in geometry/landmarks.py, not real
 landmark detection (not yet ported -- see README).
+
+Like MATLAB's roast(), it finishes by visualizing the results (see
+roast_py.viz: MRI, segmentation and electrode-placement views plus the
+voltage/E-field renderings of visualizeRes.m), and it saves everything
+roast_py.viz.review_res() needs to redraw them later.
 """
 
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING
 
 from .dependencies import ensure_dependencies
@@ -50,6 +56,32 @@ class RoastResult:
     ef_mag: np.ndarray
     voxel_size: np.ndarray
     affine: np.ndarray
+    recipe: dict[str, float] | None = None
+    landmarks: np.ndarray | None = None  # 0-based voxel coords, geometry/landmarks.py order
+    mesh_node: np.ndarray | None = None  # mesh node coordinates (mm, see meshing/cgal_mesher.py)
+    mesh_elem: np.ndarray | None = None  # tetrahedra: 1-based node ids + region label
+
+
+def output_paths(work_dir: str, base: str) -> dict[str, str]:
+    """Where roast() writes each output for subject `base` in `work_dir`.
+
+    One place for the naming, shared with roast_py.viz.review_res(), which
+    reads these back. The MATLAB equivalents carry a simulation tag
+    (`<subj>_<simTag>_...`); roast_py doesn't tag simulations yet, so a
+    new run on the same subject and work_dir replaces the previous one.
+    """
+    stem = os.path.join(work_dir, base)
+    return {
+        "options": f"{stem}_roastOptions.json",
+        "elec_mask": f"{stem}_mask_elec.nii",
+        "gel_mask": f"{stem}_mask_gel.nii",
+        "mesh": f"{stem}_mesh.npz",
+        "v_pos": f"{stem}_v.pos",
+        "e_pos": f"{stem}_e.pos",
+        "v": f"{stem}_v.nii",
+        "e": f"{stem}_e.nii",
+        "emag": f"{stem}_emag.nii",
+    }
 
 
 def roast(
@@ -66,6 +98,7 @@ def roast(
     cgalmesh_bin=None,
     getdp_bin=None,
     install_missing: bool = True,
+    visualize: bool = True,
 ) -> RoastResult:
     """roast_py's equivalent of `roast(subj, recipe, ...)`.
 
@@ -78,6 +111,14 @@ def roast(
     (or in `work_dir` if given), matching postGetDP.m's outputs, and
     returns them directly (along with the intermediate tissue/electrode/
     gel masks) for inspection.
+
+    With `visualize` (the default) the results are displayed at the end,
+    as MATLAB's roast() does: slice views of the MRI and segmentation, a
+    3D view of the electrode placement, and the voltage and E-field on the
+    gray matter in 3D and in slices (see roast_py.viz). Windows open once
+    the simulation has finished; with no display available the figures
+    are saved as PNG files in the work directory instead. Redraw them any
+    time later with roast_py.viz.review_res(subj).
 
     Before any work starts, the running interpreter is checked against
     roast_py's tested environment (exact package versions that ran this
@@ -166,12 +207,36 @@ def roast(
     )
 
     print("Saving NIfTI outputs ...")
-    nib.save(nib.Nifti1Image(vol_v.astype(np.float32), t1_img.affine), os.path.join(work_dir, f"{base}_v.nii"))
-    nib.save(nib.Nifti1Image(ef_mag.astype(np.float32), t1_img.affine), os.path.join(work_dir, f"{base}_emag.nii"))
-    nib.save(nib.Nifti1Image(vol_e.astype(np.float32), t1_img.affine), os.path.join(work_dir, f"{base}_e.nii"))
+    paths = output_paths(work_dir, base)
+    nib.save(nib.Nifti1Image(vol_v.astype(np.float32), t1_img.affine), paths["v"])
+    nib.save(nib.Nifti1Image(ef_mag.astype(np.float32), t1_img.affine), paths["emag"])
+    nib.save(nib.Nifti1Image(vol_e.astype(np.float32), t1_img.affine), paths["e"])
+
+    # What review_res() needs to redraw everything later without re-running
+    # the pipeline -- the counterparts of MATLAB's _mask_elec.nii,
+    # _mask_gel.nii, <subj>_<tag>.mat (mesh) and _roastOptions.mat.
+    nib.save(nib.Nifti1Image(elec_mask.astype(np.uint8), t1_img.affine), paths["elec_mask"])
+    nib.save(nib.Nifti1Image(gel_mask.astype(np.uint8), t1_img.affine), paths["gel_mask"])
+    np.savez_compressed(paths["mesh"], node=node, elem=elem)
+    options = {
+        "subj": subj,
+        "work_dir": work_dir,
+        "recipe": {name: float(i) for name, i in recipe.items()},
+        "cap_type": cap_type,
+        "elec_type": elec_type,
+        "elec_size": [float(x) for x in np.ravel(elec_size)],
+        "conductivities": asdict(conductivities),
+        "maxvol": maxvol,
+        "masks": os.path.abspath(mask_path),
+        "landmarks": np.asarray(landmarks, dtype=float).tolist(),
+        # voxel -> MNI mapping; needs SPM/NiftyReg registration, not ported yet
+        "mri2mni": None,
+    }
+    with open(paths["options"], "w") as f:
+        json.dump(options, f, indent=2)
 
     print(f"Done. Outputs saved in {work_dir}")
-    return RoastResult(
+    result = RoastResult(
         subj=subj,
         work_dir=work_dir,
         tissue_labels=tissue_labels,
@@ -182,4 +247,26 @@ def roast(
         ef_mag=ef_mag,
         voxel_size=voxel_size,
         affine=t1_img.affine,
+        recipe=dict(recipe),
+        landmarks=np.asarray(landmarks),
+        mesh_node=node,
+        mesh_elem=elem,
     )
+
+    if visualize:
+        # The results are already on disk, so a display problem must not
+        # cost the user the simulation: report it and return normally.
+        try:
+            from .viz.results import show_roast_results
+
+            show_roast_results(result)
+        except Exception as e:  # noqa: BLE001
+            import warnings
+
+            warnings.warn(
+                f"Visualization failed ({type(e).__name__}: {e}). The simulation "
+                f"results are saved in {work_dir}; retry the display with "
+                f"roast_py.viz.review_res({subj!r}).",
+                stacklevel=2,
+            )
+    return result

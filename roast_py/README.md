@@ -8,8 +8,9 @@ plain standalone binaries the way getDP and NiftyReg are) are written up
 in full in the project's plan; the short version is below.
 
 **Status: Phases 0-4 (I/O, segmentation, electrode placement, meshing, FEM
-solve) done, wired into a top-level `roast()` (see Quickstart below).
-Phases 5+ not yet implemented.** Runs end to end and produces physically
+solve) done, wired into a top-level `roast()` (see Quickstart below), plus
+the visualization half of Phase 7 (`reviewRes`/`visualizeRes` and the views
+they call — see Visualization below). Phases 5 and 6 not yet implemented.** Runs end to end and produces physically
 sane output, but **has not yet been numerically validated against MATLAB
 ROAST** (that's Phase 5 — the actual accuracy gate) and landmark placement
 is still an interim heuristic (see `geometry/landmarks.py`), not real
@@ -27,7 +28,7 @@ end, segmentation through FEM solve. They are listed in
 |---|---|
 | Python | **3.11.15** (3.11–3.13 supported; 3.10 and 3.14 are not) |
 | Installer | **pip only** — no conda packages; conda, if used, only provides Python |
-| Key packages | tensorflow 2.21.0, tf-keras 2.21.0, keras 3.15.1, numpy 2.4.6, scipy 1.17.1, nibabel 5.4.2, pandas 3.0.5, openpyxl 3.1.5, scikit-image 0.26.0, h5py 3.14.0 (+ their dependencies, 42 pins total) |
+| Key packages | tensorflow 2.21.0, tf-keras 2.21.0, keras 3.15.1, numpy 2.4.6, scipy 1.17.1, nibabel 5.4.2, pandas 3.0.5, openpyxl 3.1.5, scikit-image 0.26.0, h5py 3.14.0, matplotlib 3.11.2, pyvista 0.49.0, vtk 9.7.1 (+ their dependencies, 58 pins total) |
 | Platforms with wheels | Linux x86_64/aarch64 (glibc ≥ 2.27), macOS on Apple silicon, Windows x86_64 — **not** Intel Macs (no TensorFlow 2.21 build) |
 
 **Recommended setup** — a fresh environment on the tested Python:
@@ -117,7 +118,9 @@ magnitude) next to the input, exactly like MATLAB's `postGetDP.m`. It also
 returns a `RoastResult` with those same volumes as numpy arrays
 (`result.vol_v`, `result.vol_e`, `result.ef_mag`) plus the intermediate
 tissue/electrode/gel masks, for inspection without re-reading the NIfTI
-files.
+files. Like MATLAB's `roast()`, it then shows the results — see
+[Visualization](#visualization-phase-7) — and returns once you close the
+windows (`visualize=False` skips them).
 
 A custom montage is just a dict of electrode name → current in mA (must
 sum to ~0):
@@ -134,6 +137,7 @@ from a git clone with no install step — it puts the package root on
 python examples/quickstart.py                    # install the tested env if needed, then run
 python examples/quickstart.py --check-deps       # just report what differs from it
 python examples/quickstart.py --no-install-deps  # don't install anything
+python examples/quickstart.py --no-visualize     # skip the result figures
 ```
 
 Verified in `tests/test_roast.py` (`@pytest.mark.slow`) and by running
@@ -379,6 +383,93 @@ an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
   pipeline's numerical results are only as physically sane as the tissue
   geometry handed to it.
 
+## Visualization (Phase 7)
+
+`roast_py/viz/` ports ROAST's visualization. `roast()` calls it at the end
+of every simulation, and `review_res()` redraws a finished one from disk:
+
+```python
+from roast_py import review_res
+
+review_res("../example/subject1.nii")                    # what roast() shows
+review_res("../example/subject1.nii", tissue="skin")     # results on another tissue
+review_res("../example/subject1.nii", show=False, save_dir="figs")  # PNGs only
+```
+
+| MATLAB | Python | What it draws |
+|---|---|---|
+| `reviewRes.m` | `viz.review_res()` | Everything below, from a finished simulation's saved outputs. Same `tissue` (`'white'`, `'gray'`, `'csf'`, `'bone'`, `'skin'`, `'air'`, `'brain'`, `'all'`) and `fastRender` options. |
+| `visualizeRes.m` | `viz.visualize_res()` | Voltage and E-field on the gray matter in 3D (electrodes colored by injected current, two color bars), and voltage/E-field slice views of the brain, the E-field with direction arrows. |
+| `viewMRI.m` | `viz.view_mri()` | T1 (and T2) slice viewer. |
+| `viewSeg.m` | `viz.view_seg()` | Segmentation slice viewer, with viewSeg's anatomical colormap. |
+| `viewElectrodes.m` | `viz.view_electrodes()` | 3D scalp (translucent), gray matter, electrodes, gel and the four head landmarks. |
+| `sliceshow.m` | `viz.sliceshow()` | The interactive viewer behind all the slice views: coronal/sagittal/axial panels; click to navigate or type voxel (and MNI) coordinates; value readout; optional vector-field arrows and brain crop. |
+| `brainCrop.m` | `viz.brain_crop()` | White-matter bounding box used to crop the slice views. |
+
+**How it's displayed.** Slice viewers are matplotlib windows; the 3D
+views are PyVista (VTK). All 3D views share one window, a panel each, with
+linked cameras; drag to rotate. While it's open the slice viewers stay
+clickable, and they stay open after it's closed. `roast()` and
+`review_res()` return once every window is closed. That's needed in a
+script, where exiting would close them, and it differs from MATLAB, whose
+figures outlive the call. In IPython with `%matplotlib` on, the slice
+viewers don't block.
+
+**No display** (a remote server, CI): the figures are saved as PNGs in
+`<work_dir>/<subj>_figures/` instead and the path is printed. The 3D views
+also need OpenGL, which headless machines often lack; if VTK can't get a
+context they are skipped with a message rather than crashing, since
+VTK's failure there can take the whole process down. The simulation
+outputs are already on disk before any of this runs, so a display problem
+never costs you the simulation.
+
+**Differences from MATLAB:**
+
+- Voxel coordinates in the slice viewers are **0-based**, like the rest of
+  roast_py: MATLAB's voxel (129, 129, 129) is (128, 128, 128) here.
+- No MNI coordinates yet. They need the voxel-to-MNI mapping from SPM or
+  NiftyReg registration, which isn't ported. `sliceshow` supports
+  `mri2mni` and will show them once that mapping exists.
+- No simulation tags, so `review_res(subj)` takes no `simTag`. A new
+  `roast()` run on the same subject and work directory replaces the
+  previous one.
+- `roast_target()` isn't ported, so neither is reviewRes's targeting
+  branch (`tarTag`, the montage topoplot).
+- `fast_render=False` smooths the displayed surface with VTK's Laplacian
+  smoother, in place of iso2mesh's `sms`.
+- The 3D views are panels of one window rather than separate figures. The
+  color bars sit under each panel, labeled at their ends, rather than
+  beside it.
+
+To make `review_res()` possible, `roast()` now also saves
+`<subj>_mask_elec.nii`, `<subj>_mask_gel.nii`, `<subj>_mesh.npz` and
+`<subj>_roastOptions.json`. These are the counterparts of MATLAB's
+`_mask_elec.nii`, `_mask_gel.nii`, `<subj>_<tag>.mat` and
+`_roastOptions.mat`.
+
+**Verified** on `subject1.nii` with a full `roast()` run:
+
+- **Rendering, under Xvfb.** The 3D panels show the voltage gradient
+  between the Fp1 anode (left frontal) and the P4 cathode (right
+  parietal), and E-field hot spots under both. The slice views put those
+  hot spots on the correct sides.
+- **Interactive session, with a real Qt backend under Xvfb.** A queued
+  mouse click on a slice viewer was handled while the 3D window's event
+  loop was running, and moved the crosshair to the clicked voxel. Closing
+  the 3D window handed over to matplotlib's loop, and closing the viewers
+  returned from `review_res()`.
+- **Headless.** With no display the figures were saved as PNGs, and the
+  3D views were skipped cleanly on a machine without OpenGL.
+- **Unit tests.** `tests/test_viz.py` covers the viewer logic (clicks,
+  typed coordinates, cropping, arrows), brainCrop's thresholds, the
+  mesh-to-world mapping, color ranges and color bars (drawn into a
+  recording fake plotter), and the save-instead-of-show fallback.
+
+Needs a GUI toolkit for interactive slice viewers: tkinter (included with
+conda's and python.org's Python) or Qt. Without one, matplotlib can only
+save files, and the slice views are saved as PNGs instead (the 3D window
+still opens).
+
 ## Remaining phases (see the full plan for detail)
 
 0. ~~I/O & preprocessing~~ done
@@ -388,7 +479,7 @@ an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
 4. ~~FEM solve~~ done (see above)
 5. End-to-end numerical validation against MATLAB ROAST (gate before continuing)
 6. Targeting (`roast_target()`, CVX → cvxpy)
-7. Visualization (`reviewRes()`) & packaging
+7. ~~Visualization (`reviewRes()`)~~ done (see above); packaging remains
 
 ## Running the tests
 

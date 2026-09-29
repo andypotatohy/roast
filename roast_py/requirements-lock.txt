@@ -1,7 +1,8 @@
 # roast_py's tested environment: exactly what was installed (with pip, on
-# Python 3.11.15) when roast("../example/subject1.nii") last ran end to end.
-# Installable on Python 3.11-3.13. Identical to TESTED_ENVIRONMENT in
-# roast_py/dependencies.py (tests/test_dependencies.py checks this).
+# Python 3.11.15) when roast("../example/subject1.nii") last ran end to end,
+# including its result visualization. Installable on Python 3.11-3.13.
+# Identical to TESTED_ENVIRONMENT in roast_py/dependencies.py
+# (tests/test_dependencies.py checks this).
 #
 #     conda create -n roast_py python=3.11 -y && conda activate roast_py
 #     pip install -r requirements-lock.txt
@@ -9,10 +10,16 @@
 # roast() installs these itself when they're missing or at other versions.
 absl-py==2.5.0
 astunparse==1.6.3
+attrs==26.1.0
 certifi==2026.2.25
 charset-normalizer==3.4.6
+contourpy==1.3.3
+cycler==0.12.1
+cyclopts==5.1.0
+docstring-parser==0.18.0
 et-xmlfile==2.0.0
 flatbuffers==25.12.19
+fonttools==4.66.1
 gast==0.7.0
 google-pasta==0.2.0
 grpcio==1.83.1
@@ -21,9 +28,11 @@ idna==3.11
 imageio==2.37.4
 importlib-resources==7.1.0
 keras==3.15.1
+kiwisolver==1.5.1
 lazy-loader==0.5
 libclang==18.1.1
 markdown-it-py==4.2.0
+matplotlib==3.11.2
 mdurl==0.1.2
 ml-dtypes==0.6.0
 namex==0.1.0
@@ -35,17 +44,25 @@ opt-einsum==3.4.0
 optree==0.20.0
 pandas==3.0.5
 pillow==12.3.0
+platformdirs==4.12.2
+pooch==1.9.0
 protobuf==7.36.1
 pygments==2.21.0
+pyparsing==3.1.1
 python-dateutil==2.9.0.post0
+pyvista==0.49.0
+pyvista-validation==0.2.2
 requests==2.33.1
 rich==15.0.0
+rich-rst==2.2.0
 scikit-image==0.26.0
 scipy==1.17.1
+scooby==0.12.0
 tensorflow==2.21.0
 termcolor==3.3.0
 tf-keras==2.21.0
 tifffile==2026.3.3
 typing-extensions==4.16.0
 urllib3==2.6.3
+vtk==9.7.1
 wrapt==2.4.0

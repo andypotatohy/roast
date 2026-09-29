@@ -29,13 +29,16 @@ dependencies = [
     # already-installed (e.g. conda-managed) TensorFlow. tf-keras X.Y must
     # match tensorflow X.Y; requirements-lock.txt pins both to 2.21.
     "tf-keras>=2.16",
+    # roast() visualizes its results at the end, as MATLAB's does:
+    # matplotlib for the slice viewers, PyVista (VTK) for the 3D views.
+    "matplotlib>=3.7",
+    "pyvista>=0.43",
 ]
 
 [project.optional-dependencies]
 # Phases that aren't implemented yet -- listed so the intent is on record,
 # but not required to run roast().
 targeting = ["cvxpy>=1.4"]
-viz = ["matplotlib>=3.7", "pyvista>=0.43"]
 dev = ["pytest>=7.4"]
 
 [build-system]
