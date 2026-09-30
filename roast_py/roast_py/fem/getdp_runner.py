@@ -36,6 +36,15 @@ def run_getdp(pro_path: str | os.PathLike, ready_msh_path: str | os.PathLike, bi
     """Ports solveByGetDP.m's `system(cmd)` call: runs getdp's `EleSta_v`
     resolution + `Map` post-operation against the given .pro/_ready.msh.
 
+    MATLAB does both in one getdp call. Here they are two: `-solve` (which
+    saves the solution to the .res file), then `-pos Map` reading that
+    .res back. The results match -- the voltage .pos byte for byte, the
+    E-field to ~1e-11 V/m (round-off from reloading the solution) -- but
+    the peak memory is lower, because the one-call form keeps the direct
+    solver's LU factorization in memory through the post-processing. For
+    MNI152 at roast.m's mesh settings that's the difference between
+    fitting in ~7.6 GB and being killed above 8.6 GB.
+
     Runs with cwd set to the .pro file's own directory, since the .pro
     file's `Print[...File "bare_name.pos"...]` directives (see
     pro_writer.py) use bare filenames, not paths -- matching where
@@ -43,17 +52,41 @@ def run_getdp(pro_path: str | os.PathLike, ready_msh_path: str | os.PathLike, bi
     """
     pro_path = Path(pro_path).resolve()
     ready_msh_path = Path(ready_msh_path).resolve()
+    res_path = pro_path.with_suffix(".res")
     binary = find_getdp_binary(bin_path)
 
-    cmd = [str(binary), str(pro_path), "-solve", "EleSta_v", "-msh", str(ready_msh_path), "-pos", "Map"]
-    result = subprocess.run(cmd, cwd=pro_path.parent, capture_output=True, text=True)
+    steps = [
+        [str(binary), str(pro_path), "-solve", "EleSta_v", "-msh", str(ready_msh_path)],
+        [str(binary), str(pro_path), "-msh", str(ready_msh_path), "-res", str(res_path), "-pos", "Map"],
+    ]
+    try:
+        for cmd in steps:
+            _run_step(cmd, cwd=pro_path.parent)
+    finally:
+        # Ports the original's clean-up of getdp's intermediate .pre/.res files.
+        for ext in (".pre", ".res"):
+            pro_path.with_suffix(ext).unlink(missing_ok=True)
+
+
+def _run_step(cmd: list[str], cwd: Path) -> None:
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    if result.returncode in (-9, 137):  # SIGKILL (137 = 128 + 9 through a shell)
+        # Almost always the kernel's out-of-memory killer: getDP's direct
+        # (MUMPS LU) solve needs several GB for a full head mesh, the same
+        # as in MATLAB ROAST, and dies without printing anything.
+        raise RuntimeError(
+            "getDP was killed while solving, most likely for running out of memory "
+            "(its direct solver needs several GB for a full-head mesh: ~7.6 GB for "
+            "the MNI152 head at ROAST's default mesh settings, more for bigger "
+            "heads -- the same as in MATLAB ROAST). Run it on a machine with more "
+            "memory, or use a coarser mesh via roast(..., mesh_options=...). A head "
+            "mesh's size is set mostly by the surface settings (radbound, "
+            "distbound), not maxvol; too coarse and the mesher can miss small "
+            "electrodes.\n"
+            f"command: {' '.join(cmd)}\nlast output:\n{result.stdout[-1500:]}"
+        )
     if result.returncode != 0:
         raise RuntimeError(
             "getDP solver cannot work properly on your system. Please check any error "
             f"message you got.\ncommand: {' '.join(cmd)}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
-
-    # Ports the original's clean-up of getdp's intermediate .pre/.res files.
-    for ext in (".pre", ".res"):
-        stale = pro_path.with_suffix(ext)
-        stale.unlink(missing_ok=True)

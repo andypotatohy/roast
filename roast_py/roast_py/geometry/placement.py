@@ -333,7 +333,8 @@ def electrode_placement(
         electrode_coord_p, center_p = np.empty((0, 3)), None
 
     if len(ind_n) > 0:
-        if np.any(landmarks[4:6, 2] <= 0):
+        # MATLAB's `landmarks(5:6,3)<=0` is on 1-based coordinates.
+        if np.any(landmarks[4:6, 2] < 0):
             raise ValueError(
                 "MRI does not cover the neck, so cannot place electrodes on the neck."
             )

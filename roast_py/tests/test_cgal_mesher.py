@@ -95,3 +95,30 @@ def test_mesh_by_iso2mesh_end_to_end_with_electrode_and_gel_regions(tmp_path):
     assert "$MeshFormat" in text
     assert "$Nodes" in text
     assert "$Elements" in text
+
+
+def test_roast_mesh_options_default_to_roast_ms_meshopt():
+    from roast_py.meshing.cgal_mesher import resolve_mesh_options
+
+    # roast.m: struct('radbound',5,'angbound',30,'distbound',0.3,'reratio',3,'maxvol',10)
+    assert resolve_mesh_options() == {
+        "radbound": 5.0, "angbound": 30.0, "distbound": 0.3, "reratio": 3.0, "maxvol": 10.0,
+    }
+    assert resolve_mesh_options({"maxvol": 5})["maxvol"] == 5.0
+    assert resolve_mesh_options({"maxvol": 5})["radbound"] == 5.0  # others keep defaults
+
+
+@pytest.mark.parametrize(
+    "bad, message",
+    [
+        ({"radius": 3}, "Unrecognized mesh options"),
+        ({}, "Unrecognized mesh options"),
+        ({"radbound": 0}, "positive number for the mesh option 'radbound'"),
+        ({"maxvol": "big"}, "positive number for the mesh option 'maxvol'"),
+    ],
+)
+def test_bad_mesh_options_are_rejected_like_matlab(bad, message):
+    from roast_py.meshing.cgal_mesher import resolve_mesh_options
+
+    with pytest.raises(ValueError, match=message):
+        resolve_mesh_options(bad)

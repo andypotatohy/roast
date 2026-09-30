@@ -118,3 +118,19 @@ def test_prepare_for_getdp_and_getdp_solve_end_to_end(two_electrode_sphere_mesh)
 
     ef_mag = np.sqrt(np.sum(interpolate_to_grid(node[e_ids - 1, :3], e_vals, shape) ** 2, axis=-1))
     assert np.nanmax(ef_mag) > 0
+
+
+def test_getdp_killed_for_memory_says_so(tmp_path):
+    """A SIGKILLed getDP (the OOM killer's signature) gets an explanation,
+    not the generic 'cannot work properly on your system'."""
+    import sys
+
+    if sys.platform.startswith("win"):
+        pytest.skip("POSIX signals")
+    fake = tmp_path / "getdp"
+    fake.write_text("#!/bin/sh\necho 'Info    : Solve[Sys_Ele]'\nkill -9 $$\n")
+    fake.chmod(0o755)
+    (tmp_path / "x.pro").write_text("")
+    (tmp_path / "x_ready.msh").write_text("")
+    with pytest.raises(RuntimeError, match=r"(?s)killed while solving.*out of memory.*Solve\[Sys_Ele\]"):
+        run_getdp(tmp_path / "x.pro", tmp_path / "x_ready.msh", bin_path=fake)

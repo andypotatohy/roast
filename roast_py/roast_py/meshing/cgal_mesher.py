@@ -23,11 +23,43 @@ import numpy as np
 
 from .mesh_io import save_inr, save_msh, sort_mesh, read_medit
 
-# Ports cgalv2m.m's defaults.
+# Ports cgalv2m.m's defaults (what iso2mesh uses when given no options).
 _DEFAULT_ANG = 30
 _DEFAULT_SSIZE = 6
 _DEFAULT_APPROX = 0.5
 _DEFAULT_RERATIO = 3
+
+# roast.m's default `meshOpt`, which MATLAB's roast() always passes to
+# meshByIso2mesh -> cgalv2m. Finer than cgalv2m's own defaults above
+# (radbound 5 vs 6, distbound 0.3 vs 0.5), and the difference matters: at
+# cgalv2m's defaults the mesher can miss the thin (~3 voxel) electrode
+# regions entirely.
+ROAST_MESH_OPTIONS = {"radbound": 5.0, "angbound": 30.0, "distbound": 0.3, "reratio": 3.0, "maxvol": 10.0}
+
+
+def resolve_mesh_options(mesh_options: dict | None = None) -> dict:
+    """Ports roast.m's meshOptions handling: fills in ROAST's defaults and
+    rejects unknown names or non-positive values, with MATLAB's messages."""
+    options = dict(ROAST_MESH_OPTIONS)
+    if mesh_options is None:
+        return options
+    if not isinstance(mesh_options, dict):
+        raise TypeError(
+            "Unrecognized format of mesh options. Please enter as a dict, with keys "
+            "'radbound', 'angbound', 'distbound', 'reratio', and 'maxvol'."
+        )
+    unknown = set(mesh_options) - set(ROAST_MESH_OPTIONS)
+    if not mesh_options or unknown:
+        raise ValueError(
+            "Unrecognized mesh options detected. Supported mesh options are 'radbound', "
+            "'angbound', 'distbound', 'reratio', and 'maxvol'. Please refer to the "
+            "iso2mesh documentation for more details."
+        )
+    for name, value in mesh_options.items():
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
+            raise ValueError(f"Please enter a positive number for the mesh option '{name}'.")
+        options[name] = float(value)
+    return options
 
 
 def find_cgalmesh_binary(bin_path: str | os.PathLike | None = None) -> Path:
@@ -113,14 +145,14 @@ def mesh_by_iso2mesh(
     voxel_size: np.ndarray,
     work_dir: str | os.PathLike,
     out_path: str | os.PathLike,
-    radbound: float = _DEFAULT_SSIZE,
-    angbound: float = _DEFAULT_ANG,
-    distbound: float = _DEFAULT_APPROX,
-    reratio: float = _DEFAULT_RERATIO,
-    maxvol: float = 10.0,
+    radbound: float = ROAST_MESH_OPTIONS["radbound"],
+    angbound: float = ROAST_MESH_OPTIONS["angbound"],
+    distbound: float = ROAST_MESH_OPTIONS["distbound"],
+    reratio: float = ROAST_MESH_OPTIONS["reratio"],
+    maxvol: float = ROAST_MESH_OPTIONS["maxvol"],
     bin_path: str | os.PathLike | None = None,
 ):
-    """Ports meshByIso2mesh.m: combines the 6-tissue label volume with the
+    """Ports meshByIso2mesh.m (defaulting to roast.m's meshOpt): combines the 6-tissue label volume with the
     per-electrode gel/electrode masks (roast_py.geometry.placement's
     output) into one multi-domain volume, meshes it, converts node
     coordinates from voxel-corner to physical (mm) space, and writes a

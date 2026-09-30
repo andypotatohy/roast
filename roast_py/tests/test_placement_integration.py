@@ -2,12 +2,10 @@
 
 Chains roast_py.segmentation.multiaxial.segment() (~2-3 min on CPU) with
 roast_py.geometry.placement.electrode_placement() on the real
-example/subject1.nii. Landmarks are derived heuristically from the
-segmentation's bounding box (front/back/left/right-most scalp points near
-the midline) rather than a real landmark-detection step (not yet ported --
-see roast_py/README.md), so this checks the placement pipeline runs
-correctly end-to-end and produces anatomically sane output on real data,
-not MATLAB bit-parity.
+example/subject1.nii, with landmarks from the TPM mapped through a real
+NiftyReg registration (~2 min) -- the same chain roast() runs. Checks the
+placement is anatomically right on real data (in MNI coordinates), not
+MATLAB bit-parity.
 """
 
 import shutil
@@ -19,23 +17,6 @@ from roast_py.geometry.cap_info import load_cap_info
 from roast_py.geometry.placement import ElectrodeParams, electrode_placement
 
 from .test_nifti import SUBJECT1
-
-
-def _heuristic_landmarks(labels: np.ndarray):
-    scalp_idx = np.argwhere(labels > 0)
-    mid_x = int(round((scalp_idx[:, 0].min() + scalp_idx[:, 0].max()) / 2))
-
-    slab = scalp_idx[np.abs(scalp_idx[:, 0] - mid_x) <= 3]
-    nasion = slab[np.argmax(slab[:, 1])].astype(float)
-    inion = slab[np.argmin(slab[:, 1])].astype(float)
-
-    mid_y = int(round((scalp_idx[:, 1].min() + scalp_idx[:, 1].max()) / 2))
-    mid_z = int(round((scalp_idx[:, 2].min() + scalp_idx[:, 2].max()) / 2))
-    band = scalp_idx[(np.abs(scalp_idx[:, 1] - mid_y) <= 5) & (np.abs(scalp_idx[:, 2] - mid_z) <= 5)]
-    right = band[np.argmax(band[:, 0])].astype(float)
-    left = band[np.argmin(band[:, 0])].astype(float)
-
-    return np.array([nasion, inion, right, left, nasion, inion])
 
 
 @pytest.mark.slow
@@ -52,7 +33,11 @@ def test_electrode_placement_end_to_end_on_subject1(tmp_path):
     labels = np.asarray(img.dataobj, dtype=np.uint8)
     voxel_size = np.abs(np.diag(img.affine)[:3])
 
-    landmarks = _heuristic_landmarks(labels)
+    from roast_py.geometry.landmarks import tpm_landmarks_to_subject
+    from roast_py.registration import run_niftyreg
+
+    registration = run_niftyreg(t1_copy, out_dir=tmp_path)
+    landmarks = tpm_landmarks_to_subject(registration.tpm2mri)
 
     names, template = load_cap_info("1010")
     # Deliberately not in cap-sheet order, to exercise classify_electrodes'
@@ -75,6 +60,13 @@ def test_electrode_placement_end_to_end_on_subject1(tmp_path):
     assert centroids["Cz"][2] > centroids["Fpz"][2]
     assert centroids["Cz"][2] > centroids["Oz"][2]
     assert centroids["Fpz"][1] > centroids["Oz"][1]
+
+    # And where the 10-10 system puts them in MNI space: Cz at the vertex
+    # (x ~ 0, y ~ -15, z ~ 100), Fpz front and low, Oz back and low.
+    mni = {n: (registration.mri2mni @ np.append(c, 1))[:3] for n, c in centroids.items()}
+    assert abs(mni["Cz"][0]) < 10 and -30 < mni["Cz"][1] < 0 and mni["Cz"][2] > 85
+    assert mni["Fpz"][1] > 70 and abs(mni["Fpz"][2]) < 25
+    assert mni["Oz"][1] < -100 and abs(mni["Oz"][2]) < 25
 
     # Gel must never overlap electrode voxels or any tissue voxel.
     assert not np.any((elec_mask > 0) & (gel_mask > 0))

@@ -3,6 +3,8 @@ built to remove the MATLAB dependency. See /roast_py/README.md for status and sc
 """
 
 import importlib
+import sys
+import types
 
 __all__ = [
     "roast",
@@ -44,14 +46,35 @@ def __getattr__(name: str):
     # roast() is what installs the missing dependencies. roast.py keeps
     # its own imports inside the function body to make that possible.
     module = importlib.import_module(module_name, __name__)
-    value = getattr(module, name)
-    # Cache in the package namespace. This also has to *overwrite* the
-    # submodule attribute that importing `.roast` just bound here --
-    # otherwise `from roast_py import roast` would return the function the
-    # first time and the module every time after.
-    globals()[name] = value
-    return value
+    # Cache every name this module provides, so later lookups skip this hook.
+    for attr, source in _LAZY.items():
+        if source == module_name:
+            globals()[attr] = getattr(module, attr)
+    return globals()[name]
 
 
 def __dir__():
     return sorted(__all__)
+
+
+class _Package(types.ModuleType):
+    """Keeps `roast_py.roast` pointing at the roast() function.
+
+    The function lives in roast.py, and whenever anything imports that
+    submodule, Python binds the *module* as the package attribute `roast`,
+    replacing the function -- so `from roast_py import roast` would start
+    returning a module depending on what had been imported before. This
+    catches that binding and stores the module's function instead. The
+    module itself stays importable as usual (`from roast_py.roast import
+    output_paths`, via sys.modules).
+    """
+
+    def __setattr__(self, name, value):
+        if isinstance(value, types.ModuleType) and name in _SAME_NAME_AS_MODULE:
+            value = getattr(value, name)
+        super().__setattr__(name, value)
+
+
+# Public functions that share their name with the submodule defining them.
+_SAME_NAME_AS_MODULE = {"roast"}
+sys.modules[__name__].__class__ = _Package

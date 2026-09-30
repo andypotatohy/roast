@@ -448,9 +448,30 @@ print(type(roast).__name__, type(review_res).__name__)
     assert result.stdout.strip() == "function function"
 
 
+@pytest.mark.parametrize(
+    "statements",
+    [
+        "from roast_py import DEFAULT_RECIPE, roast",  # another name resolved first
+        "import roast_py.roast; from roast_py.viz import review; from roast_py import roast",
+        "from roast_py.viz import SliceViewer, sliceshow",
+    ],
+)
+def test_public_functions_are_never_shadowed_by_submodules(statements):
+    code = (
+        "import sys, types;"
+        f"sys.path.insert(0, {str(PROJECT_ROOT)!r});"
+        f"{statements};"
+        "import roast_py, roast_py.viz;"
+        "print(isinstance(roast_py.roast, types.FunctionType),"
+        " isinstance(roast_py.viz.sliceshow, types.FunctionType))"
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "True True"
+
+
 def test_lazy_attribute_access_returns_the_function_not_the_submodule():
-    """roast_py.roast is both a submodule and a function name; repeated
-    `from roast_py import roast` must keep returning the function."""
+    """Repeated `from roast_py import roast` must keep returning the function."""
     code = (
         "import sys;"
         f"sys.path.insert(0, {str(PROJECT_ROOT)!r});"

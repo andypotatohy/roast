@@ -7,9 +7,10 @@ covers the default disc-electrode, 10-05-cap, single-montage case that
 exercises the whole pipeline, not every option MATLAB's roast() accepts
 (pad/ring electrodes work via ElectrodeParams but aren't wired into this
 function's own keyword arguments yet; neck/custom electrodes, T2-assisted
-segmentation, and zero-padding aren't wired in either). Landmarks are
-estimated with the interim heuristic in geometry/landmarks.py, not real
-landmark detection (not yet ported -- see README).
+segmentation, and zero-padding aren't wired in either). Landmarks come
+from roast.m's TPM landmarks, carried onto the head by a NiftyReg
+registration to MNI space (runNiftyReg.m); manual landmark correction
+(checkLandmarks.m) isn't ported.
 
 Like MATLAB's roast(), it finishes by visualizing the results (see
 roast_py.viz: MRI, segmentation and electrode-placement views plus the
@@ -58,6 +59,7 @@ class RoastResult:
     affine: np.ndarray
     recipe: dict[str, float] | None = None
     landmarks: np.ndarray | None = None  # 0-based voxel coords, geometry/landmarks.py order
+    mri2mni: np.ndarray | None = None  # 0-based voxel -> MNI mm (roast.m's Affine*image(1).mat)
     mesh_node: np.ndarray | None = None  # mesh node coordinates (mm, see meshing/cgal_mesher.py)
     mesh_elem: np.ndarray | None = None  # tetrahedra: 1-based node ids + region label
 
@@ -93,10 +95,11 @@ def roast(
     elec_size=(6.0, 2.0),
     conductivities: Conductivities | None = None,
     work_dir: str | None = None,
-    maxvol: float = 10.0,
+    mesh_options: dict[str, float] | None = None,
     model_dir=None,
     cgalmesh_bin=None,
     getdp_bin=None,
+    niftyreg_bin=None,
     install_missing: bool = True,
     visualize: bool = True,
 ) -> RoastResult:
@@ -106,6 +109,17 @@ def roast(
     through roast_py.io.nifti.convert_to_ras first if not; see README).
     `recipe` is an electrode-name -> injected-current(mA) dict; currents
     must sum to ~0. Defaults to ROAST's own default recipe.
+
+    Head landmarks (nasion, inion, ears, neck) are found as in MATLAB with
+    Multiaxial: the head is registered to the MNI152 template with
+    NiftyReg's reg_aladin (a couple of minutes; saved as
+    `<subj>_niftyReg.json`), and ROAST's landmarks defined in eTPM.nii are
+    mapped through that registration onto the head.
+
+    `mesh_options` is MATLAB's 'meshOptions': any of 'radbound',
+    'angbound', 'distbound', 'reratio' and 'maxvol' (iso2mesh's meaning),
+    defaulting to roast.m's {radbound: 5, angbound: 30, distbound: 0.3,
+    reratio: 3, maxvol: 10}.
 
     Saves voltage/E-field/E-field-magnitude NIfTI outputs next to `subj`
     (or in `work_dir` if given), matching postGetDP.m's outputs, and
@@ -141,9 +155,10 @@ def roast(
     from .fem.pro_writer import Conductivities
     from .fem.solve import solve_and_postprocess
     from .geometry.cap_info import load_cap_info
-    from .geometry.landmarks import heuristic_landmarks
+    from .geometry.landmarks import tpm_landmarks_to_subject
     from .geometry.placement import ElectrodeParams, electrode_placement
-    from .meshing.cgal_mesher import mesh_by_iso2mesh
+    from .meshing.cgal_mesher import mesh_by_iso2mesh, resolve_mesh_options
+    from .registration import run_niftyreg
 
     if recipe is None:
         recipe = DEFAULT_RECIPE
@@ -152,6 +167,7 @@ def roast(
         raise ValueError(f"recipe currents must sum to ~0, got {total_current}")
     if conductivities is None:
         conductivities = Conductivities()
+    mesh_options = resolve_mesh_options(mesh_options)
 
     subj = os.path.abspath(subj)
     base = os.path.splitext(os.path.basename(subj))[0]
@@ -173,8 +189,10 @@ def roast(
     tissue_img = nib.load(mask_path)
     tissue_labels = np.asarray(tissue_img.dataobj, dtype=np.uint8)
 
-    print("[2/5] Estimating landmarks (interim heuristic -- see geometry/landmarks.py) ...")
-    landmarks = heuristic_landmarks(tissue_labels)
+    print("[2/5] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
+    registration = run_niftyreg(subj, out_dir=work_dir, bin_path=niftyreg_bin)
+    landmarks = tpm_landmarks_to_subject(registration.tpm2mri)
+    mri2mni = registration.mri2mni
 
     print("[3/5] Placing electrodes ...")
     elec_names = list(recipe.keys())
@@ -192,7 +210,7 @@ def roast(
     msh_path = os.path.join(work_dir, f"{base}.msh")
     node, elem, _face = mesh_by_iso2mesh(
         tissue_labels, elec_mask, gel_mask, voxel_size, work_dir=work_dir, out_path=msh_path,
-        maxvol=maxvol, bin_path=cgalmesh_bin,
+        **mesh_options, bin_path=cgalmesh_bin,
     )
 
     print("[5/5] Solving FEM ...")
@@ -226,11 +244,12 @@ def roast(
         "elec_type": elec_type,
         "elec_size": [float(x) for x in np.ravel(elec_size)],
         "conductivities": asdict(conductivities),
-        "maxvol": maxvol,
+        "mesh_options": mesh_options,
         "masks": os.path.abspath(mask_path),
         "landmarks": np.asarray(landmarks, dtype=float).tolist(),
-        # voxel -> MNI mapping; needs SPM/NiftyReg registration, not ported yet
-        "mri2mni": None,
+        # 0-based voxel -> MNI mm; MATLAB's opt.mri2mni is the 1-based equivalent
+        "mri2mni": mri2mni.tolist(),
+        "Affine": registration.affine.tolist(),
     }
     with open(paths["options"], "w") as f:
         json.dump(options, f, indent=2)
@@ -249,6 +268,7 @@ def roast(
         affine=t1_img.affine,
         recipe=dict(recipe),
         landmarks=np.asarray(landmarks),
+        mri2mni=mri2mni,
         mesh_node=node,
         mesh_elem=elem,
     )

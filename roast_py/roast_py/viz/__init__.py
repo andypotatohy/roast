@@ -13,6 +13,8 @@ them, as roast() does.
 """
 
 import importlib
+import sys
+import types
 
 _LAZY = {
     "review_res": ".review",
@@ -41,3 +43,17 @@ def __getattr__(name: str):
 
 def __dir__():
     return __all__
+
+
+class _Package(types.ModuleType):
+    """Keeps `roast_py.viz.sliceshow` pointing at the sliceshow() function,
+    not the sliceshow.py submodule Python binds over it on import (see the
+    same class in roast_py/__init__.py)."""
+
+    def __setattr__(self, name, value):
+        if isinstance(value, types.ModuleType) and name == "sliceshow":
+            value = value.sliceshow
+        super().__setattr__(name, value)
+
+
+sys.modules[__name__].__class__ = _Package

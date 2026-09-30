@@ -12,9 +12,10 @@ solve) done, wired into a top-level `roast()` (see Quickstart below), plus
 the visualization half of Phase 7 (`reviewRes`/`visualizeRes` and the views
 they call — see Visualization below). Phases 5 and 6 not yet implemented.** Runs end to end and produces physically
 sane output, but **has not yet been numerically validated against MATLAB
-ROAST** (that's Phase 5 — the actual accuracy gate) and landmark placement
-is still an interim heuristic (see `geometry/landmarks.py`), not real
-landmark detection. Don't use it for real simulations until Phase 5 passes.
+ROAST** (that's Phase 5 — the actual accuracy gate). Landmarks now come
+from registration to MNI space, as in MATLAB (see
+[Landmarks](#landmarks-registration-to-mni)). Don't use it for real
+simulations until Phase 5 passes.
 
 ## Install
 
@@ -151,6 +152,20 @@ producing a voltage volume of 0 to 362 mV and an E-field magnitude up to
 see the FEM solve section below), with `subject1_v.nii`/`_e.nii`/`_emag.nii`
 written out alongside the intermediate `.msh`/`.pro`/`.pos` files.
 
+Those subject1 numbers predate two later changes. Landmarks now come
+from NiftyReg registration, which adds about 2 minutes and moves the
+electrodes to their correct positions. Meshing now uses `roast.m`'s mesh
+settings, which roughly triples subject1's mesh (see
+[Meshing](#meshing-phase-3)).
+
+With both in place, the full pipeline was run on MATLAB's own default
+head, `example/MNI152_T1_1mm.nii` (converted to RAS first). It took
+**938 s (~15.6 min)** on 4 CPU cores, with a 384,549-node mesh, voltage
+from 0 to 280 mV and E-field up to 30 V/m. The electrode centers landed
+at MNI (−36, 82, −4) for Fp1 and (59, −85, 52) for P4. The slow test
+`tests/test_roast.py` now runs on this head, because subject1 at these
+mesh settings needs more memory than some test machines have.
+
 Current limitations of `roast()` itself, beyond Phase 5 validation:
 input must already be RAS-oriented (run `roast_py.io.nifti.convert_to_ras`
 first if not — `example/subject1.nii` already is); only disc electrodes
@@ -251,12 +266,64 @@ deliberately requesting electrodes out of pool order.
   landmarks — checks fitted electrodes land on the surface and that
   anatomically-named points end up anatomically placed (Fpz frontal, Oz
   occipital, Cz at the vertex, Fp1 left of Fp2).
-- `tests/test_placement_integration.py` (`@pytest.mark.slow`, ~2.5 min):
-  full pipeline (multiaxial segmentation → electrode placement) on the real
-  `example/subject1.nii`, with landmarks derived heuristically from the
-  segmentation's bounding box (real landmark detection isn't ported yet —
-  see Remaining phases). Confirms Cz is the highest point, Fpz is more
-  anterior than Oz, and gel never overlaps electrodes or other tissue.
+- `tests/test_placement_integration.py` (`@pytest.mark.slow`, ~5 min):
+  full pipeline (multiaxial segmentation → NiftyReg registration →
+  landmarks → electrode placement) on the real `example/subject1.nii`.
+  Confirms Cz, Fpz and Oz land where the 10-10 system puts them in MNI
+  space, and gel never overlaps electrodes or other tissue.
+
+## Landmarks (registration to MNI)
+
+Electrode placement needs the nasion, inion, both ear points and two neck
+points on the individual head. As in MATLAB with the Multiaxial
+segmentation, `roast()` gets them by registration rather than by
+detecting them in the image:
+
+1. **`registration/niftyreg.py`** ports `runNiftyReg.m`. It runs the
+   bundled `lib/NiftyReg/<os>/reg_aladin` to affinely register the head to
+   `example/MNI152_T1_1mm.nii` (about 2 minutes on CPU). It inverts
+   reg_aladin's matrix into SPM's `Affine` convention (subject world → MNI
+   world), and saves it with the MRI and eTPM voxel-to-world matrices as
+   `<subj>_niftyReg.json`, the counterpart of `_niftyReg.mat`.
+2. **`geometry/landmarks.py`** holds `roast.m`'s `landmarksInTPM`
+   verbatim. These are 16 points in `eTPM.nii` voxels: the six head
+   landmarks, the scalp center, and nine 10-10 positions on the midline.
+   It maps them onto the head with `roast.m`'s
+   `tpm2mri = inv(image.mat)·inv(Affine)·tpm.mat`, rounding the way MATLAB
+   does.
+
+The same registration also gives `mri2mni` (`Affine·image.mat`). `roast()`
+saves it in `_roastOptions.json` and returns it on `RoastResult`, and the
+slice viewers use it to show and accept MNI coordinates, as MATLAB's do.
+
+One convention differs from MATLAB. `roast_py`'s matrices are nibabel
+affines on **0-based** voxel indices, where SPM's `.mat` uses 1-based
+ones, so every landmark here is exactly MATLAB's minus one.
+`tests/test_landmarks.py` checks this against MATLAB's 1-based formulas.
+The same test file runs the real reg_aladin on subject1 (slow) and
+checks the landmarks land on the scalp.
+
+This replaced a bounding-box heuristic that had been a stand-in, and the
+difference is large. On subject1 the heuristic put Cz about 5 cm too far
+forward (MNI y = +36) and Fp1 at nose level (MNI z = −42). With the
+registered landmarks Cz lands at MNI (−1, −15, 99) and Fp1 at
+(−28, 83, −2), where the 10-10 system puts them.
+
+**Not ported:**
+
+- `checkLandmarks.m`, the manual landmark GUI that can refit the
+  registration from clicked points.
+- The SPM path's registration, which reads `Affine` from `_seg8.mat`.
+  `Registration` takes that format too, so it plugs in once SPM
+  segmentation runs.
+- `alignHeader2mni` on the outputs (the `_MNI` header copies).
+- Caching: unlike MATLAB, `roast()` re-runs the registration every time
+  rather than reusing an existing `_niftyReg` file.
+
+As in MATLAB, the back-neck landmark can fall below the image on scans
+that stop at the skull base. It does for subject1. It only matters if
+neck electrodes are requested, and placement then refuses with MATLAB's
+error.
 
 One correctness fix worth calling out: `cleanScalp.m`'s morphological
 close/open operations use structuring elements that grow up to `ones(30,30,30)`
@@ -303,10 +370,43 @@ work around.
   produced tetrahedra are valid (positive volume, in-range node
   references) and that region numbering behaves as documented above.
 - Manually verified against the real pipeline output: `example/subject1.nii`
-  segmented (Phase 1) → 3 electrodes placed (Phase 2) → meshed at ROAST's
-  default `maxvol=10` produced 223,926 nodes / ~1.33M tetrahedra / 897,814
+  segmented (Phase 1) → 3 electrodes placed (Phase 2) → meshed at
+  `maxvol=10` produced 223,926 nodes / ~1.33M tetrahedra / 897,814
   triangles across all 12 expected regions (6 tissue + 3 gel + 3
-  electrode), in about a minute.
+  electrode), in about a minute. That run used cgalv2m's own sizing
+  defaults; see the next paragraph.
+
+**Mesh options now match `roast.m`.** MATLAB's `roast()` always passes
+its `meshOpt` to the mesher (`radbound` 5, `angbound` 30, `distbound` 0.3,
+`reratio` 3, `maxvol` 10). The Python `roast()` passed nothing, so it
+meshed with iso2mesh's generic defaults (`radbound` 6, `distbound` 0.5),
+which are coarser. That went unnoticed until the registered landmarks
+moved the electrodes. For subject1's default montage, CGAL then missed
+both thin (~3-voxel) electrode regions entirely, and the solve stopped
+with "Electrode was not meshed properly". With `roast.m`'s settings both
+mesh, and the head mesh is about 2.6× finer (~584k nodes), as in MATLAB.
+`roast(..., mesh_options={...})` ports MATLAB's `'meshOptions'`, with the
+same defaults and validation. It replaces the old `maxvol` argument.
+
+**Memory.** At these settings getDP's direct solver (MUMPS LU) needs
+several GB: about **7.6 GB** for MNI152 (384,549 nodes), and more than
+8.6 GB for subject1 (583,756 nodes). MATLAB ROAST needs the same for the
+same mesh. The node count is set by the surface settings (`radbound`,
+`distbound`), not by `maxvol`: `maxvol=20` gave subject1 583,626 nodes.
+
+Two things keep this manageable:
+
+- **Solve and post-processing run as two getDP calls.** MATLAB uses one
+  (`-solve EleSta_v -pos Map`), which keeps the LU factorization in memory
+  while it writes the E-field. That was enough to push MNI152 over this
+  sandbox's 8.6 GB limit after the solve had already finished. `run_getdp`
+  now runs `-solve`, then `-pos Map` reading the saved `.res`. On a test
+  mesh the voltage output is byte-identical, and the E-field agrees to
+  1.4×10⁻¹¹ V/m on fields up to 4,287 V/m (round-off from reloading the
+  solution).
+- **A clear error when memory runs out.** If getDP is killed anyway,
+  `roast()` says it probably ran out of memory, rather than MATLAB's
+  generic "cannot work properly on your system".
 
 That real run also caught a genuine performance bug before it shipped:
 `read_medit()`'s and `save_msh()`'s initial implementations converted
@@ -427,9 +527,10 @@ never costs you the simulation.
 
 - Voxel coordinates in the slice viewers are **0-based**, like the rest of
   roast_py: MATLAB's voxel (129, 129, 129) is (128, 128, 128) here.
-- No MNI coordinates yet. They need the voxel-to-MNI mapping from SPM or
-  NiftyReg registration, which isn't ported. `sliceshow` supports
-  `mri2mni` and will show them once that mapping exists.
+- MNI coordinates come from the NiftyReg registration (see
+  [Landmarks](#landmarks-registration-to-mni)). Simulations run with an
+  older roast_py have none saved, so their viewers show voxel coordinates
+  only.
 - No simulation tags, so `review_res(subj)` takes no `simTag`. A new
   `roast()` run on the same subject and work directory replaces the
   previous one.

@@ -309,6 +309,7 @@ def show_roast_results(result, block: bool = True) -> FigureSet:
         result.subj, result.tissue_labels, result.elec_mask, result.gel_mask, result.landmarks,
         result.mesh_node, result.mesh_elem, list(result.recipe.values()), result.affine,
         result.voxel_size, result.vol_v, result.ef_mag, result.vol_e, result.work_dir,
+        mri2mni=result.mri2mni,
     )
     figs.show(fallback_dir=figures_dir(result.work_dir, result.subj), block=block)
     return figs
