@@ -336,7 +336,9 @@ def electrode_placement(
         # MATLAB's `landmarks(5:6,3)<=0` is on 1-based coordinates.
         if np.any(landmarks[4:6, 2] < 0):
             raise ValueError(
-                "MRI does not cover the neck, so cannot place electrodes on the neck."
+                "MRI does not cover the neck, so cannot place electrodes on the neck. Consider using "
+                "the 'zero_padding' option to extend the input MRI (MATLAB also suggests turning "
+                "Multiaxial off, i.e. SPM segmentation, which isn't ported to roast_py)."
             )
         electrode_coord_n, center_n = place_neck_electrodes(scalp.shape, scalp_surface, landmarks, ind_n)
     else:

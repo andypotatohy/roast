@@ -159,20 +159,101 @@ settings, which roughly triples subject1's mesh (see
 [Meshing](#meshing-phase-3)).
 
 With both in place, the full pipeline was run on MATLAB's own default
-head, `example/MNI152_T1_1mm.nii` (converted to RAS first). It took
+head, `example/MNI152_T1_1mm.nii`. It took
 **938 s (~15.6 min)** on 4 CPU cores, with a 384,549-node mesh, voltage
 from 0 to 280 mV and E-field up to 30 V/m. The electrode centers landed
 at MNI (−36, 82, −4) for Fp1 and (59, −85, 52) for P4. The slow test
 `tests/test_roast.py` now runs on this head, because subject1 at these
 mesh settings needs more memory than some test machines have.
 
-Current limitations of `roast()` itself, beyond Phase 5 validation:
-input must already be RAS-oriented (run `roast_py.io.nifti.convert_to_ras`
-first if not — `example/subject1.nii` already is); only disc electrodes
-via the 10-05 cap are wired into `roast()`'s own keyword arguments so far
-(pad/ring electrodes work at the `geometry.placement.ElectrodeParams`
-level but aren't exposed as `roast()` options yet); no neck/custom
-electrodes, no T2-assisted segmentation, no zero-padding option.
+### roast() options
+
+`roast()` takes MATLAB's options as keyword arguments, with the same
+defaults and checks (`roast_py/options.py` ports `roast.m`'s option
+handling, error messages included):
+
+```python
+roast()                                              # example/MNI152_T1_1mm.nii, Fp1 +1 mA / P4 -1 mA
+roast("example/subject1.nii", {"F1": 0.3, "P2": 0.7, "C5": -0.6, "O2": -0.4})
+roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
+      elec_type=["pad", "disc", "pad"], elec_ori=["ap", None, [0, 0.71, 0.71]],
+      elec_size=[[45, 25, 4], None, [50, 30, 3]],
+      conductivities={"csf": 0.6}, mesh_options={"maxvol": 8},
+      zero_padding=10, simulation_tag="mySim")
+```
+
+| MATLAB option | Python | Status |
+|---|---|---|
+| `subj`, `recipe` | positional; `None` = default; recipe as a dict (or MATLAB's flat list) | done; non-RAS input is converted automatically (`<subj>_ras.nii`) |
+| `'capType'` | `cap_type` | done (1020/1010/1005/BioSemi/EGI) |
+| `'elecType'`, `'elecSize'`, `'elecOri'` | `elec_type`, `elec_size`, `elec_ori` | done: disc/pad/ring, mixed types, per-electrode sizes and pad orientations. MATLAB's cell arrays are lists, with `None` for `[]` |
+| neck (`Nk1`–`Nk4`) and `custom*` electrodes | in the recipe | done; custom coordinates from `<subj>_customLocations`, as in MATLAB |
+| `'meshOptions'` | `mesh_options` (dict) | done |
+| `'conductivities'` | `conductivities` (dict) | done, including per-electrode gel/electrode values |
+| `'simulationTag'` | `simulation_tag` | done; outputs are `<subj>_<tag>_*`. Without a tag they are `<subj>_*`: unlike MATLAB, no timestamp tag is made up, so untagged runs on one subject overwrite each other |
+| `'zeroPadding'` | `zero_padding` | done |
+| `'multiaxial'` | `multiaxial` | Multiaxial is roast_py's only segmenter, so it's always on; `'off'` (SPM) raises `NotImplementedError` |
+| `'T2'` | `t2` | `NotImplementedError` (only SPM uses it; with `multiaxial='on'` you get MATLAB's own error) |
+| `'resampling'` | `resampling` | `NotImplementedError` (MATLAB uses SPM's `spm_reslice`) |
+| `'manualGui'` | `manual_gui` | `NotImplementedError` |
+| `'nyhead'`, `'leadfield'` | as in MATLAB | `NotImplementedError` |
+
+Results are in the space of the modeled MRI (after RAS conversion and
+zero-padding), as in MATLAB. `review_res(subj, sim_tag=..., tissue=...)`
+redraws a tagged run.
+
+### runExamples.m in Python
+
+`examples/run_examples.py` translates the master branch's `runExamples.m`:
+the same calls, in the same order and with the same numbers. Like MATLAB,
+it appends each failure to `errLog.txt` ("error at running cmd N:" plus
+the message) and moves on.
+
+```
+python examples/run_examples.py            # everything, unattended
+python examples/run_examples.py 14 20 24   # just these
+python examples/run_examples.py --list     # print the calls
+python examples/run_examples.py --show 14  # figure windows (waits for you to close them)
+```
+
+The `roast_target` calls (34–37) and the `reviewRes` calls on their
+results (39–41) are left out. After each successful `roast()` the script
+saves that run's figures in `example/run_examples_figures/cmdNN/`, since
+untagged runs overwrite each other's outputs in `example/`.
+
+Expect many calls to fail, quickly and with a message saying what's
+missing. All 17 calls that use unported features were run here; each
+stopped in about a second with the expected error:
+
+- missing input files: `example/bikson.hdr`/`.img` (3, 4)
+- T2 and SPM (9, 10, 22, 25), with MATLAB's own error for T2 plus
+  Multiaxial (10)
+- resampling (11, 12)
+- the New York head (26–31, 33)
+- lead fields (32)
+- `review_res` of cmd 25's simulation, which never ran (38)
+
+The calls that run the pipeline were checked on the MNI152 head, which
+fits this sandbox's ~8.6 GB memory limit; subject1's solve needs more.
+Each took 9–10 minutes and saved figures:
+
+- 5: zero-padding, plus 10-05 electrode Exx19
+- 14: disc, pad and ring together
+- 20: per-pad orientations given as MATLAB's cell array
+- 24: per-electrode gel and electrode conductivities, which reach getDP's
+  `.pro` file
+
+13 (BioSemi plus neck and custom electrodes on subject1) stops at
+placement with "MRI does not cover the neck". subject1's scan ends above
+the back-of-neck landmark, which is the case MATLAB's own check guards
+against. Its BioSemi and custom electrodes were checked separately: the
+custom ones land on the scalp next to their `subject1_customLocations`
+coordinates.
+
+Each call runs in its own Python process, so memory is released between
+calls and a crash or out-of-memory kill is logged as that call's error
+rather than ending the batch. (`--in-process` runs them all in one.)
+
 
 ## What's here so far
 

@@ -276,10 +276,15 @@ def all_views(
     fast_render: bool = True,
     mri2mni=None,
     t2=None,
+    stem: str | None = None,
 ) -> FigureSet:
     """Every figure MATLAB's roast() draws for a simulation, in its order:
-    viewMRI, viewSeg, viewElectrodes, then visualizeRes."""
-    base = os.path.splitext(os.path.basename(subj))[0]
+    viewMRI, viewSeg, viewElectrodes, then visualizeRes.
+
+    `subj` is the MRI to display (the one modeled); `stem` is the
+    simulation's output stem, `<subj>[_<simTag>]`, which names the .pos
+    files and the figure titles (default: `subj`'s own name)."""
+    base = stem or os.path.splitext(os.path.basename(subj))[0]
     figs = FigureSet(title=f"ROAST: {base}")
     print("showing MRI...")
     figs.extend(view_mri(subj, t2, mri2mni))
@@ -297,19 +302,19 @@ def all_views(
     return figs
 
 
-def figures_dir(work_dir: str, subj: str) -> str:
-    base = os.path.splitext(os.path.basename(subj))[0]
-    return os.path.join(work_dir, f"{base}_figures")
+def figures_dir(work_dir: str, stem: str) -> str:
+    """`<work_dir>/<stem>_figures`, where figures go when they can't be shown."""
+    return os.path.join(work_dir, f"{stem}_figures")
 
 
-def show_roast_results(result, block: bool = True) -> FigureSet:
-    """What roast() calls at the end: draws everything and shows it (or,
-    without a display, saves PNGs to `<work_dir>/<subj>_figures/`)."""
-    figs = all_views(
-        result.subj, result.tissue_labels, result.elec_mask, result.gel_mask, result.landmarks,
-        result.mesh_node, result.mesh_elem, list(result.recipe.values()), result.affine,
-        result.voxel_size, result.vol_v, result.ef_mag, result.vol_e, result.work_dir,
-        mri2mni=result.mri2mni,
-    )
-    figs.show(fallback_dir=figures_dir(result.work_dir, result.subj), block=block)
-    return figs
+def show_roast_results(result, block: bool = True):
+    """Shows a RoastResult's figures, as roast() does at the end (or,
+    without a display, saves PNGs to `<work_dir>/<subj>[_<tag>]_figures/`).
+
+    Goes through review_res(), so it reads the saved outputs and, with
+    TensorFlow loaded in this process, draws in a child process (see
+    review_res). `block` is kept for compatibility; showing always waits
+    for the windows to close."""
+    from .review import review_res
+
+    return review_res(result.subj, work_dir=result.work_dir, sim_tag=result.sim_tag)

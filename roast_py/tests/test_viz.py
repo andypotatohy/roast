@@ -412,7 +412,7 @@ def test_review_res_reads_back_what_roast_saved(tmp_path, monkeypatch):
         json.dump({"recipe": {"Fp1": 1.0, "P4": -1.0}, "masks": str(masks), "landmarks": [[1, 1, 1]] * 6,
                    "mri2mni": None}, f)
 
-    figs = review_module.review_res(str(subj), show=False, install_missing=False)
+    figs = review_module.review_res(str(subj), show=False, install_missing=False, in_child=False)
     assert [s.title for s in figs.scenes] == [
         "Electrode placement in Simulation: subj", "Voltage in Simulation: subj", "Electric field in Simulation: subj",
     ]
@@ -423,3 +423,38 @@ def test_review_res_reads_back_what_roast_saved(tmp_path, monkeypatch):
         "01_mri.png", "02_segmentation.png", "03_voltage_in_simulation_subj.png",
         "04_electric_field_in_simulation_subj.png",
     ]
+
+
+def test_review_res_draws_in_a_child_process_when_tensorflow_is_loaded(tmp_path, monkeypatch):
+    """VTK can segfault in a process that has imported TensorFlow, so
+    review_res() (and roast()'s visualization) hand off to a fresh one."""
+    import os
+    import sys
+    import types
+    from pathlib import Path
+
+    from roast_py.roast import output_paths
+    from roast_py.viz import review as review_module
+
+    subj = tmp_path / "subj.nii"
+    subj.write_bytes(b"")
+    with open(output_paths(str(tmp_path), "subj", "tag1")["options"], "w") as f:
+        f.write("{}")
+    calls = []
+
+    def fake_run(cmd, env):
+        calls.append((cmd, env))
+        return types.SimpleNamespace(returncode=0)
+
+    monkeypatch.setitem(sys.modules, "tensorflow", types.ModuleType("tensorflow"))
+    monkeypatch.setattr(review_module.subprocess, "run", fake_run)
+
+    assert review_module.review_res(str(subj), "skin", sim_tag="tag1", show=False, save_dir="out") is None
+    cmd, env = calls[0]
+    assert cmd[:3] == [sys.executable, "-m", "roast_py.viz.review"]
+    assert cmd[3:] == [
+        str(subj), "--tissue", "skin", "--work-dir", str(tmp_path),
+        "--sim-tag", "tag1", "--save-dir", "out", "--no-show",
+    ]
+    project_root = str(Path(__file__).resolve().parents[1])
+    assert project_root in env["PYTHONPATH"].split(os.pathsep)
