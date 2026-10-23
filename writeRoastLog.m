@@ -10,6 +10,7 @@ function opt = writeRoastLog(subject,opt,fun)
 % April 2018
 % August 2019 callable by roast_target()
 % July 2025 writes out the mri2mni matrix
+% October 2026 writes out customized electrode coordinates
 
 [dirname,subjName] = fileparts(subject);
 if isempty(dirname), dirname = pwd; end
@@ -36,6 +37,14 @@ switch fun
         
         fprintf(fid,'%s:\n',uniqueTag);
         fprintf(fid,'recipe:\t%s\n',opt.configTxt);
+        if isfield(opt,'customLoc') && ~isempty(opt.customLoc)
+            fprintf(fid,'customLocations:\t');
+            for i=1:length(opt.customLoc.name)
+                fprintf(fid,'%s: [%g,%g,%g]',opt.customLoc.name{i},opt.customLoc.coord(i,:));
+                if i<length(opt.customLoc.name), fprintf(fid,'; '); end
+            end
+            fprintf(fid,'\n');
+        end
         fprintf(fid,'capType:\t%s\n',opt.elecPara(1).capType);
         
         fprintf(fid,'elecType:\t');

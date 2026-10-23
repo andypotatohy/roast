@@ -923,7 +923,19 @@ if ~exist([dirname filesep subjModelNameAftSeg '_masks_MNI.nii'],'file')
     alignHeader2mni(subjRasRSPD,T2,subjRasRSPDSeg,mri2mni);
 end
 
-options = struct('configTxt',configTxt,'elecPara',elecPara,'subjRasRSPD',subjRasRSPD,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'mri2mni',mri2mni,'landmarks',landmarks,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS);
+% coordinates of the customized electrodes in this recipe, read the same way as in
+% electrodePlacement(), so that moving an electrode makes a new simulation (see isNewOptions)
+if ~isempty(elecPara(1).indC)
+    fid = fopen([dirname filesep subjName '_customLocations']);
+    capInfo_C = textscan(fid,'%s %f %f %f');
+    fclose(fid);
+    elecLoc_C = cell2mat(capInfo_C(2:4));
+    customLoc = struct('name',{capInfo_C{1}(elecPara(1).indC)},'coord',elecLoc_C(elecPara(1).indC,:));
+else
+    customLoc = [];
+end
+
+options = struct('configTxt',configTxt,'elecPara',elecPara,'subjRasRSPD',subjRasRSPD,'T2',T2,'multiaxial',multiaxial,'Affine',Affine,'mri2mni',mri2mni,'landmarks',landmarks,'meshOpt',meshOpt,'conductivities',conductivities,'uniqueTag',simTag,'resamp',doResamp,'zeroPad',paddingAmt,'isNonRAS',isNonRAS,'customLoc',customLoc);
 
 % log tracking
 Sopt = dir([dirname filesep subjName '_*_roastOptions.mat']);
