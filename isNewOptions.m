@@ -8,6 +8,7 @@ function isNewOpt = isNewOptions(optNew,optOld,fun)
 % April 2018
 % August 2019 callable by roast_target()
 % July 2025 also checks Affine
+% October 2026 also checks customized electrode coordinates
 
 isNewOpt = 0;
 
@@ -199,6 +200,16 @@ switch fun
         end
         
         if optNew.zeroPad ~= optOld.zeroPad
+            isNewOpt = 1;
+            return
+        end
+        
+        % customized electrode coordinates (options saved by earlier versions of
+        % ROAST do not have this field)
+        locNew = []; locOld = [];
+        if isfield(optNew,'customLoc'), locNew = optNew.customLoc; end
+        if isfield(optOld,'customLoc'), locOld = optOld.customLoc; end
+        if ~isequal(locNew,locOld)
             isNewOpt = 1;
             return
         end
