@@ -8,6 +8,8 @@ function [mriRAS,isNonRAS] = convertToRAS(mri)
 % yhuang16@citymail.cuny.edu
 % September 2019
 % June 2023 added support for qform_code
+% October 2026 negate the whole header column when flipping an axis (oblique headers
+%   were sheared); 0-based origin; drop the stale qform
 
 nii = load_untouch_nii(mri);
 
@@ -52,14 +54,14 @@ if any(permOrder~=[1 2 3]) || any(flipTag<0)
         
         resolution = nii.hdr.dime.pixdim(2:4);
         
-        origin = round(inv(M1)*[0;0;0;1]+1);
-        origin = origin(1:3); % voxel coordinates of the origin
+        origin = inv(M1)*[0;0;0;1];
+        origin = origin(1:3); % 0-based voxel coordinates of the world origin (srow is 0-based)
         
         for i=1:3
             if flipTag(i)<0
                 img = flipdim(img,i); % flipping the volume
-                origin(i) = siz(i) - origin(i) + 1; % flipping the origin voxel coordinates
-                M_orient(oriInd(i),i) = abs(M_orient(oriInd(i),i)); % update header
+                origin(i) = siz(i) - 1 - origin(i); % flipping the origin voxel coordinates
+                M_orient(:,i) = -M_orient(:,i); % flipping a voxel axis negates its whole column
             end
         end
         
@@ -84,6 +86,7 @@ if any(permOrder~=[1 2 3]) || any(flipTag<0)
         nii.hdr.hist.qoffset_x = nii.hdr.hist.srow_x(4);
         nii.hdr.hist.qoffset_y = nii.hdr.hist.srow_y(4);
         nii.hdr.hist.qoffset_z = nii.hdr.hist.srow_z(4); % update header
+        nii.hdr.hist.qform_code = 0; % quaternion is not recomputed; keep the sform only, as alignHeader2mni.m does
         
         save_untouch_nii(nii,mriRAS);
         
