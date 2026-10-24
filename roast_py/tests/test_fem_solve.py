@@ -134,3 +134,25 @@ def test_getdp_killed_for_memory_says_so(tmp_path):
     (tmp_path / "x_ready.msh").write_text("")
     with pytest.raises(RuntimeError, match=r"(?s)killed while solving.*out of memory.*Solve\[Sys_Ele\]"):
         run_getdp(tmp_path / "x.pro", tmp_path / "x_ready.msh", bin_path=fake)
+
+
+def test_getdp_out_of_memory_in_mumps_says_so(tmp_path):
+    """MUMPS failing to allocate the factors (INFOG(1)=-13, what subject1
+    hits on a 14 GB machine) is reported as running out of memory. The solve
+    passes -ksp_error_if_not_converged: without it getdp writes NaN and exits 0."""
+    import sys
+
+    if sys.platform.startswith("win"):
+        pytest.skip("shell script stand-in for getdp")
+    fake = tmp_path / "getdp"
+    fake.write_text(
+        "#!/bin/sh\necho \"$@\" > args.txt\n"
+        "echo '[0]PETSC ERROR: Error reported by MUMPS in numerical factorization phase: "
+        "INFOG(1)=-13, INFO(2)=1166537700' >&2\nexit 1\n"
+    )
+    fake.chmod(0o755)
+    (tmp_path / "x.pro").write_text("")
+    (tmp_path / "x_ready.msh").write_text("")
+    with pytest.raises(RuntimeError, match=r"(?s)ran out of memory.*INFOG\(1\)=-13"):
+        run_getdp(tmp_path / "x.pro", tmp_path / "x_ready.msh", bin_path=fake)
+    assert "-ksp_error_if_not_converged" in (tmp_path / "args.txt").read_text()

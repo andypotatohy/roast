@@ -45,6 +45,14 @@ def run_getdp(pro_path: str | os.PathLike, ready_msh_path: str | os.PathLike, bi
     MNI152 at roast.m's mesh settings that's the difference between
     fitting in ~7.6 GB and being killed above 8.6 GB.
 
+    The solve also gets PETSc's `-ksp_error_if_not_converged`. Without it,
+    when MUMPS can't factorize (INFOG(1) = -13: no memory for the factors,
+    ~19 GB for subject1) PETSc fills the solution with NaN and getdp still
+    exits 0, so the run only fails later with postGetDP.m's "getDP did not
+    converge". With it, getdp exits non-zero with MUMPS's error, which
+    _run_step explains. A working solve is unchanged: a direct (`preonly`)
+    solve always counts as converged.
+
     Runs with cwd set to the .pro file's own directory, since the .pro
     file's `Print[...File "bare_name.pos"...]` directives (see
     pro_writer.py) use bare filenames, not paths -- matching where
@@ -56,7 +64,7 @@ def run_getdp(pro_path: str | os.PathLike, ready_msh_path: str | os.PathLike, bi
     binary = find_getdp_binary(bin_path)
 
     steps = [
-        [str(binary), str(pro_path), "-solve", "EleSta_v", "-msh", str(ready_msh_path)],
+        [str(binary), str(pro_path), "-solve", "EleSta_v", "-msh", str(ready_msh_path), "-ksp_error_if_not_converged"],
         [str(binary), str(pro_path), "-msh", str(ready_msh_path), "-res", str(res_path), "-pos", "Map"],
     ]
     try:
@@ -68,6 +76,18 @@ def run_getdp(pro_path: str | os.PathLike, ready_msh_path: str | os.PathLike, bi
             pro_path.with_suffix(ext).unlink(missing_ok=True)
 
 
+_OUT_OF_MEMORY_ADVICE = (
+    "(its direct solver needs several GB for a full-head mesh: ~7.6 GB for "
+    "the MNI152 head at ROAST's default mesh settings, ~19 GB for "
+    "example/subject1.nii, more for bigger heads -- the same as in MATLAB "
+    "ROAST). Run it on a machine with more "
+    "memory, or use a coarser mesh via roast(..., mesh_options=...). A head "
+    "mesh's size is set mostly by the surface settings (radbound, "
+    "distbound), not maxvol; too coarse and the mesher can miss small "
+    "electrodes."
+)
+
+
 def _run_step(cmd: list[str], cwd: Path) -> None:
     result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if result.returncode in (-9, 137):  # SIGKILL (137 = 128 + 9 through a shell)
@@ -75,15 +95,16 @@ def _run_step(cmd: list[str], cwd: Path) -> None:
         # (MUMPS LU) solve needs several GB for a full head mesh, the same
         # as in MATLAB ROAST, and dies without printing anything.
         raise RuntimeError(
-            "getDP was killed while solving, most likely for running out of memory "
-            "(its direct solver needs several GB for a full-head mesh: ~7.6 GB for "
-            "the MNI152 head at ROAST's default mesh settings, more for bigger "
-            "heads -- the same as in MATLAB ROAST). Run it on a machine with more "
-            "memory, or use a coarser mesh via roast(..., mesh_options=...). A head "
-            "mesh's size is set mostly by the surface settings (radbound, "
-            "distbound), not maxvol; too coarse and the mesher can miss small "
-            "electrodes.\n"
+            f"getDP was killed while solving, most likely for running out of memory {_OUT_OF_MEMORY_ADVICE}\n"
             f"command: {' '.join(cmd)}\nlast output:\n{result.stdout[-1500:]}"
+        )
+    output = result.stdout + result.stderr
+    if result.returncode != 0 and "INFOG(1)=-13" in output.replace(" ", ""):
+        # MUMPS asks for the factors' memory up front; this is it not getting it.
+        raise RuntimeError(
+            "getDP ran out of memory while solving: its direct solver (MUMPS) could not "
+            f"allocate the memory for the LU factorization {_OUT_OF_MEMORY_ADVICE}\n"
+            f"command: {' '.join(cmd)}\nsolver error:\n{output[-1500:]}"
         )
     if result.returncode != 0:
         raise RuntimeError(
