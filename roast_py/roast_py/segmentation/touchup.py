@@ -1,22 +1,25 @@
-"""Ports binaryMaskGenerate.m, sizeOfObject.m, and the core cleanup pipeline
-of segTouchup.m to numpy/scipy.
+"""Ports segTouchup.m (with binaryMaskGenerate.m and sizeOfObject.m) to
+numpy/scipy: the cleanup ROAST applies to SPM's six per-tissue probability
+maps (c1..c6) to get one clean 6-label volume.
 
-This is the post-processing ROAST applies to SPM's raw per-tissue
-probability maps (c1..c6) to get a single clean 6-label volume. It's needed
-regardless of which segmenter produced those probability maps, so it's kept
-separate from roast_py.segmentation.spm_standalone.
+All of segTouchup.m is here: smoothing, binarization, CSF continuity,
+removal of disconnected pieces, relabeling of empty voxels, removal of
+outside air, and the three patching passes (gray matter, CSF, bone). The
+patching passes use three atlas masks ROAST's modified SPM12 warped into
+the subject (`_rmask.mat`), which roast_py.spm.routines.rmask_volumes()
+reproduces from official SPM's deformation field.
 
-Known gap vs. segTouchup.m: the three final "patching" passes (gray-matter,
-CSF, and bone patching) rely on `eyes_vol`, `holes_vol`, and
-`WMexclude_vol` -- three extra probability volumes that ROAST's own patched
-copy of SPM's `spm_preproc_write8.m` (lib/spm12/spm_preproc_write8.m)
-computes and saves alongside the normal c1..c6 outputs, from extra tissue
-classes in the extended eTPM.nii atlas beyond the standard 6. Reproducing
-that requires understanding those SPM-internal modifications in detail,
-which is out of scope for this pass -- see the tracked follow-up task.
-Everything else in segTouchup.m's pipeline (smoothing, binarization, CSF
-continuity fix, disconnected-voxel removal, empty-voxel relabeling, final
-tissue-label assembly) is ported here.
+Details kept from MATLAB because they change the result:
+
+* SPM's maps are uint8 (0-255) and MATLAB smooths them as integers: each
+  `imfilter` result is rounded, which decides ties in the argmax that
+  follows. Pass the raw uint8 maps to match MATLAB exactly.
+* Ties between tissues go to the first in each call's argument order,
+  which is not the same in every step (air comes first when relabeling
+  empty voxels).
+* The even-sized boxes (10x10x10, 12x12x12) centre where MATLAB's strel
+  does, and erosion treats the outside of the volume as foreground, as
+  MATLAB's imerode does.
 """
 
 from __future__ import annotations
@@ -38,14 +41,109 @@ def _gaussian_kernel_5x5(sigma: float) -> np.ndarray:
 
 
 def _smooth_slices(volume: np.ndarray, sigma: float) -> np.ndarray:
-    """Matches segTouchup.m's per-slice `imfilter(slice, fspecial('gaussian',5,sigma))`:
-    correlation (== convolution here, kernel is symmetric) with zero-padded
-    'same'-size output, applied independently to each axial slice."""
+    """segTouchup.m's per-slice `imfilter(slice, fspecial('gaussian',5,sigma))`:
+    correlation (== convolution here, the kernel is symmetric) with
+    zero-padded 'same'-size output, on each axial slice.
+
+    Like imfilter, an integer input gives an integer output: rounded (half
+    away from zero) and saturated to its type's range.
+    """
     kernel = _gaussian_kernel_5x5(sigma)
-    out = np.empty_like(volume, dtype=float)
+    out = np.empty(volume.shape, dtype=float)
+    data = volume.astype(float)
     for i in range(volume.shape[2]):
-        out[:, :, i] = ndimage.convolve(volume[:, :, i], kernel, mode="constant", cval=0.0)
+        out[:, :, i] = ndimage.convolve(data[:, :, i], kernel, mode="constant", cval=0.0)
+    if np.issubdtype(volume.dtype, np.integer):
+        info = np.iinfo(volume.dtype)
+        out = np.clip(np.floor(out + 0.5), info.min, info.max).astype(volume.dtype)
     return out
+
+
+def _box_dilate(mask: np.ndarray, n: int) -> np.ndarray:
+    """MATLAB's imdilate(mask, ones(n,n,n)), even n included."""
+    out = mask.astype(np.uint8)
+    for axis in range(mask.ndim):
+        out = ndimage.maximum_filter1d(out, n, axis=axis, mode="constant", cval=0, origin=0)
+    return out.astype(bool)
+
+
+def _box_erode(mask: np.ndarray, n: int) -> np.ndarray:
+    """MATLAB's imerode(mask, ones(n,n,n)): for even n the box's centre is
+    MATLAB's floor((n+1)/2), and the outside counts as foreground."""
+    out = mask.astype(np.uint8)
+    origin = -1 if n % 2 == 0 else 0
+    for axis in range(mask.ndim):
+        out = ndimage.minimum_filter1d(out, n, axis=axis, mode="constant", cval=1, origin=origin)
+    return out.astype(bool)
+
+
+# segTouchup.m's vect_g: the 18 neighbours whose offset has L1 norm 1 or 2
+# (faces and edges of the 3x3x3 cube), in ndgrid order.
+_NEIGHBOURS_18 = [
+    (i, j, k)
+    for k in (-1, 0, 1) for j in (-1, 0, 1) for i in (-1, 0, 1)
+    if abs(i) + abs(j) + abs(k) in (1, 2)
+]
+
+
+def _interior(shape) -> np.ndarray:
+    inside = np.zeros(shape, dtype=bool)
+    inside[1:-1, 1:-1, 1:-1] = True
+    return inside
+
+
+def _shifted(volume: np.ndarray, offset) -> np.ndarray:
+    """volume[p + offset] for interior p (wraps at the border, which the
+    callers never read)."""
+    return np.roll(volume, shift=tuple(-o for o in offset), axis=(0, 1, 2))
+
+
+def _neighbour_has(labels: np.ndarray, wanted) -> np.ndarray:
+    """Voxels with at least one of their 18 neighbours labelled in `wanted`."""
+    hit = np.zeros(labels.shape, dtype=bool)
+    target = np.isin(labels, wanted)
+    for offset in _NEIGHBOURS_18:
+        hit |= _shifted(target, offset)
+    return hit
+
+
+def _neighbours_of(source: np.ndarray) -> np.ndarray:
+    """Voxels that are one of the 18 neighbours of a `source` voxel."""
+    hit = np.zeros(source.shape, dtype=bool)
+    for offset in _NEIGHBOURS_18:
+        hit |= np.roll(source, shift=offset, axis=(0, 1, 2))
+    return hit
+
+
+def patch_labels(all_mask: np.ndarray, holes, eyes, wm_exclude) -> np.ndarray:
+    """segTouchup.m's three patching passes, then skull holes to skin.
+
+    * gray matter: white matter touching CSF/bone/skin/air becomes gray,
+      except near the marked white-matter surface (`WMexclude_vol`);
+    * CSF: bone/skin/air touching white or gray matter becomes CSF;
+    * bone: skin/air touching CSF (outside the eye regions) becomes bone;
+    * bone inside the skull holes (optic canals etc.) becomes skin.
+
+    "Touching" is the 18-neighbourhood, and only voxels off the volume's
+    border are sources, as in MATLAB. Each pass reads the labels the
+    previous one left; within a pass the result doesn't depend on order.
+    """
+    labels = all_mask.copy()
+    interior = _interior(labels.shape)
+
+    white = labels == WHITE
+    keep = white & _box_dilate(np.asarray(wm_exclude) > 1e-4, 10)
+    source = white & ~keep & interior
+    labels[source & _neighbour_has(labels, [CSF, BONE, SKIN, AIR])] = GRAY
+
+    source = np.isin(labels, [WHITE, GRAY]) & interior
+    labels[_neighbours_of(source) & np.isin(labels, [BONE, SKIN, AIR])] = CSF
+
+    source = (labels == CSF) & ~(np.asarray(eyes) > 1e-4) & interior
+    labels[_neighbours_of(source) & np.isin(labels, [SKIN, AIR])] = BONE
+
+    labels[(labels == BONE) & (np.asarray(holes) > 1e-4)] = SKIN
+    return labels
 
 
 def binary_mask_generate(*arrays: np.ndarray):
@@ -112,13 +210,21 @@ def touchup(
     air: np.ndarray,
     is_smooth: bool = True,
     conn: int = 18,
+    holes=None,
+    eyes=None,
+    wm_exclude=None,
 ) -> np.ndarray:
-    """Ports segTouchup.m's cleanup pipeline (minus the eyes/holes/WM-exclude
-    patching passes -- see module docstring) from six per-tissue probability
-    volumes to a single uint8 label volume using WHITE/GRAY/CSF/BONE/SKIN/AIR.
+    """Ports segTouchup.m: six per-tissue probability maps (SPM's c1..c6
+    order: gray, white, CSF, bone, skin, air) to one uint8 label volume
+    using WHITE/GRAY/CSF/BONE/SKIN/AIR.
+
+    `holes`, `eyes` and `wm_exclude` are the `_rmask.mat` volumes for the
+    patching passes (see patch_labels()); leave them out to skip those
+    passes.
     """
     gray_t, white_t, csf_t, bone_t, skin_t, air_t = (
-        a.astype(float) for a in (gray, white, csf, bone, skin, air)
+        a if np.issubdtype(np.asarray(a).dtype, np.integer) else np.asarray(a, dtype=float)
+        for a in (gray, white, csf, bone, skin, air)
     )
 
     if is_smooth:
@@ -165,17 +271,17 @@ def touchup(
     # distance), same approach as segTouchup.m's while loop.
     empt_t = binary_mask_generate(gray_t, white_t, csf_t, bone_t, skin_t, air_t)[0]
     tissues = [gray_t, white_t, csf_t, bone_t, skin_t, air_t]
-    sigmas = [1, 1, 1, 1, 1, 1]
     guard = 0
     while np.any(empt_t):
         guard += 1
         if guard > 50:
             raise RuntimeError("touchup(): empty-voxel relabeling did not converge")
-        filled = [
-            _smooth_slices((t.astype(np.uint8) * 255).astype(float), s)
-            for t, s in zip(tissues, sigmas)
-        ]
-        _, *fil_masks = binary_mask_generate(*filled)
+        # uint8(mask)*255, smoothed as integers (sigma 1 for every tissue)
+        filled = [_smooth_slices(t.astype(np.uint8) * np.uint8(255), 1.0) for t in tissues]
+        # MATLAB's call order here puts air first: binaryMaskGenerate(air_fil,
+        # gray_fil, white_fil, csf_fil, bone_fil, skin_fil); ties go to air.
+        _, air_fil, *rest = binary_mask_generate(filled[5], *filled[:5])
+        fil_masks = [*rest, air_fil]
         new_tissues = []
         newly_assigned = np.zeros_like(empt_t)
         for t, fil in zip(tissues, fil_masks):
@@ -187,6 +293,12 @@ def touchup(
 
     gray_t, white_t, csf_t, bone_t, skin_t, air_t = tissues
 
+    # Remove outside air: keep only air enclosed by the head.
+    not_air = ~air_t
+    closed = _box_erode(_box_dilate(not_air, 10), 10)
+    enclosed = _box_erode(ndimage.binary_fill_holes(closed), 12)
+    air_t = air_t & enclosed
+
     all_mask = np.zeros_like(gray_t, dtype=np.uint8)
     all_mask[white_t] = WHITE
     all_mask[gray_t] = GRAY
@@ -194,4 +306,13 @@ def touchup(
     all_mask[bone_t] = BONE
     all_mask[skin_t] = SKIN
     all_mask[air_t] = AIR
+
+    if holes is not None or eyes is not None or wm_exclude is not None:
+        zeros = np.zeros(all_mask.shape)
+        all_mask = patch_labels(
+            all_mask,
+            zeros if holes is None else holes,
+            zeros if eyes is None else eyes,
+            zeros if wm_exclude is None else wm_exclude,
+        )
     return all_mask

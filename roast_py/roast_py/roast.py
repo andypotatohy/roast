@@ -4,13 +4,18 @@ placement -> meshing -> FEM solve into a single call.
 
 Takes MATLAB roast()'s options as keyword arguments (see roast()'s
 docstring and roast_py/options.py for the Python spellings). Implemented:
-capType, elecType, elecSize, elecOri, meshOptions, conductivities,
-simulationTag and zeroPadding, plus neck and custom electrodes, and
-automatic conversion to RAS. Not ported yet, and refused with
-NotImplementedError: SPM segmentation (multiaxial 'off', and with it T2
-images), resampling, the New York head, lead-field generation and the
-manual landmark GUI. Landmarks come from roast.m's TPM landmarks, carried
-onto the head by a NiftyReg registration to MNI space (runNiftyReg.m).
+capType, elecType, elecSize, elecOri, T2, multiaxial, meshOptions,
+conductivities, simulationTag, resampling and zeroPadding, plus neck and
+custom electrodes, and automatic conversion to RAS. Not ported yet, and
+refused with NotImplementedError: the New York head, lead-field generation
+and the manual landmark GUI.
+
+Segmentation is Multiaxial or SPM; SPM, resampling and T2 alignment run
+through SPM's official Python interface (roast_py.spm), which installs the
+MATLAB Runtime it needs on first use, after asking to accept its license.
+Landmarks come from roast.m's TPM landmarks, carried onto the head by the
+registration to MNI space: NiftyReg's (runNiftyReg.m) with Multiaxial,
+SPM's own (`_seg8.mat`) with SPM, as in MATLAB.
 
 Like MATLAB's roast(), it finishes by visualizing the results (see
 roast_py.viz: MRI, segmentation and electrode-placement views plus the
@@ -133,6 +138,7 @@ def roast(
     getdp_bin=None,
     niftyreg_bin=None,
     install_missing: bool = True,
+    accept_matlab_runtime_license: bool | None = None,
     visualize: bool = True,
 ) -> RoastResult:
     """roast_py's equivalent of MATLAB's `roast(subj, recipe, ...)`.
@@ -148,10 +154,21 @@ def roast(
     default {'Fp1': 1, 'P4': -1}. Neck electrodes are 'Nk1'..'Nk4';
     custom ones ('custom...') are read from `<subj>_customLocations`.
 
-    Segmentation is always Multiaxial (roast_py's only segmenter), so
-    `multiaxial` may be left out or True; False (SPM) is not ported, nor are
-    `t2` (only SPM uses it), `resampling`, `manual_gui`, the New York head
-    and recipe='leadfield' -- these raise NotImplementedError.
+    Segmentation: `multiaxial=False` (or 'off') segments with SPM, as do
+    calls with a `t2` image (SPM uses both; the T2 is first aligned to the
+    T1 if needed). Otherwise roast_py segments with Multiaxial -- its
+    default, unlike MATLAB's, whose default is SPM. `resampling=True`
+    reslices the MRI to 1 mm voxels with SPM first. With Multiaxial,
+    landmarks come from a NiftyReg registration; with SPM, from SPM's own.
+
+    SPM needs the MATLAB Runtime R2025b (free, several GB). If it isn't
+    installed, roast() installs it before doing any other work, once its
+    license is accepted: at an interactive prompt, or with
+    `accept_matlab_runtime_license=True` or
+    ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes (see roast_py.spm.runtime).
+
+    Not ported, and raising NotImplementedError: `manual_gui`, the New
+    York head and recipe='leadfield'.
 
     `mesh_options` is MATLAB's 'meshOptions': any of 'radbound',
     'angbound', 'distbound', 'reratio' and 'maxvol' (iso2mesh's meaning),
@@ -235,21 +252,14 @@ def roast(
     if t2 is not None:
         if not os.path.exists(t2):
             raise FileNotFoundError(f"The T2 MRI you provided {t2} does not exist.")
-    if multiaxial is not None and not on_off(multiaxial, "multiaxial"):
-        raise NotImplementedError(
-            "SPM segmentation (multiaxial 'off') is not ported to roast_py yet; roast_py always segments "
-            "with Multiaxial. Leave 'multiaxial' out, or set it to True."
+    multiaxial_on = None if multiaxial is None else on_off(multiaxial, "multiaxial")
+    if t2 is not None and multiaxial_on:
+        raise ValueError(
+            "Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please "
+            "only provide T1 image with option 'multiaxial' turned on."
         )
-    if t2 is not None:
-        if multiaxial is not None:
-            raise ValueError(
-                "Multiaxial cannot be run with both T1 and T2 images. If you meant to use Multiaxial, please "
-                "only provide T1 image with option 'multiaxial' turned on."
-            )
-        raise NotImplementedError(
-            "T2 images are only used by SPM segmentation (multiaxial 'off'), which is not ported to roast_py "
-            "yet. Multiaxial segments from the T1 alone; leave out 't2'."
-        )
+    # Explicitly off, or a T2 given: SPM. Otherwise roast_py's default, Multiaxial.
+    use_spm = multiaxial_on is False or t2 is not None
     if on_off(manual_gui, "manualGui"):
         raise NotImplementedError("The manual landmark GUI (checkLandmarks.m) is not ported to roast_py yet.")
 
@@ -262,11 +272,7 @@ def roast(
     mesh_options = resolve_mesh_options(mesh_options)
     conductivities = resolve_conductivities(conductivities, len(elec_names))
 
-    if on_off(resampling, "resampling"):
-        raise NotImplementedError(
-            "The 'resampling' option is not ported to roast_py yet: MATLAB resamples with SPM's spm_reslice "
-            "(7th-degree B-spline), which has no exact Python counterpart here."
-        )
+    do_resample = on_off(resampling, "resampling")
     if zero_padding is None:
         zero_padding = 0
     if zero_padding < 0 or zero_padding != int(zero_padding):
@@ -283,23 +289,43 @@ def roast(
 
     original_img = nib.load(subj)
     pixdim = np.asarray(original_img.header.get_zooms()[:3], dtype=float)
-    if np.any(pixdim < 0.8):
+    if np.any(pixdim < 0.8) and not do_resample:
         warnings.warn(
             "The MRI has higher resolution (<0.8mm) in at least one direction. This will make the modeling "
-            "process more computationally expensive and thus slower.",
+            "process more computationally expensive and thus slower. If you wish to run faster using just "
+            "1-mm model, you can ask ROAST to re-sample the MRI into 1 mm first, by turning on the "
+            "'resampling' option.",
             stacklevel=2,
         )
-    if len(np.unique(pixdim)) > 1:
+    if len(np.unique(pixdim)) > 1 and not do_resample:
         warnings.warn(
-            "The MRI has anisotropic resolution. The electrode size will not be exact if the model is built "
-            "from an MRI with anisotropic resolution.",
+            "The MRI has anisotropic resolution. It is highly recommended that you turn on the 'resampling' "
+            "option, as the electrode size will not be exact if the model is built from an MRI with "
+            "anisotropic resolution.",
             stacklevel=2,
         )
 
+    # SPM (segmentation, T2 alignment, resampling) needs its runtime: get it
+    # in place -- and the license question asked -- before any long work.
+    spm_runtime = None
+    if use_spm or do_resample:
+        from .spm.runtime import ensure_spm
+
+        spm_runtime = ensure_spm(accept_license=accept_matlab_runtime_license, install_missing=install_missing)
+
+    # RAS, then resampling, then zero-padding, then T2 alignment (roast.m).
     model_mri = convert_to_ras(subj).path
+    if do_resample:
+        from .spm.routines import resample_to_1mm
+
+        model_mri = resample_to_1mm(model_mri, runtime=spm_runtime)
     if zero_padding > 0:
         model_mri = zero_pad(model_mri, zero_padding)
     model_mri = os.path.abspath(model_mri)
+    if t2 is not None:
+        from .spm.routines import realign_t2
+
+        t2 = realign_t2(os.path.abspath(t2), model_mri, runtime=spm_runtime)
     t1_img = nib.load(model_mri)
     voxel_size = np.abs(np.diag(t1_img.affine)[:3])
 
@@ -308,15 +334,23 @@ def roast(
     recipe_text = ", ".join(f"{n} ({c:g} mA)" for n, c in zip(elec_names, current))
     print(f"ROAST {subj}\nUSING RECIPE: {recipe_text}" + (f"\nunder tag: {simulation_tag}" if simulation_tag else ""))
 
-    print(f"[1/5] Segmenting {model_mri} ...")
-    from .segmentation.multiaxial import segment  # imports TensorFlow; see note at top
+    if use_spm:
+        from .registration import registration_from_seg8
+        from .spm.routines import seg8_path, spm_segment
 
-    mask_path = segment(model_mri, model_dir=model_dir)
-    tissue_img = nib.load(mask_path)
-    tissue_labels = np.asarray(tissue_img.dataobj, dtype=np.uint8)
+        print(f"[1/5] Segmenting {model_mri} with SPM ...")
+        mask_path = spm_segment(model_mri, t2, runtime=spm_runtime)
+        print("[2/5] Mapping the TPM landmarks through SPM's registration (_seg8.mat) ...")
+        registration = registration_from_seg8(seg8_path(model_mri, with_t2=t2 is not None))
+    else:
+        print(f"[1/5] Segmenting {model_mri} with Multiaxial ...")
+        from .segmentation.multiaxial import segment  # imports TensorFlow; see note at top
 
-    print("[2/5] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
-    registration = run_niftyreg(model_mri, out_dir=work_dir, bin_path=niftyreg_bin)
+        mask_path = segment(model_mri, model_dir=model_dir)
+        print("[2/5] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
+        registration = run_niftyreg(model_mri, out_dir=work_dir, bin_path=niftyreg_bin)
+    tissue_labels = np.asarray(nib.load(mask_path).dataobj, dtype=np.uint8)
+
     landmarks = tpm_landmarks_to_subject(registration.tpm2mri)
     mri2mni = registration.mri2mni
 
@@ -378,6 +412,9 @@ def roast(
         "conductivities": asdict(conductivities),
         "mesh_options": mesh_options,
         "zero_padding": zero_padding,
+        "resampling": do_resample,
+        "segmentation": "spm" if use_spm else "multiaxial",
+        "t2": t2,
         "masks": os.path.abspath(mask_path),
         "landmarks": np.asarray(landmarks, dtype=float).tolist(),
         # 0-based voxel -> MNI mm; MATLAB's opt.mri2mni is the 1-based equivalent

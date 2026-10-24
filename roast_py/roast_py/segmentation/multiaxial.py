@@ -7,8 +7,9 @@ Python function -- there's no more MATLAB, and no more subprocess, needed
 to run this segmentation path at all: it becomes roast_py's default rather
 than the "for abnormal anatomy" opt-in it is in MATLAB ROAST, since it's
 already free of the MATLAB/SPM dependency the rest of this port exists to
-remove. The SPM12 path (roast_py.segmentation.spm_standalone) exists
-alongside it for parity validation against MATLAB ROAST's default path.
+remove. SPM segmentation (roast_py.spm.routines.spm_segment, through
+SPM's official Python interface) exists alongside it -- MATLAB ROAST's
+default path, used with multiaxial off or a T2 image.
 
 Output tissue labels match ROAST's own scheme (see the top-level README's
 `'conductivities'` option, listed in that order): 1=white, 2=gray, 3=csf,

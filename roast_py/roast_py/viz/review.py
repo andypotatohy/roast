@@ -143,6 +143,7 @@ def review_res(
         tissue=tissue,
         fast_render=fast_render,
         mri2mni=None if mri2mni is None else np.asarray(mri2mni),
+        t2=_existing_t2(options.get("t2")),
         stem=stem,
     )
     if save_dir:
@@ -151,6 +152,15 @@ def review_res(
     if show:
         figs.show(fallback_dir=None if save_dir else figures_dir(work_dir, stem))
     return figs
+
+
+def _existing_t2(path):
+    """The (aligned) T2 the simulation used, for viewMRI; None if none or gone."""
+    if path and not os.path.exists(path):
+        raise FileNotFoundError(
+            f"T2 file {path} does not exist. You used that to run ROAST but maybe later deleted it."
+        )
+    return path or None
 
 
 def _review_res_in_child(subj, *, tissue, fast_render, work_dir, sim_tag, show, save_dir) -> None:

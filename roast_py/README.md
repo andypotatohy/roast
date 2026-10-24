@@ -192,9 +192,9 @@ roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
 | `'conductivities'` | `conductivities` (dict) | done, including per-electrode gel/electrode values |
 | `'simulationTag'` | `simulation_tag` | done; outputs are `<subj>_<tag>_*`. Without a tag they are `<subj>_*`: unlike MATLAB, no timestamp tag is made up, so untagged runs on one subject overwrite each other |
 | `'zeroPadding'` | `zero_padding` | done |
-| `'multiaxial'` | `multiaxial` | Multiaxial is roast_py's only segmenter, so it's always on; `'off'` (SPM) raises `NotImplementedError` |
-| `'T2'` | `t2` | `NotImplementedError` (only SPM uses it; with `multiaxial='on'` you get MATLAB's own error) |
-| `'resampling'` | `resampling` | `NotImplementedError` (MATLAB uses SPM's `spm_reslice`) |
+| `'multiaxial'` | `multiaxial` | done: `'off'` segments with SPM. Left out, roast_py uses Multiaxial (unless a T2 is given) — MATLAB's default is SPM |
+| `'T2'` | `t2` | done (SPM): aligned to the T1 if needed, then segmented with it; with `multiaxial='on'` you get MATLAB's own error |
+| `'resampling'` | `resampling` | done (SPM's `spm_reslice`, as in MATLAB) |
 | `'manualGui'` | `manual_gui` | `NotImplementedError` |
 | `'nyhead'`, `'leadfield'` | as in MATLAB | `NotImplementedError` |
 
@@ -303,21 +303,117 @@ Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
   already be exactly that Python-native alternative, which is why it's the
   default rather than a fallback.
 
-- **`roast_py/segmentation/spm_standalone.py` (optional/parity path).**
-  Drives SPM12's official standalone build (compiled against the free
-  MATLAB Runtime, no MATLAB license) to reproduce `start_seg.m`'s New
-  Segment step, then ports `segTouchup.m`'s cleanup pipeline
-  (`roast_py/segmentation/touchup.py`, unit-tested with synthetic data) to
-  turn SPM's raw tissue-probability maps into the same 6-label scheme.
-  **Not runtime-tested** — SPM standalone + the MATLAB Runtime aren't
-  installable in this environment. **Known gap:** `segTouchup.m`'s three
-  final patching passes (gray-matter/CSF/bone) depend on `eyes_vol`,
-  `holes_vol`, and `WMexclude_vol` — extra volumes computed by ROAST's own
-  patched copy of SPM's `lib/spm12/spm_preproc_write8.m` from extra classes
-  in the extended `eTPM.nii` atlas. `touchup.py` implements everything else
-  in the pipeline (smoothing, binarization, CSF-continuity fix,
-  disconnected-voxel pruning, empty-voxel relabeling) but not those three
-  passes yet — tracked as a follow-up task.
+- **SPM (`roast_py/spm/`), MATLAB ROAST's default path.** Runs ROAST's
+  SPM steps through SPM's official Python interface,
+  [spm-python](https://github.com/spm/spm-python) — see
+  [SPM through spm-python](#spm-through-spm-python) below — and ports
+  `segTouchup.m` in full (`roast_py/segmentation/touchup.py`) to turn SPM's
+  tissue maps into the 6-label scheme.
+
+## SPM through spm-python
+
+`roast()` runs ROAST's SPM steps with SPM's official Python interface,
+[spm-python](https://github.com/spm/spm-python). That package runs a
+compiled SPM (25.01) on the free MATLAB Runtime, so no MATLAB license is
+needed:
+
+| MATLAB | Python | Used for |
+|---|---|---|
+| `start_seg.m`, `renameSPMres.m` | `spm.routines.spm_segment()` | segmentation with `multiaxial='off'` or a T2; writes `<mri>_T1orT2_seg8.mat` (`_T1andT2` with a T2), whose registration gives the landmarks, as in MATLAB |
+| `segTouchup.m` | `segmentation.touchup.touchup()` | SPM's tissue maps → `<mri>_T1orT2_SPM_masks.nii` |
+| `realignT2.m` | `spm.routines.realign_t2()` | `'T2'`: coregister and reslice the T2 onto the T1 → `<T1>_T2_aligned.nii` |
+| `resampToOneMM.m` | `spm.routines.resample_to_1mm()` | `'resampling'`: reslice to 1 mm voxels → `<mri>_1mm.nii` |
+
+Output names match MATLAB's, and a step whose output exists is skipped,
+as in MATLAB.
+
+**Installation is automatic.** The first time a call needs SPM, roast_py
+does two things before any other work:
+
+1. **Python packages.** It installs spm-python and the compiled SPM with
+   pip, at pinned versions (`spm.runtime.SPM_PACKAGES`). They aren't part of
+   the always-installed environment because only SPM calls need them, and
+   the compiled SPM is an 80 MB wheel.
+2. **MATLAB Runtime R2025b.** It finds an existing installation (MathWorks'
+   default locations, `$MATLAB_RUNTIME_PATH`, or a MATLAB R2025b), or
+   installs one. Installing uses the
+   [matlab-runtime](https://github.com/balbasty/matlab-runtime) package
+   from spm-python's authors, which downloads MathWorks' official installer
+   and runs it silently. It goes into a per-user folder by default
+   (`~/.local/share/roast_py/MATLAB_Runtime` on Linux,
+   `~/Library/Application Support/...` on macOS, `%LOCALAPPDATA%\...` on
+   Windows), so no administrator rights are needed on Linux or macOS. Set
+   `$MATLAB_RUNTIME_PATH` to put it elsewhere. Expect a download of several
+   GB, and about 10 GB of free space while installing.
+
+**The MATLAB Runtime license.** Installing the runtime means accepting
+MathWorks' license, and roast_py never accepts it on its own. In a
+terminal it asks once; for scripts and batch jobs, pass
+`roast(..., accept_matlab_runtime_license=True)` or set
+`ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes`. Without either it stops
+before doing any work and says how. To install up front:
+
+```
+python -m roast_py.spm install --accept-license   # packages + runtime
+python -m roast_py.spm status                     # what's installed where
+python -m roast_py.spm check                      # start SPM once, print its version
+```
+
+**How it runs.** SPM always runs in a separate Python process
+(`roast_py.spm.worker`), never in the caller's. The MATLAB Runtime is
+large and slow to start, and it ships its own copies of common libraries,
+while roast_py's process usually has TensorFlow and VTK loaded already. On
+macOS that process is started through MathWorks' `mwpython`, as MathWorks
+requires, via matlab-runtime's `mwpython2`.
+
+**Differences from MATLAB ROAST's SPM:**
+
+- **SPM version.** spm-python ships SPM 25.01, while ROAST bundles a
+  modified SPM12, so segmentations can differ slightly.
+- **The `_rmask.mat` volumes.** ROAST's SPM12 also warped three atlas
+  masks (skull holes, extra-cerebral CSF/eyes, a marked white-matter
+  surface; `lib/spm12/eTPM_*.nii`) into the subject's space for
+  `segTouchup`'s patching passes. Official SPM doesn't. Instead, roast_py
+  has SPM write its forward deformation (`y_*.nii`) and samples the same
+  masks through it, porting `spm_load_mask.m`/`spm_sample_mask.m`
+  exactly, down to their degree-2 B-spline over the log mask.
+- **Output names.** ROAST's SPM12 turns the `prefix` option into a
+  suffix. Official SPM prepends it, so roast_py lets SPM write `r*.nii` and
+  renames the result to ROAST's names.
+
+**`segTouchup.m` is now ported in full.** This includes the three patching
+passes (gray matter, CSF, bone, then skull holes to skin) and the "remove
+outside air" step, which the earlier port lacked. Three details were also
+corrected to match MATLAB:
+
+- SPM's maps are smoothed as uint8 integers, with MATLAB's rounding.
+- Tie-breaking follows each call's argument order; air comes first when
+  relabeling empty voxels.
+- The even-sized 10³ and 12³ boxes are centered where MATLAB centers
+  them, and erosion treats the outside of the volume as foreground.
+
+**Verified here:**
+
+- **Batches.** The jobs match `start_seg.m`, `realignT2.m` and
+  `resampToOneMM.m` field for field, and they convert into spm-python's
+  `matlabbatch` objects.
+- **`_seg8.mat` reading.** It was checked on a real SPM output, the New
+  York head's. The converted matrices equal the masks' and `eTPM.nii`'s
+  headers, and the TPM landmarks it gives land within 3 mm of that head's
+  scalp.
+- **Atlas-mask sampling.** It matches the B-spline formula exactly. On the
+  MNI152 head the sampled masks are left/right symmetric and anatomically
+  placed.
+- **Patching passes and morphology.** These are checked against MATLAB's
+  definitions.
+- **Installer logic.** License consent, install location, an existing
+  runtime, a failed download and the macOS launcher are all covered by
+  `tests/test_spm.py`.
+
+**Not verified: SPM actually running.** This development sandbox can't
+reach MathWorks' servers, so the MATLAB Runtime couldn't be installed
+here. The first real run, on a machine that can reach
+`ssd.mathworks.com`, is the check that remains.
 
 ## Electrode placement & cap fitting (Phase 2)
 

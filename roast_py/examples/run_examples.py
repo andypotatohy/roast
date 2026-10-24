@@ -29,11 +29,14 @@ that show their results (cmds 39-41). The lead-field roast() calls that
 only feed roast_target (cmds 32-33) are kept; they fail fast because lead
 fields aren't ported.
 
-Expect many calls to fail with NotImplementedError, naming what isn't
-ported yet: SPM segmentation (and so T2 images), resampling, the New York
-head and lead fields. Each roast() run that does go through takes ~15
-minutes on CPU and several GB of memory for the solve: ~7.6 GB for the
-MNI152 head, more for subject1.
+The calls with T2 images, resampling or multiaxial 'off' use SPM, which
+needs the MATLAB Runtime (installed on first use, after you accept its
+license; set ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes to run unattended
+-- see roast_py.spm). Calls that leave 'multiaxial' out use roast_py's
+default, Multiaxial, where MATLAB's default is SPM. The New York head and
+lead fields aren't ported and fail fast with NotImplementedError. Each
+roast() run that goes through takes ~15 minutes on CPU and several GB of
+memory for the solve: ~7.6 GB for the MNI152 head, more for subject1.
 """
 
 from __future__ import annotations
