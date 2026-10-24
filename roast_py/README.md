@@ -221,17 +221,36 @@ results (39–41) are left out. After each successful `roast()` the script
 saves that run's figures in `example/run_examples_figures/cmdNN/`, since
 untagged runs overwrite each other's outputs in `example/`.
 
-Expect many calls to fail, quickly and with a message saying what's
-missing. All 17 calls that use unported features were run here; each
-stopped in about a second with the expected error:
+Expect some calls to fail, quickly and with a message saying what's
+missing. These stop in about a second with the expected error:
 
 - missing input files: `example/bikson.hdr`/`.img` (3, 4)
-- T2 and SPM (9, 10, 22, 25), with MATLAB's own error for T2 plus
-  Multiaxial (10)
-- resampling (11, 12)
+- T2 plus Multiaxial (10): MATLAB's own error
 - the New York head (26–31, 33)
 - lead fields (32)
-- `review_res` of cmd 25's simulation, which never ran (38)
+
+**The SPM calls (9, 11, 12, 22, 25, 38) need a machine with ~20 GB of
+memory.** At roast.m's mesh settings, subject1 is too big to solve on the
+14 GB machine they were run on. Cmd 9 gives 801,767 nodes, and MUMPS asks
+for ~19 GB. Cmd 11 gives 666,927 nodes and was killed at ~13 GB. So they
+were also run there with a coarser mesh (`mesh_options={'radbound': 8,
+'distbound': 0.4, 'maxvol': 30}`, about 470k nodes), passed by a separate
+driver script; the examples themselves are unchanged:
+
+- 9 (T1 + T2): 544 s.
+- 11 (SPM resampling, padding 20, Multiaxial): 671 s. 12 is the same call
+  in roast_py, since Multiaxial is already the default, so it wasn't run
+  again.
+- 22 (resampling, padding 10, T2, pads): 534 s.
+- 25: every SPM step ran, along with the placement of all five electrodes
+  once the padding fix was in. The coarse mesh then missed the small
+  neck ring Nk1. It sits on the front of the neck at the very bottom of
+  subject1's scan, on a thin band that SPM labels skin although the T1
+  there is background noise. That is below the atlas again, as with the
+  padding. Enlarging Nk1 to F8's ring didn't help, so cmd 25 needs its
+  own `radbound` 4, and therefore the memory.
+- 38 (15 s): `review_res` of an `awesomeSimulation` made by cmd 9's call with
+  that tag, since cmd 25 couldn't finish here.
 
 The calls that run the pipeline were checked on the MNI152 head, which
 fits this sandbox's ~8.6 GB memory limit; subject1's solve needs more.
@@ -422,10 +441,32 @@ corrected to match MATLAB:
   runtime, a failed download and the macOS launcher are all covered by
   `tests/test_spm.py`.
 
-**Not verified: SPM actually running.** This development sandbox can't
-reach MathWorks' servers, so the MATLAB Runtime couldn't be installed
-here. The first real run, on a machine that can reach
-`ssd.mathworks.com`, is the check that remains.
+**Verified by running SPM** (Linux, 4 CPUs, 14 GB memory):
+
+- **Installation.** `python -m roast_py.spm install --accept-license`
+  downloaded and installed MATLAB Runtime R2025b Update 7 (11 GB) in under
+  a minute. `check` then started SPM25 in about 20 s.
+- **Each routine on subject1.**
+  - `resample_to_1mm` took 31 s; the mean intensity was unchanged.
+  - `realign_t2` took 42 s. The aligned T2 correlates 0.986 with the
+    original at the same world points.
+  - Segment took 2–3 minutes, with T1 alone or T1 plus T2.
+  - The touchup gives sensible tissue volumes and an intensity order of
+    WM > skin > GM > CSF > bone > air. The eyes come out as CSF, so the
+    atlas masks sampled through `iy_` work.
+- **Bugs that only a real run could show,** all fixed:
+  - Numbers reached MATLAB as int64, which `spm_reslice` rejects.
+  - Channels and tissues were built as cells, where SPM needs struct
+    arrays.
+  - The masks were first sampled through `y_`, the forward deformation,
+    which is on the atlas grid. They need `iy_`.
+  - The zero-padding problem above.
+- **The full pipeline with SPM segmentation**
+  (`roast('example/MNI152_T1_1mm.nii', multiaxial='off')`, all defaults)
+  finished in 558 s. The brain E-field median is 0.11 V/m in WM and
+  0.09 V/m in GM, peaking under Fp1 and P4.
+- **runExamples' SPM calls on subject1:** see
+  [runExamples.m in Python](#runexamplesm-in-python).
 
 ## Electrode placement & cap fitting (Phase 2)
 

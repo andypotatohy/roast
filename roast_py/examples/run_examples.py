@@ -35,8 +35,9 @@ license; set ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes to run unattended
 -- see roast_py.spm). Calls that leave 'multiaxial' out use roast_py's
 default, Multiaxial, where MATLAB's default is SPM. The New York head and
 lead fields aren't ported and fail fast with NotImplementedError. Each
-roast() run that goes through takes ~15 minutes on CPU and several GB of
-memory for the solve: ~7.6 GB for the MNI152 head, more for subject1.
+roast() run that goes through takes ~10-15 minutes on CPU and several GB
+of memory for the solve: ~7.6 GB for the MNI152 head, up to ~19 GB for
+subject1 (with SPM's segmentation).
 """
 
 from __future__ import annotations
