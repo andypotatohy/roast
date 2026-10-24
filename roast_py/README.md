@@ -343,8 +343,9 @@ does two things before any other work:
    (`~/.local/share/roast_py/MATLAB_Runtime` on Linux,
    `~/Library/Application Support/...` on macOS, `%LOCALAPPDATA%\...` on
    Windows), so no administrator rights are needed on Linux or macOS. Set
-   `$MATLAB_RUNTIME_PATH` to put it elsewhere. Expect a download of several
-   GB, and about 10 GB of free space while installing.
+   `$MATLAB_RUNTIME_PATH` to put it elsewhere. The installed runtime takes
+   11 GB on Linux; keep about 20 GB free while installing, since MathWorks'
+   installer archive and its unpacked copy need room too.
 
 **The MATLAB Runtime license.** Installing the runtime means accepting
 MathWorks' license, and roast_py never accepts it on its own. In a
@@ -374,7 +375,7 @@ requires, via matlab-runtime's `mwpython2`.
   masks (skull holes, extra-cerebral CSF/eyes, a marked white-matter
   surface; `lib/spm12/eTPM_*.nii`) into the subject's space for
   `segTouchup`'s patching passes. Official SPM doesn't. Instead, roast_py
-  has SPM write its forward deformation (`y_*.nii`) and samples the same
+  has SPM write its inverse deformation (`iy_*.nii`) and samples the same
   masks through it, porting `spm_load_mask.m`/`spm_sample_mask.m`
   exactly, down to their degree-2 B-spline over the log mask.
 - **Output names.** ROAST's SPM12 turns the `prefix` option into a

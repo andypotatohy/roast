@@ -13,7 +13,7 @@ exists is skipped.
 ROAST's modified SPM12 also wrote `_rmask.mat` (skull holes, extra-cerebral
 CSF/eyes and a marked white-matter surface, warped from atlas space) for
 segTouchup's patching passes. Official SPM doesn't, so spm_segment() has
-SPM write its forward deformation and samples the same atlas masks through
+SPM write its inverse deformation and samples the same atlas masks through
 it the same way (rmask_volumes()).
 """
 
@@ -196,11 +196,13 @@ def sample_atlas_mask(mask: np.ndarray, coords: np.ndarray) -> np.ndarray:
 
 def rmask_volumes(deformation: str | os.PathLike) -> dict[str, np.ndarray]:
     """The three `_rmask.mat` volumes ROAST's modified SPM12 saved, from
-    official SPM's forward deformation `y_<name>.nii`.
+    official SPM's inverse deformation `iy_<name>.nii`.
 
-    That field holds, for every voxel of the segmented MRI, its position in
-    the atlas (mm) -- the same mapping spm_preproc_write8.m computes
-    internally (`[t1,t2,t3] = defs(...)`) and sampled the masks with.
+    That field, on the segmented MRI's grid, holds every voxel's position
+    in the atlas (mm): spm_preproc_write8.m writes it from the very
+    `[t1,t2,t3] = defs(...)` coordinates the modified SPM12 sampled the
+    masks with. (The forward deformation `y_` is the opposite mapping, on
+    the atlas grid.)
     """
     y = nib.load(str(deformation))
     mm = np.asarray(y.dataobj, dtype=float).reshape(*y.shape[:3], 3)
@@ -237,7 +239,7 @@ def spm_segment(t1: str | os.PathLike, t2: str | os.PathLike | None = None, runt
     target = spm_output_name(t1, t2 is not None)
     masks_path = directory / f"{target}_SPM_masks.nii"
     seg8 = directory / f"{target}_seg8.mat"
-    deformation = directory / f"y_{target}.nii"
+    deformation = directory / f"iy_{target}.nii"
     tissue_paths = [directory / f"c{i}{target}.nii" for i in range(1, 7)]
 
     if masks_path.exists() and seg8.exists():
@@ -251,7 +253,7 @@ def spm_segment(t1: str | os.PathLike, t2: str | os.PathLike | None = None, runt
         for i, path in enumerate(tissue_paths, start=1):
             (directory / f"c{i}{base}.nii").replace(path)
         (directory / f"{base}_seg8.mat").replace(seg8)
-        (directory / f"y_{base}.nii").replace(deformation)
+        (directory / f"iy_{base}.nii").replace(deformation)
 
     print("SPM segmentation touchup ...")
     # load_untouch_nii reads SPM's uint8 maps raw (0-255, not rescaled),

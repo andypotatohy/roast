@@ -39,8 +39,9 @@ def _vol(path: str) -> str:
 def segment_batch(t1: str, t2: str | None = None, tpm: str = "", write_deformation: bool = True) -> dict:
     """Ports start_seg.m (native space only, ROAST's default `norm=false`).
 
-    `write_deformation` additionally writes SPM's forward deformation
-    `y_<t1>.nii` (warp.write = [0 1]; start_seg.m has [0 0]). It doesn't
+    `write_deformation` additionally writes SPM's inverse deformation
+    `iy_<t1>.nii` (warp.write = [1 0]; start_seg.m has [0 0]): on the
+    MRI's own grid, the atlas position (mm) of every voxel. It doesn't
     change the segmentation. roast_py samples ROAST's extra atlas masks
     through it, which ROAST's modified SPM12 did inside spm_preproc_write8.m
     (see routines.rmask_volumes).
@@ -57,7 +58,7 @@ def segment_batch(t1: str, t2: str | None = None, tpm: str = "", write_deformati
         "reg": [0, 0.001, 0.5, 0.05, 0.2],
         "affreg": "mni",
         "samp": 3,
-        "write": [0, 1] if write_deformation else [0, 0],
+        "write": [1, 0] if write_deformation else [0, 0],
         "mrf": 0,
         "cleanup": 0,
         "fwhm": 0,
@@ -113,16 +114,26 @@ def to_matlabbatch(entries: list[dict]):
     """spm-python's `matlabbatch` (an spm.Cell) for a list of batch entries.
 
     Builds it attribute by attribute -- `batch(0).spm.spatial.preproc
-    .tissue(2).ngaus = 2` -- the way spm-python's own examples and tests do.
+    .tissue[2].ngaus = 2`.
     """
+    import numpy as np
     from spm import Array, Cell
 
     def is_struct_array(value):
         return isinstance(value, list) and value and all(isinstance(v, dict) for v in value)
 
+    def is_number(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
     def convert(value):
-        if isinstance(value, list) and value and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value):
-            return Array.from_any(list(value))
+        # Numbers go over as doubles, like MATLAB literals: a Python int
+        # would arrive as int64, and SPM fails mixing that with doubles
+        # (spm_reslice: "Integers can only be combined with integers of
+        # the same class, or scalar doubles").
+        if isinstance(value, list) and value and all(is_number(v) for v in value):
+            return Array.from_any(np.asarray(value, dtype=float))
+        if is_number(value):
+            return float(value)
         if isinstance(value, list):  # cell array of strings
             return list(value)
         return value
@@ -142,11 +153,16 @@ def to_matlabbatch(entries: list[dict]):
     batch = Cell()
     for i, entry in enumerate(entries):
         # Each assignment walks the whole path from the batch again --
-        # `batch(i).spm.spatial.preproc.tissue(2).ngaus = 2` -- because
+        # `batch(i).spm.spatial.preproc.tissue[2].ngaus = 2` -- because
         # spm-python's placeholder objects can't be kept and reused.
+        # matlabbatch itself is a cell (`batch(i)`, MATLAB's `{i}`); struct
+        # arrays inside it use brackets (`tissue[2]`, MATLAB's `(i)`): in
+        # spm-python, `tissue(2).f` would make a *cell* of structs, which
+        # SPM rejects ("Can not initialise tissue value(s): job is not a
+        # struct").
         for path, value in leaves(entry):
             target = batch(i)
             for step in path[:-1]:
-                target = target(step) if isinstance(step, int) else getattr(target, step)
+                target = target[step] if isinstance(step, int) else getattr(target, step)
             setattr(target, path[-1], convert(value))
     return batch

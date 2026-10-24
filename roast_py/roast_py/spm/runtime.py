@@ -67,8 +67,11 @@ PREFIX_ENV_VAR = "MATLAB_RUNTIME_PATH"  # matlab-runtime's own variable
 LICENSE_URL = "https://www.mathworks.com/help/compiler/install-the-matlab-runtime.html"
 RUNTIME_DEPS_URL = "https://github.com/mathworks-ref-arch/container-images/tree/main/matlab-runtime-deps"
 
-# Approximate: MathWorks' installer download plus the unpacked runtime.
-APPROX_INSTALL_GB = 10
+# Measured on Linux for R2025b (Update 7): the installed runtime is 11 GB;
+# while installing, MathWorks' installer archive and its unpacked copy
+# take room too.
+APPROX_INSTALL_GB = 20
+INSTALLED_GB = 11
 
 
 class MatlabRuntimeLicenseNotAccepted(RuntimeError):
@@ -164,7 +167,7 @@ def license_accepted_by_env() -> bool:
 def _license_text(prefix: Path) -> str:
     return (
         f"ROAST's SPM routines need the free MATLAB Runtime {MATLAB_RELEASE} from MathWorks "
-        f"(about {APPROX_INSTALL_GB} GB of disk space while installing).\n"
+        f"({INSTALLED_GB} GB once installed; keep about {APPROX_INSTALL_GB} GB free while installing).\n"
         f"roast_py can download and install it into:\n    {prefix}\n"
         "Installing it means accepting the MATLAB Runtime license agreement:\n"
         f"    {LICENSE_URL}\n"

@@ -47,7 +47,7 @@ def test_segment_batch_is_start_seg_m():
     assert all(t["native"] == [1, 0] and t["warped"] == [0, 0] for t in job["tissue"])
     assert job["warp"] == {
         "reg": [0, 0.001, 0.5, 0.05, 0.2], "affreg": "mni", "samp": 3,
-        "write": [0, 1],  # + forward deformation, for the rmask volumes (start_seg.m: [0 0])
+        "write": [1, 0],  # + inverse deformation iy_, for the rmask volumes (start_seg.m: [0 0])
         "mrf": 0, "cleanup": 0, "fwhm": 0,
     }
 
@@ -77,11 +77,19 @@ def test_batches_convert_to_spm_python_objects():
     entries = batch._as_runtime()
     assert len(entries) == 2
     preproc = entries[0]["spm"]["spatial"]["preproc"]
-    assert [c["vols"] for c in preproc["channel"]] == [["/d/t1.nii,1"], ["/d/t2.nii,1"]]
-    assert [int(t["ngaus"]) for t in preproc["tissue"]] == [1, 1, 2, 3, 4, 2]
+    # channel and tissue must be struct arrays, not cells of structs: SPM
+    # rejects the latter ("job is not a struct")
+    for field in ("channel", "tissue"):
+        assert preproc[field]["type__"] == "structarray", field
+    assert [c["vols"] for c in preproc["channel"]["data__"]] == [["/d/t1.nii,1"], ["/d/t2.nii,1"]]
+    assert [int(t["ngaus"]) for t in preproc["tissue"]["data__"]] == [1, 1, 2, 3, 4, 2]
     assert preproc["warp"]["reg"].tolist() == [0, 0.001, 0.5, 0.05, 0.2]
     assert preproc["warp"]["affreg"] == "mni"
     assert entries[1]["spm"]["spatial"]["coreg"]["estwrite"]["eoptions"]["cost_fun"] == "nmi"
+    # Every number is a double, as in MATLAB: SPM fails on int64 inputs.
+    assert preproc["warp"]["reg"].dtype == np.float64
+    assert np.asarray(preproc["tissue"]["data__"][0]["ngaus"]).dtype == np.float64
+    assert np.asarray(entries[1]["spm"]["spatial"]["coreg"]["estwrite"]["roptions"]["interp"]).dtype == np.float64
 
 
 # --------------------------------------------------------------------------
@@ -193,7 +201,7 @@ def test_rmask_volumes_through_an_identity_deformation(tmp_path):
     shape = tpm.shape[:3]
     voxels = np.stack(np.meshgrid(*[np.arange(n) for n in shape], indexing="ij"), axis=-1).astype(float)
     mm = voxels @ tpm.affine[:3, :3].T + tpm.affine[:3, 3]
-    y = tmp_path / "y_identity.nii"
+    y = tmp_path / "iy_identity.nii"
     nib.save(nib.Nifti1Image(mm[:, :, :, None, :].astype(np.float32), tpm.affine), str(y))
     volumes = rmask_volumes(y)
     for name, relative in RMASK_FILES.items():
