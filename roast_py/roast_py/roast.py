@@ -220,7 +220,7 @@ def roast(
     from .geometry.cap_info import load_cap_info
     from .geometry.landmarks import tpm_landmarks_to_subject
     from .geometry.placement import electrode_placement
-    from .io.nifti import convert_to_ras, zero_pad
+    from .io.nifti import clear_padding, convert_to_ras, zero_pad
     from .meshing.cgal_mesher import mesh_by_iso2mesh, resolve_mesh_options
     from .options import (
         on_off,
@@ -349,7 +349,10 @@ def roast(
         mask_path = segment(model_mri, model_dir=model_dir)
         print("[2/5] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
         registration = run_niftyreg(model_mri, out_dir=work_dir, bin_path=niftyreg_bin)
-    tissue_labels = np.asarray(nib.load(mask_path).dataobj, dtype=np.uint8)
+    if zero_padding > 0:
+        tissue_labels = clear_padding(mask_path, zero_padding)  # not in MATLAB; see clear_padding
+    else:
+        tissue_labels = np.asarray(nib.load(mask_path).dataobj, dtype=np.uint8)
 
     landmarks = tpm_landmarks_to_subject(registration.tpm2mri)
     mri2mni = registration.mri2mni

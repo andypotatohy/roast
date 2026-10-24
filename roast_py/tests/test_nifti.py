@@ -13,7 +13,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from roast_py.io.nifti import align_header_to_mni, convert_to_ras, zero_pad
+from roast_py.io.nifti import align_header_to_mni, clear_padding, convert_to_ras, zero_pad
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MNI152 = REPO_ROOT / "example" / "MNI152_T1_1mm.nii"
@@ -99,6 +99,18 @@ def test_zero_pad_rejects_already_padded_name(tmp_path):
     fake.touch()
     with pytest.raises(ValueError):
         zero_pad(str(fake), 10)
+
+
+def test_clear_padding_sets_the_padding_to_air(tmp_path):
+    labels = np.zeros((12, 12, 12), dtype=np.uint8)
+    labels[3:9, 3:9, 3:9] = 2
+    labels[:, :, :2] = 5  # a "skin" slab in the padding, as SPM's atlas prior can give
+    path = tmp_path / "x_padded2_masks.nii"
+    nib.save(nib.Nifti1Image(labels, np.diag([1.0, 1, 1, 1])), path)
+    out = clear_padding(str(path), 2)
+    assert not out[:, :, :2].any() and (out[3:9, 3:9, 3:9] == 2).all()
+    assert out[2:-2, 2:-2, 2:-2].sum() == labels[2:-2, 2:-2, 2:-2].sum()
+    assert np.array_equal(np.asarray(nib.load(path).dataobj), out)  # saved back
 
 
 def test_align_header_to_mni_forces_sform(mni152_copy, tmp_path):

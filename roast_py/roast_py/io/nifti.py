@@ -103,6 +103,30 @@ def zero_pad(mri_path: str, pad_num: int) -> str:
     return pad_path
 
 
+def clear_padding(mask_path: str, pad_num: int) -> np.ndarray:
+    """Set the `pad_num` slices that zero_pad() added around a segmentation
+    back to air (0), rewriting `mask_path` if any weren't. Returns the labels.
+
+    Not in MATLAB ROAST. SPM leaves the padding's exact zeros out of its
+    intensity model, so a padded voxel's tissue comes from the atlas prior
+    alone. Below the eTPM's field of view that prior is the mean of its
+    bottom slice, ~40% soft tissue, so with enough padding the slices under
+    the neck can come out as a slab of skin across the whole volume (cmd 25
+    of runExamples.m: 1.9 million voxels). cleanScalp.m then fills the
+    scalp's whole bounding box, and electrodes land on its flat faces. The
+    padding holds no anatomy by construction, so it is air.
+    """
+    img = nib.load(mask_path)
+    labels = np.asarray(img.dataobj, dtype=np.uint8)
+    p = pad_num
+    inner = np.zeros(labels.shape, dtype=bool)
+    inner[p:-p, p:-p, p:-p] = True
+    if labels[~inner].any():
+        labels = np.where(inner, labels, 0).astype(np.uint8)
+        nib.save(nib.Nifti1Image(labels, img.affine, img.header), mask_path)
+    return labels
+
+
 def align_header_to_mni(mri_path: str, mri2mni: np.ndarray, out_name: str) -> str:
     """Rewrite ``mri_path``'s header so voxel-to-world maps directly to MNI space.
 

@@ -381,6 +381,17 @@ requires, via matlab-runtime's `mwpython2`.
 - **Output names.** ROAST's SPM12 turns the `prefix` option into a
   suffix. Official SPM prepends it, so roast_py lets SPM write `r*.nii` and
   renames the result to ROAST's names.
+- **Zero-padding is cleared to air after segmenting.** This isn't in
+  MATLAB. SPM leaves exact zeros out of its intensity model, so the tissue
+  of a padded voxel comes from the atlas prior alone. Below eTPM's field
+  of view that prior is the mean of its bottom slice, about 40% soft
+  tissue. In cmd 25 (`zeroPadding` 30) that made the slices under the neck
+  a slab of "skin" 1.9 million voxels wide. `cleanScalp` then filled the
+  scalp's whole bounding box, and POz's pad landed on a flat face, where
+  its `'ap'` orientation was parallel to the normal (NaN, then "goes out
+  of image boundary"). ROAST's SPM12 computes this prior the same way. The
+  padding holds no anatomy by construction, so `io.nifti.clear_padding()`
+  sets it back to air, for either segmenter.
 
 **`segTouchup.m` is now ported in full.** This includes the three patching
 passes (gray matter, CSF, bone, then skull holes to skin) and the "remove
@@ -568,8 +579,12 @@ same defaults and validation. It replaces the old `maxvol` argument.
 
 **Memory.** At these settings getDP's direct solver (MUMPS LU) needs
 several GB: about **7.6 GB** for MNI152 (384,549 nodes), and more than
-8.6 GB for subject1 (583,756 nodes). MATLAB ROAST needs the same for the
-same mesh. The node count is set by the surface settings (`radbound`,
+8.6 GB for subject1 (583,756 nodes). SPM's segmentation of subject1
+meshes finer still (801,767 nodes), and for that MUMPS asks for
+**~19 GB**. Its 1-mm resampled, 20-voxel padded version (cmd 11, 666,927
+nodes) was killed at ~13 GB on a 14 GB machine. MATLAB ROAST needs the
+same for the same mesh: it ships the same getDP, built on complex-valued
+PETSc, so every factor entry takes 16 bytes. The node count is set by the surface settings (`radbound`,
 `distbound`), not by `maxvol`: `maxvol=20` gave subject1 583,626 nodes.
 
 Two things keep this manageable:
@@ -584,7 +599,13 @@ Two things keep this manageable:
   solution).
 - **A clear error when memory runs out.** If getDP is killed anyway,
   `roast()` says it probably ran out of memory, rather than MATLAB's
-  generic "cannot work properly on your system".
+  generic "cannot work properly on your system". Memory can also run out
+  without a kill. When MUMPS can't allocate the factors up front
+  (INFOG(1) = −13, which is what subject1's 19 GB request hits), PETSc
+  fills the solution with NaN and getDP exits 0, and MATLAB then reports
+  "getDP did not converge". roast_py passes PETSc's
+  `-ksp_error_if_not_converged`, so getDP exits with MUMPS's error, and
+  `roast()` reports it as running out of memory.
 
 That real run also caught a genuine performance bug before it shipped:
 `read_medit()`'s and `save_msh()`'s initial implementations converted
