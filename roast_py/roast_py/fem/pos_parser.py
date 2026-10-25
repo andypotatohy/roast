@@ -34,6 +34,23 @@ def read_pos_node_table(path: str, n_components: int) -> tuple[np.ndarray, np.nd
     return np.array(ids, dtype=np.int64), np.array(vals, dtype=float)
 
 
+def node_table_is_complete(path: str, n_components: int) -> bool:
+    """Whether getDP finished writing the NodeTable .pos file at `path`:
+    its first line is the number of nodes, followed by that many rows of
+    `node_id value_1 .. value_n`. A file cut short (getDP interrupted
+    while writing it) has fewer rows or a short last row."""
+    try:
+        with open(path) as f:
+            expected = int(f.readline().split()[0])
+            rows, last = 0, ""
+            for line in f:
+                if line.strip():
+                    rows, last = rows + 1, line
+    except (OSError, ValueError, IndexError):
+        return False
+    return rows == expected and len(last.split()) == 1 + n_components
+
+
 def interpolate_to_grid(points: np.ndarray, values: np.ndarray, grid_shape: tuple[int, int, int]) -> np.ndarray:
     """Ports postGetDP.m's `TriScatteredInterp(...)` + evaluation on
     `ndgrid(1:dim(1),1:dim(2),1:dim(3))`: linear interpolation (barycentric,

@@ -16,9 +16,110 @@ import os
 import numpy as np
 
 from .getdp_runner import run_getdp
-from .pos_parser import interpolate_to_grid, read_pos_node_table
+from .pos_parser import interpolate_to_grid, node_table_is_complete, read_pos_node_table
 from .prepare import prepare_for_getdp
 from .pro_writer import Conductivities, write_pro_file
+
+
+def solution_paths(work_dir: str, subj_tag: str) -> tuple[str, str]:
+    """getDP's voltage and E-field node tables, `<subj_tag>_v.pos` / `_e.pos`."""
+    return os.path.join(work_dir, f"{subj_tag}_v.pos"), os.path.join(work_dir, f"{subj_tag}_e.pos")
+
+
+def discard_solution(work_dir: str, subj_tag: str) -> None:
+    """Removes the .pos files, so the next roast() solves again."""
+    for path in solution_paths(work_dir, subj_tag):
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def solution_exists(work_dir: str, subj_tag: str) -> bool:
+    """roast.m's `exist([... '_v.pos'])` check before solving, made safe to
+    resume from: both tables must be there and complete (see
+    node_table_is_complete), so an interrupted getDP run solves again."""
+    v_path, e_path = solution_paths(work_dir, subj_tag)
+    return node_table_is_complete(v_path, 1) and node_table_is_complete(e_path, 3)
+
+
+def solve(
+    work_dir: str,
+    subj_tag: str,
+    node: np.ndarray,
+    elem: np.ndarray,
+    elec_names: list[str],
+    current: list[float],
+    sigma: Conductivities,
+    bin_path: str | os.PathLike | None = None,
+) -> None:
+    """Ports prepareForGetDP.m + solveByGetDP.m's roast() path: writes
+    `{subj_tag}_ready.msh` and `{subj_tag}.pro` and runs getDP, which
+    writes `{subj_tag}_v.pos` / `_e.pos`. `node`/`elem` are
+    roast_py.meshing.cgal_mesher.mesh_by_iso2mesh's output (node already in
+    physical/mm space); `work_dir` must contain `{subj_tag}.msh` from that
+    same call. `current` is in mA, one value per electrode in `elec_names`'
+    order (must sum to ~0). A failed run leaves no .pos files behind.
+    """
+    msh_path = os.path.join(work_dir, f"{subj_tag}.msh")
+    ready_msh_path = os.path.join(work_dir, f"{subj_tag}_ready.msh")
+    pro_path = os.path.join(work_dir, f"{subj_tag}.pro")
+
+    _element_elec_needed, area_elec_needed = prepare_for_getdp(msh_path, ready_msh_path, node, elem, elec_names)
+
+    ind_use = list(range(1, len(elec_names) + 1))
+    write_pro_file(pro_path, current, sigma, area_elec_needed, ind_use, lf_tag="")
+
+    discard_solution(work_dir, subj_tag)
+    try:
+        run_getdp(pro_path, ready_msh_path, bin_path=bin_path)
+    except BaseException:
+        discard_solution(work_dir, subj_tag)
+        raise
+
+
+def postprocess(
+    work_dir: str,
+    subj_tag: str,
+    node: np.ndarray,
+    voxel_size: np.ndarray,
+    grid_shape: tuple[int, int, int],
+):
+    """Ports postGetDP.m's roast() path: reads getDP's .pos files and
+    interpolates them onto the MRI grid.
+
+    Returns (vol_v, vol_e, ef_mag): voltage (mV) and E-field (V/m, 3
+    components) volumes on the `grid_shape` voxel grid, plus E-field
+    magnitude -- matching postGetDP.m's `vol_all`/`ef_all`/`ef_mag`. If
+    getDP's solution is empty or all NaN, the .pos files are removed
+    before raising, so the next roast() solves again.
+    """
+    v_path, e_path = solution_paths(work_dir, subj_tag)
+    try:
+        v_ids, v_vals = read_pos_node_table(v_path, 1)
+        e_ids, e_vals = read_pos_node_table(e_path, 3)
+
+        if v_ids.size == 0 or e_ids.size == 0:
+            raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
+
+        v_vals = v_vals[:, 0] - v_vals[:, 0].min()  # re-reference voltage, matching postGetDP.m
+
+        # Mesh node coordinates are in physical (mm) space (mesh_by_iso2mesh's
+        # output); convert back to voxel-index space for interpolation onto
+        # the MRI grid, matching postGetDP.m's `node(:,i)/imgHdr.mat(i,i)`.
+        node_voxel = node[:, :3] / np.asarray(voxel_size)
+
+        vol_v = interpolate_to_grid(node_voxel[v_ids - 1], v_vals, grid_shape)
+        if np.all(np.isnan(vol_v)):
+            raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
+
+        vol_e = interpolate_to_grid(node_voxel[e_ids - 1], e_vals, grid_shape)
+        if np.all(np.isnan(vol_e)):
+            raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
+    except RuntimeError:
+        discard_solution(work_dir, subj_tag)
+        raise
+
+    ef_mag = np.sqrt(np.sum(vol_e**2, axis=-1))
+    return vol_v, vol_e, ef_mag
 
 
 def solve_and_postprocess(
@@ -33,49 +134,6 @@ def solve_and_postprocess(
     grid_shape: tuple[int, int, int],
     bin_path: str | os.PathLike | None = None,
 ):
-    """Ports the roast() (non-lead-field) path of solveByGetDP.m +
-    postGetDP.m. `node`/`elem` are roast_py.meshing.cgal_mesher.mesh_by_iso2mesh's
-    output (node already in physical/mm space); `work_dir` must contain
-    `{subj_tag}.msh` from that same call. `current` is in mA, one value
-    per electrode in `elec_names`' order (must sum to ~0).
-
-    Returns (vol_v, vol_e, ef_mag): voltage (mV) and E-field (V/m, 3
-    components) volumes on the `grid_shape` voxel grid, plus E-field
-    magnitude -- matching postGetDP.m's `vol_all`/`ef_all`/`ef_mag`.
-    """
-    msh_path = os.path.join(work_dir, f"{subj_tag}.msh")
-    ready_msh_path = os.path.join(work_dir, f"{subj_tag}_ready.msh")
-    pro_path = os.path.join(work_dir, f"{subj_tag}.pro")
-
-    _element_elec_needed, area_elec_needed = prepare_for_getdp(msh_path, ready_msh_path, node, elem, elec_names)
-
-    ind_use = list(range(1, len(elec_names) + 1))
-    write_pro_file(pro_path, current, sigma, area_elec_needed, ind_use, lf_tag="")
-
-    run_getdp(pro_path, ready_msh_path, bin_path=bin_path)
-
-    v_path = os.path.join(work_dir, f"{subj_tag}_v.pos")
-    e_path = os.path.join(work_dir, f"{subj_tag}_e.pos")
-    v_ids, v_vals = read_pos_node_table(v_path, 1)
-    e_ids, e_vals = read_pos_node_table(e_path, 3)
-
-    if v_ids.size == 0 or e_ids.size == 0:
-        raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
-
-    v_vals = v_vals[:, 0] - v_vals[:, 0].min()  # re-reference voltage, matching postGetDP.m
-
-    # Mesh node coordinates are in physical (mm) space (mesh_by_iso2mesh's
-    # output); convert back to voxel-index space for interpolation onto
-    # the MRI grid, matching postGetDP.m's `node(:,i)/imgHdr.mat(i,i)`.
-    node_voxel = node[:, :3] / np.asarray(voxel_size)
-
-    vol_v = interpolate_to_grid(node_voxel[v_ids - 1], v_vals, grid_shape)
-    if np.all(np.isnan(vol_v)):
-        raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
-
-    vol_e = interpolate_to_grid(node_voxel[e_ids - 1], e_vals, grid_shape)
-    if np.all(np.isnan(vol_e)):
-        raise RuntimeError("getDP did not converge. Please check getDP before proceeding.")
-
-    ef_mag = np.sqrt(np.sum(vol_e**2, axis=-1))
-    return vol_v, vol_e, ef_mag
+    """solve() then postprocess(): solveByGetDP.m + postGetDP.m in one call."""
+    solve(work_dir, subj_tag, node, elem, elec_names, current, sigma, bin_path=bin_path)
+    return postprocess(work_dir, subj_tag, node, voxel_size, grid_shape)

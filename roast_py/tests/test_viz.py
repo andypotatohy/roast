@@ -401,7 +401,7 @@ def test_review_res_reads_back_what_roast_saved(tmp_path, monkeypatch):
     nib.save(nib.Nifti1Image(np.ones(labels.shape, np.float32), affine), subj)
     masks = tmp_path / "subj_multiaxial_masks.nii"
     nib.save(nib.Nifti1Image(labels, affine), masks)
-    paths = output_paths(str(tmp_path), "subj")
+    paths = output_paths(str(tmp_path), "subj", "t1")
     for key, data in (("elec_mask", np.zeros(labels.shape, np.uint8)), ("gel_mask", np.zeros(labels.shape, np.uint8)),
                       ("v", vol_v), ("e", vol_e), ("emag", ef_mag)):
         nib.save(nib.Nifti1Image(np.asarray(data, np.float32 if key in "v e emag" else np.uint8), affine), paths[key])
@@ -409,19 +409,20 @@ def test_review_res_reads_back_what_roast_saved(tmp_path, monkeypatch):
     (tmp_path / "v.pos").rename(paths["v_pos"])
     (tmp_path / "e.pos").rename(paths["e_pos"])
     with open(paths["options"], "w") as f:
-        json.dump({"recipe": {"Fp1": 1.0, "P4": -1.0}, "masks": str(masks), "landmarks": [[1, 1, 1]] * 6,
-                   "mri2mni": None}, f)
+        json.dump({"subj": str(subj), "simulation_tag": "t1", "recipe": {"Fp1": 1.0, "P4": -1.0},
+                   "masks": str(masks), "landmarks": [[1, 1, 1]] * 6, "mri2mni": None}, f)
 
+    # No tag given: the subject's latest (here only) simulation.
     figs = review_module.review_res(str(subj), show=False, install_missing=False, in_child=False)
     assert [s.title for s in figs.scenes] == [
-        "Electrode placement in Simulation: subj", "Voltage in Simulation: subj", "Electric field in Simulation: subj",
+        "Electrode placement in Simulation: t1", "Voltage in Simulation: t1", "Electric field in Simulation: t1",
     ]
     assert len(figs.figures) == 4  # MRI, segmentation, voltage, E-field
 
     saved = figs.save(tmp_path / "out", include_3d=False)
     assert [p.name for p in saved] == [
-        "01_mri.png", "02_segmentation.png", "03_voltage_in_simulation_subj.png",
-        "04_electric_field_in_simulation_subj.png",
+        "01_mri.png", "02_segmentation.png", "03_voltage_in_simulation_t1.png",
+        "04_electric_field_in_simulation_t1.png",
     ]
 
 

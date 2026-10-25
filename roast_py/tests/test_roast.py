@@ -47,13 +47,21 @@ def test_roast_default_recipe_on_mni152(tmp_path):
     assert ef_valid.max() > 0
     assert ef_valid.max() < 10000
 
+    tag = result.sim_tag  # a date-time stamp: no simulation_tag given
+    assert len(tag) == 15
     for suffix in ("v.nii", "emag.nii", "e.nii"):
-        assert (tmp_path / f"{base}_{suffix}").exists(), suffix
+        assert (tmp_path / f"{base}_{tag}_{suffix}").exists(), suffix
 
     # Everything review_res() needs to redraw the results later.
-    for name in ("roastOptions.json", "mask_elec.nii", "mask_gel.nii", "mesh.npz", "v.pos", "e.pos",
-                 "niftyReg.json"):
-        assert (tmp_path / f"{base}_{name}").exists(), name
+    for name in ("roastOptions.json", "mask_elec.nii", "mask_gel.nii", "mesh.npz", "v.pos", "e.pos"):
+        assert (tmp_path / f"{base}_{tag}_{name}").exists(), name
+    assert (tmp_path / f"{base}_niftyReg.json").exists()
+    assert (tmp_path / f"{base}_roastLog").read_text().startswith(f"{tag}:\n")
+
+    # The same call again: same options, so the same tag, and every step skipped.
+    again = roast(subj, visualize=False)
+    assert again.sim_tag == tag
+    assert np.array_equal(again.ef_mag, result.ef_mag, equal_nan=True)
 
     # Both DEFAULT_RECIPE electrodes placed, and where the 10-10 system puts
     # them: this head *is* MNI space, so the registration is near identity.

@@ -16,10 +16,10 @@ logged as that call's error instead of ending the whole run. Pass
 --in-process to run them all in this one.
 
 Inputs and outputs are under the repository's example/ folder, as in
-MATLAB, so example/ fills up with results. Untagged runs on the same
-subject overwrite each other there (roast_py doesn't give each run a
-timestamp tag the way MATLAB does), so after each successful roast() call
-the script also saves its figures as PNGs in
+MATLAB, so example/ fills up with results, each call's under its own tag
+(a date-time stamp unless the call gives one). Running a call again
+reuses its results and skips every step, as in MATLAB. After each
+successful roast() call the script also saves its figures as PNGs in
 example/run_examples_figures/cmdNN/. Pass --no-figures to skip that, or
 --show to open the windows instead, which waits for you to close them
 before the next call (MATLAB's commented-out `pause`).

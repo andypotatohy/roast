@@ -1,14 +1,14 @@
 """Ports reviewRes.m: redraw a finished simulation from its saved outputs.
 
     from roast_py.viz import review_res
-    review_res("example/subject1.nii")                  # brain, as roast() shows it
+    review_res("example/subject1.nii")                  # latest simulation, brain
     review_res("example/subject1.nii", tissue="skin")   # results on another tissue
     review_res("example/subject1.nii", sim_tag="awesomeSimulation", tissue="all")
 
 Differences from MATLAB:
 
-* `sim_tag` is a keyword (MATLAB's 2nd argument), and may be left out for
-  a simulation roast() ran without a tag (see roast.output_paths).
+* `sim_tag` is a keyword (MATLAB's 2nd argument). Left out, it is the
+  subject's most recent simulation, where MATLAB asks for a tag.
 * Only roast() results. roast_target() hasn't been ported, so the
   targeting branch (`tarTag`, the montage topoplot) isn't either.
 
@@ -43,9 +43,10 @@ def review_res(
     """reviewRes(subj, simTag, tissue, fastRender) for a simulation roast() ran.
 
     `subj` is the same MRI path given to roast() (default
-    example/MNI152_T1_1mm.nii, as in MATLAB), and `sim_tag` its
-    `simulation_tag` (None for an untagged run); `work_dir` is where
-    roast() wrote its outputs, if not next to `subj`. `tissue` is one of
+    example/MNI152_T1_1mm.nii, as in MATLAB), and `sim_tag` the
+    simulation's tag (RoastResult.sim_tag; default: the subject's most
+    recent simulation in `work_dir`). `work_dir` is where roast() wrote
+    its outputs, if not next to `subj`. `tissue` is one of
     'white', 'gray', 'csf', 'bone', 'skin', 'air', 'brain' (default) or
     'all'. `fast_render=False` smooths the 3D surface for display (slower).
 
@@ -62,6 +63,7 @@ def review_res(
     forces either way (default: decide from whether TensorFlow is loaded).
     """
     from ..roast import _default_subject, _mri_base, output_paths, simulation_stem
+    from ..simulation_log import latest_simulation, saved_simulations
 
     if not subj:
         subj = _default_subject()
@@ -69,15 +71,25 @@ def review_res(
         raise NotImplementedError("The New York head is not ported to roast_py yet.")
     subj = os.path.abspath(subj)
     base = _mri_base(subj)
-    stem = simulation_stem(base, sim_tag)
     work_dir = os.path.abspath(work_dir) if work_dir else os.path.dirname(subj)
+    if sim_tag is None:
+        latest = latest_simulation(work_dir, base, subj)
+        if latest is None:
+            raise FileNotFoundError(
+                f"No simulation of {subj} found in {work_dir} (no {base}_<tag>_roastOptions.json). "
+                "Please run roast() first."
+            )
+        sim_tag = latest["simulation_tag"]
+        print(f"No simulation tag given: showing the latest simulation of {base}, '{sim_tag}'")
+    stem = simulation_stem(base, sim_tag)
     paths = output_paths(work_dir, base, sim_tag)
 
     if not os.path.exists(paths["options"]):
-        what = f"Simulation {sim_tag}" if sim_tag else f"The untagged simulation for {subj}"
+        tags = [opt["simulation_tag"] for opt in saved_simulations(work_dir, base, subj)]
         raise FileNotFoundError(
-            f"Option file {paths['options']} not found. {what} may never have been run "
-            "(or ran with an older roast_py). Please run roast() first."
+            f"Option file {paths['options']} not found. Simulation {sim_tag} may never have been run. "
+            "Please run roast() first."
+            + (f" Simulations of {base} saved in {work_dir}: {', '.join(tags)}." if tags else "")
         )
 
     if in_child is None:
@@ -98,7 +110,7 @@ def review_res(
 
     with open(paths["options"]) as f:
         options = json.load(f)
-    print(f"Showing results for Simulation {sim_tag} ..." if sim_tag else f"Showing results for {base} ...")
+    print(f"Showing results for Simulation {sim_tag} ...")
 
     def need(key: str, what: str, step: str) -> str:
         path = options["masks"] if key == "masks" else paths[key]
@@ -145,6 +157,7 @@ def review_res(
         mri2mni=None if mri2mni is None else np.asarray(mri2mni),
         t2=_existing_t2(options.get("t2")),
         stem=stem,
+        sim_tag=sim_tag,
     )
     if save_dir:
         saved = figs.save(save_dir)

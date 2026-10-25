@@ -78,10 +78,10 @@ def output_paths(work_dir: str, base: str, sim_tag: str | None = None) -> dict[s
     """Where roast() writes each output for subject `base` in `work_dir`.
 
     One place for the naming, shared with roast_py.viz.review_res(), which
-    reads these back. With a simulation tag the names are MATLAB's
-    `<subj>_<simTag>_...`. Unlike MATLAB, roast() doesn't invent a
-    timestamp tag when none is given: untagged outputs are `<subj>_...`,
-    and a new untagged run on the same subject replaces the previous one.
+    reads these back: MATLAB's `<subj>_<simTag>_...`. roast() always has a
+    tag (the user's, or a date-time stamp; see roast_py.simulation_log);
+    `sim_tag=None` gives the untagged `<subj>_...` names that roast_py
+    versions before tags wrote.
     """
     stem = os.path.join(work_dir, simulation_stem(base, sim_tag))
     return {
@@ -96,6 +96,27 @@ def output_paths(work_dir: str, base: str, sim_tag: str | None = None) -> dict[s
         "e": f"{stem}_e.nii",
         "emag": f"{stem}_emag.nii",
     }
+
+
+def _multiaxial_masks_path(model_mri: str) -> str:
+    """`<mri>_multiaxial_masks.nii` next to the modeled MRI, as
+    segmentation.multiaxial.segment() names it (computed here so a cached
+    segmentation doesn't need TensorFlow imported)."""
+    base = os.path.splitext(os.path.basename(model_mri))[0]
+    return os.path.join(os.path.dirname(model_mri), f"{base}_multiaxial_masks.nii")
+
+
+def _write_atomically(path: str, write) -> None:
+    """`write(tmp)` to a temporary name next to `path`, then rename it into
+    place: an interrupted run never leaves a half-written file that the
+    next run's "already done, skipping" check would trust."""
+    tmp = os.path.join(os.path.dirname(path), f".partial_{os.path.basename(path)}")
+    try:
+        write(tmp)
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def _mri_base(path: str) -> str:
@@ -182,11 +203,25 @@ def roast(
     mapped through that registration onto the head.
 
     Saves voltage/E-field/E-field-magnitude NIfTI outputs next to `subj`
-    (or in `work_dir` if given), named `<subj>_<simulation_tag>_v.nii`
-    etc. (`<subj>_v.nii` without a tag), and returns them directly (along
-    with the intermediate tissue/electrode/gel masks) for inspection.
-    Results are in the space of the modeled MRI (`RoastResult.model_mri`),
-    i.e. after RAS conversion and zero-padding, as in MATLAB.
+    (or in `work_dir` if given), named `<subj>_<tag>_v.nii` etc., and
+    returns them directly (along with the intermediate tissue/electrode/gel
+    masks) for inspection. Results are in the space of the modeled MRI
+    (`RoastResult.model_mri`), i.e. after RAS conversion and zero-padding,
+    as in MATLAB.
+
+    Simulations and their tags work as in MATLAB. `<tag>` is
+    `simulation_tag`, or by default the date and time
+    (`20261025T143012`, MATLAB's `datestr(now,30)`). The options are saved
+    as `<subj>_<tag>_roastOptions.json` and logged in `<subj>_roastLog`.
+    If a simulation of the same MRI was already saved with the same
+    options, roast() carries on under its tag instead, warning if you gave
+    a different one. Reusing a tag for different options is an error. Each
+    of the six steps (segmentation, registration, electrode placement,
+    meshing, solving, saving the results) is skipped if its output already
+    exists. A repeated call therefore just loads the results, and an
+    interrupted one resumes where it stopped. Delete a step's output to
+    redo it; the steps after a step that ran are redone too, which
+    MATLAB doesn't do. `RoastResult.sim_tag` is the tag used.
 
     With `visualize` (the default) the results are displayed at the end,
     as MATLAB's roast() does: slice views of the MRI and segmentation, a
@@ -216,7 +251,7 @@ def roast(
     import nibabel as nib
     import numpy as np
 
-    from .fem.solve import solve_and_postprocess
+    from .fem.solve import postprocess, solution_exists, solve
     from .geometry.cap_info import load_cap_info
     from .geometry.landmarks import tpm_landmarks_to_subject
     from .geometry.placement import electrode_placement
@@ -229,7 +264,9 @@ def roast(
         resolve_electrodes,
         resolve_recipe,
     )
-    from .registration import run_niftyreg
+    from .registration import Registration, registration_path, run_niftyreg
+    from .simulation_log import check_tag, register_simulation
+    from .simulation_log import log_path as sim_log_path
 
     # -- check inputs, in roast.m's order --------------------------------------
     if not subj:
@@ -271,6 +308,7 @@ def roast(
         )
     mesh_options = resolve_mesh_options(mesh_options)
     conductivities = resolve_conductivities(conductivities, len(elec_names))
+    check_tag(simulation_tag)
 
     do_resample = on_off(resampling, "resampling")
     if zero_padding is None:
@@ -314,7 +352,8 @@ def roast(
         spm_runtime = ensure_spm(accept_license=accept_matlab_runtime_license, install_missing=install_missing)
 
     # RAS, then resampling, then zero-padding, then T2 alignment (roast.m).
-    model_mri = convert_to_ras(subj).path
+    ras = convert_to_ras(subj)
+    model_mri = ras.path
     if do_resample:
         from .spm.routines import resample_to_1mm
 
@@ -329,26 +368,40 @@ def roast(
     t1_img = nib.load(model_mri)
     voxel_size = np.abs(np.diag(t1_img.affine)[:3])
 
-    stem = simulation_stem(base, simulation_tag)
-    paths = output_paths(work_dir, base, simulation_tag)
     recipe_text = ", ".join(f"{n} ({c:g} mA)" for n, c in zip(elec_names, current))
-    print(f"ROAST {subj}\nUSING RECIPE: {recipe_text}" + (f"\nunder tag: {simulation_tag}" if simulation_tag else ""))
+    print(f"ROAST {subj}\nUSING RECIPE: {recipe_text}")
 
+    # Each step is skipped when its output already exists, as in roast.m:
+    # steps 1-2 are shared by every simulation of the modeled MRI, steps
+    # 3-6 belong to one simulation tag.
     if use_spm:
         from .registration import registration_from_seg8
-        from .spm.routines import seg8_path, spm_segment
+        from .spm.routines import seg8_path, spm_masks_path, spm_segment
 
-        print(f"[1/5] Segmenting {model_mri} with SPM ...")
-        mask_path = spm_segment(model_mri, t2, runtime=spm_runtime)
-        print("[2/5] Mapping the TPM landmarks through SPM's registration (_seg8.mat) ...")
+        with_t2 = t2 is not None
+        redo = not (spm_masks_path(model_mri, with_t2).exists() and seg8_path(model_mri, with_t2).exists())
+        print(f"[1/6] SPM segmentation of {model_mri} ...")
+        mask_path = spm_segment(model_mri, t2, runtime=spm_runtime)  # skips what's done itself
+        print("[2/6] Mapping the TPM landmarks through SPM's registration (_seg8.mat) ...")
         registration = registration_from_seg8(seg8_path(model_mri, with_t2=t2 is not None))
     else:
-        print(f"[1/5] Segmenting {model_mri} with Multiaxial ...")
-        from .segmentation.multiaxial import segment  # imports TensorFlow; see note at top
+        mask_path = _multiaxial_masks_path(model_mri)
+        redo = not os.path.exists(mask_path)
+        if not redo:
+            print(f"[1/6] Multiaxial segmentation done, skipping ({mask_path})")
+        else:
+            print(f"[1/6] Segmenting {model_mri} with Multiaxial ...")
+            from .segmentation.multiaxial import segment  # imports TensorFlow; see note at top
 
-        mask_path = segment(model_mri, model_dir=model_dir)
-        print("[2/5] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
-        registration = run_niftyreg(model_mri, out_dir=work_dir, bin_path=niftyreg_bin)
+            _write_atomically(mask_path, lambda tmp: segment(model_mri, out_path=tmp, model_dir=model_dir))
+        reg_path = registration_path(model_mri, work_dir)
+        if reg_path.exists():  # depends only on the MRI, not on the segmentation
+            print(f"[2/6] NiftyReg registration done, skipping ({reg_path})")
+            registration = Registration.load(reg_path)
+        else:
+            print("[2/6] Registering to MNI space (NiftyReg) and mapping the TPM landmarks ...")
+            registration = run_niftyreg(model_mri, out_dir=work_dir, bin_path=niftyreg_bin)
+            redo = True
     if zero_padding > 0:
         tissue_labels = clear_padding(mask_path, zero_padding)  # not in MATLAB; see clear_padding
     else:
@@ -357,46 +410,7 @@ def roast(
     landmarks = tpm_landmarks_to_subject(registration.tpm2mri)
     mri2mni = registration.mri2mni
 
-    print("[3/5] Placing electrodes ...")
-    cap_names, cap_template = load_cap_info(cap_type)
-    custom_names = custom_coords = None
-    if any("custom" in name.lower() for name in elec_names):
-        custom_names, custom_coords = read_custom_locations(subj)
-        # MATLAB's coordinates are 1-based voxels of the input MRI; carry
-        # them into the modeled MRI's 0-based voxels (RAS + padding).
-        homogeneous = np.column_stack([custom_coords - 1.0, np.ones(len(custom_coords))])
-        to_model = np.linalg.inv(t1_img.affine) @ original_img.affine
-        custom_coords = (to_model @ homogeneous.T).T[:, :3]
-    elec_mask, gel_mask = electrode_placement(
-        tissue_labels, landmarks, elec_names, elec_paras, cap_names, cap_template, voxel_size,
-        is_biosemi=cap_type == "biosemi", is_egi=cap_type == "egi",
-        custom_names=custom_names, custom_coords=custom_coords,
-    )
-
-    print("[4/5] Meshing ...")
-    node, elem, _face = mesh_by_iso2mesh(
-        tissue_labels, elec_mask, gel_mask, voxel_size, work_dir=work_dir, out_path=paths["msh"],
-        **mesh_options, bin_path=cgalmesh_bin,
-    )
-
-    print("[5/5] Solving FEM ...")
-    vol_v, vol_e, ef_mag = solve_and_postprocess(
-        work_dir, stem, node, elem, elec_names, current, conductivities, voxel_size,
-        tissue_labels.shape, bin_path=getdp_bin,
-    )
-
-    print("Saving NIfTI outputs ...")
-    nib.save(nib.Nifti1Image(vol_v.astype(np.float32), t1_img.affine), paths["v"])
-    nib.save(nib.Nifti1Image(ef_mag.astype(np.float32), t1_img.affine), paths["emag"])
-    nib.save(nib.Nifti1Image(vol_e.astype(np.float32), t1_img.affine), paths["e"])
-
-    # What review_res() needs to redraw everything later without re-running
-    # the pipeline -- the counterparts of MATLAB's _mask_elec.nii,
-    # _mask_gel.nii, <subj>_<tag>.mat (mesh) and _roastOptions.mat.
-    nib.save(nib.Nifti1Image(elec_mask.astype(np.uint8), t1_img.affine), paths["elec_mask"])
-    nib.save(nib.Nifti1Image(gel_mask.astype(np.uint8), t1_img.affine), paths["gel_mask"])
-    np.savez_compressed(paths["mesh"], node=node, elem=elem)
-
+    # -- the simulation's tag: a saved simulation with the same options, or a new one
     def plain(value):
         return value.tolist() if isinstance(value, np.ndarray) else value
 
@@ -418,16 +432,86 @@ def roast(
         "resampling": do_resample,
         "segmentation": "spm" if use_spm else "multiaxial",
         "t2": t2,
+        "is_non_ras": ras.was_reoriented,
         "masks": os.path.abspath(mask_path),
         "landmarks": np.asarray(landmarks, dtype=float).tolist(),
         # 0-based voxel -> MNI mm; MATLAB's opt.mri2mni is the 1-based equivalent
         "mri2mni": mri2mni.tolist(),
         "Affine": registration.affine.tolist(),
     }
-    with open(paths["options"], "w") as f:
-        json.dump(options, f, indent=2)
+    options, reused = register_simulation(options, work_dir, base)
+    simulation_tag = options["simulation_tag"]
+    if reused:
+        print(f"Same options as simulation '{simulation_tag}' run before: carrying on under its tag")
+    else:
+        print(f"Simulation options saved in {sim_log_path(work_dir, base)}, under tag: {simulation_tag}")
+    stem = simulation_stem(base, simulation_tag)
+    paths = output_paths(work_dir, base, simulation_tag)
 
-    print(f"Done. Outputs saved in {work_dir}")
+    # `redo`: an earlier step just ran, so whatever later steps saved
+    # before was built from something else and is redone too.
+    if not redo and os.path.exists(paths["elec_mask"]) and os.path.exists(paths["gel_mask"]):
+        print("[3/6] Electrodes already placed, skipping")
+        elec_mask = np.asarray(nib.load(paths["elec_mask"]).dataobj, dtype=np.uint8)
+        gel_mask = np.asarray(nib.load(paths["gel_mask"]).dataobj, dtype=np.uint8)
+    else:
+        print("[3/6] Placing electrodes ...")
+        cap_names, cap_template = load_cap_info(cap_type)
+        custom_names = custom_coords = None
+        if any("custom" in name.lower() for name in elec_names):
+            custom_names, custom_coords = read_custom_locations(subj)
+            # MATLAB's coordinates are 1-based voxels of the input MRI; carry
+            # them into the modeled MRI's 0-based voxels (RAS + padding).
+            homogeneous = np.column_stack([custom_coords - 1.0, np.ones(len(custom_coords))])
+            to_model = np.linalg.inv(t1_img.affine) @ original_img.affine
+            custom_coords = (to_model @ homogeneous.T).T[:, :3]
+        elec_mask, gel_mask = electrode_placement(
+            tissue_labels, landmarks, elec_names, elec_paras, cap_names, cap_template, voxel_size,
+            is_biosemi=cap_type == "biosemi", is_egi=cap_type == "egi",
+            custom_names=custom_names, custom_coords=custom_coords,
+        )
+        for key, mask in (("gel_mask", gel_mask), ("elec_mask", elec_mask)):
+            image = nib.Nifti1Image(mask.astype(np.uint8), t1_img.affine)
+            _write_atomically(paths[key], lambda tmp, image=image: nib.save(image, tmp))
+        redo = True
+
+    if not redo and os.path.exists(paths["mesh"]) and os.path.exists(paths["msh"]):
+        print("[4/6] Mesh already generated, skipping")
+        with np.load(paths["mesh"]) as mesh:
+            node, elem = mesh["node"], mesh["elem"]
+    else:
+        print("[4/6] Meshing ...")
+        node, elem, _face = mesh_by_iso2mesh(
+            tissue_labels, elec_mask, gel_mask, voxel_size, work_dir=work_dir, out_path=paths["msh"],
+            **mesh_options, bin_path=cgalmesh_bin,
+        )
+        # Written after the .msh, so its presence means both are complete.
+        _write_atomically(paths["mesh"], lambda tmp: np.savez_compressed(tmp, node=node, elem=elem))
+        redo = True
+
+    if not redo and solution_exists(work_dir, stem):
+        print("[5/6] Model already solved, skipping")
+    else:
+        print("[5/6] Solving FEM ...")
+        solve(work_dir, stem, node, elem, elec_names, current, conductivities, bin_path=getdp_bin)
+        redo = True
+
+    if not redo and all(os.path.exists(paths[key]) for key in ("v", "e", "emag")):
+        print("[6/6] All steps done, loading the results")
+        vol_v, vol_e, ef_mag = (
+            np.asarray(nib.load(paths[key]).dataobj, dtype=np.float32) for key in ("v", "e", "emag")
+        )
+    else:
+        print("[6/6] Saving the results ...")
+        # float32, as saved: a later run that loads them returns the same arrays
+        vol_v, vol_e, ef_mag = (
+            vol.astype(np.float32) for vol in postprocess(work_dir, stem, node, voxel_size, tissue_labels.shape)
+        )
+        for key, vol in (("v", vol_v), ("e", vol_e), ("emag", ef_mag)):
+            image = nib.Nifti1Image(vol, t1_img.affine)
+            _write_atomically(paths[key], lambda tmp, image=image: nib.save(image, tmp))
+
+    print(f"Done. Outputs saved in {work_dir}, under tag: {simulation_tag}")
     result = RoastResult(
         subj=subj,
         work_dir=work_dir,

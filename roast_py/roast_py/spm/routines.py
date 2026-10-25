@@ -226,6 +226,12 @@ def seg8_path(t1: str | os.PathLike, with_t2: bool) -> Path:
     return directory / f"{spm_output_name(t1, with_t2)}_seg8.mat"
 
 
+def spm_masks_path(t1: str | os.PathLike, with_t2: bool) -> Path:
+    """`<mri>_T1orT2_SPM_masks.nii` (`_T1andT2` with a T2): spm_segment()'s result."""
+    directory, _, _ = _split(t1)
+    return directory / f"{spm_output_name(t1, with_t2)}_SPM_masks.nii"
+
+
 def spm_segment(t1: str | os.PathLike, t2: str | os.PathLike | None = None, runtime=None) -> str:
     """ROAST's SPM segmentation: returns the path of the 6-tissue mask
     `<mri>_T1orT2_SPM_masks.nii` (`_T1andT2` with a T2), writing
@@ -237,7 +243,7 @@ def spm_segment(t1: str | os.PathLike, t2: str | os.PathLike | None = None, runt
 
     directory, base, _ = _split(t1)
     target = spm_output_name(t1, t2 is not None)
-    masks_path = directory / f"{target}_SPM_masks.nii"
+    masks_path = spm_masks_path(t1, t2 is not None)
     seg8 = directory / f"{target}_seg8.mat"
     deformation = directory / f"iy_{target}.nii"
     tissue_paths = [directory / f"c{i}{target}.nii" for i in range(1, 7)]
@@ -268,7 +274,9 @@ def spm_segment(t1: str | os.PathLike, t2: str | os.PathLike | None = None, runt
     reference = nib.load(str(t1))
     out = nib.Nifti1Image(labels.astype(np.uint8), reference.affine)
     out.header["descrip"] = b"tissue masks"
-    nib.save(out, str(masks_path))
+    partial = masks_path.with_name(f".partial_{masks_path.name}")
+    nib.save(out, str(partial))
+    partial.replace(masks_path)  # whole or not at all: its presence means "segmented"
     # segTouchup.m deletes the per-tissue maps (and _rmask.mat) once done.
     for path in [*tissue_paths, deformation]:
         path.unlink(missing_ok=True)

@@ -277,26 +277,29 @@ def all_views(
     mri2mni=None,
     t2=None,
     stem: str | None = None,
+    sim_tag: str | None = None,
 ) -> FigureSet:
     """Every figure MATLAB's roast() draws for a simulation, in its order:
     viewMRI, viewSeg, viewElectrodes, then visualizeRes.
 
     `subj` is the MRI to display (the one modeled); `stem` is the
     simulation's output stem, `<subj>[_<simTag>]`, which names the .pos
-    files and the figure titles (default: `subj`'s own name)."""
+    files (default: `subj`'s own name). The figure titles show `sim_tag`,
+    as MATLAB's show its uniqueTag (default: the stem)."""
     base = stem or os.path.splitext(os.path.basename(subj))[0]
+    tag = sim_tag or base
     figs = FigureSet(title=f"ROAST: {base}")
     print("showing MRI...")
     figs.extend(view_mri(subj, t2, mri2mni))
     print("showing segmentations...")
     figs.extend(view_seg(tissue_labels, mri2mni))
     print("showing electrode placement...")
-    figs.extend(view_electrodes(tissue_labels, elec_mask, gel_mask, landmarks, affine, tag=base))
+    figs.extend(view_electrodes(tissue_labels, elec_mask, gel_mask, landmarks, affine, tag=tag))
     figs.extend(
         result_views(
             tissue_labels, node, elem, currents, affine, voxel_size, vol_v, ef_mag, vol_e,
             os.path.join(work_dir, f"{base}_v.pos"), os.path.join(work_dir, f"{base}_e.pos"),
-            tag=base, tissue=tissue, fast_render=fast_render, mri2mni=mri2mni,
+            tag=tag, tissue=tissue, fast_render=fast_render, mri2mni=mri2mni,
         )
     )
     return figs

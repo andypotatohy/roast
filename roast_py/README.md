@@ -113,9 +113,10 @@ result = roast("/path/to/subject1.nii")  # copy it out of example/ first -- see 
 ```
 
 That's the whole call — `roast()` chains segmentation → electrode
-placement → meshing → FEM solve and saves `<subj>_v.nii` (voltage),
-`<subj>_e.nii` (E-field, 3 components) and `<subj>_emag.nii` (E-field
-magnitude) next to the input, exactly like MATLAB's `postGetDP.m`. It also
+placement → meshing → FEM solve and saves `<subj>_<tag>_v.nii` (voltage),
+`_e.nii` (E-field, 3 components) and `_emag.nii` (E-field magnitude) next
+to the input, exactly like MATLAB's `postGetDP.m`. `<tag>` is
+`simulation_tag`, or the date and time. It also
 returns a `RoastResult` with those same volumes as numpy arrays
 (`result.vol_v`, `result.vol_e`, `result.ef_mag`) plus the intermediate
 tissue/electrode/gel masks, for inspection without re-reading the NIfTI
@@ -190,7 +191,7 @@ roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
 | neck (`Nk1`–`Nk4`) and `custom*` electrodes | in the recipe | done; custom coordinates from `<subj>_customLocations`, as in MATLAB |
 | `'meshOptions'` | `mesh_options` (dict) | done |
 | `'conductivities'` | `conductivities` (dict) | done, including per-electrode gel/electrode values |
-| `'simulationTag'` | `simulation_tag` | done; outputs are `<subj>_<tag>_*`. Without a tag they are `<subj>_*`: unlike MATLAB, no timestamp tag is made up, so untagged runs on one subject overwrite each other |
+| `'simulationTag'` | `simulation_tag` | done, as in MATLAB: outputs are `<subj>_<tag>_*`, with a date-time tag (`20261025T143012`) by default; see [Simulation tags and resuming](#simulation-tags-and-resuming) |
 | `'zeroPadding'` | `zero_padding` | done |
 | `'multiaxial'` | `multiaxial` | done: `'off'` segments with SPM. Left out, roast_py uses Multiaxial (unless a T2 is given) — MATLAB's default is SPM |
 | `'T2'` | `t2` | done (SPM): aligned to the T1 if needed, then segmented with it; with `multiaxial='on'` you get MATLAB's own error |
@@ -200,7 +201,56 @@ roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
 
 Results are in the space of the modeled MRI (after RAS conversion and
 zero-padding), as in MATLAB. `review_res(subj, sim_tag=..., tissue=...)`
-redraws a tagged run.
+redraws a simulation.
+
+### Simulation tags and resuming
+
+`roast_py/simulation_log.py` ports writeRoastLog.m and isNewOptions.m. As
+in MATLAB, every simulation is saved under a tag:
+
+- **The tag** is `simulation_tag`, or by default the date and time,
+  `20261025T143012` (MATLAB's `datestr(now,30)`). `RoastResult.sim_tag`
+  says which one was used.
+- **Options.** Once the MRI is segmented and registered, the options are
+  compared with every simulation of that MRI already saved in the work
+  directory. The comparison uses isNewOptions.m's list: the recipe, cap,
+  each electrode's type and size (and orientation, for pads), T2,
+  segmenter, the MNI registration, mesh options, conductivities,
+  resampling and zero-padding.
+  - If one matches, roast() carries on under its tag. If you passed a
+    different tag, it warns that yours is ignored.
+  - Otherwise the options are saved as `<subj>_<tag>_roastOptions.json`
+    (MATLAB: `.mat`), and an entry in MATLAB's format is appended to
+    `<subj>_roastLog`.
+  - Reusing a tag for different options is an error, as in MATLAB.
+- **Each step is skipped if its output exists:**
+
+  | step | skipped when this exists |
+  |---|---|
+  | 1. segmentation | `<mri>_T1orT2_SPM_masks.nii` + `_seg8.mat` (SPM), `<mri>_multiaxial_masks.nii` (Multiaxial) |
+  | 2. registration | `_seg8.mat` (SPM), `<mri>_niftyReg.json` (Multiaxial) |
+  | 3. electrode placement | `<subj>_<tag>_mask_elec.nii` + `_mask_gel.nii` |
+  | 4. meshing | `<subj>_<tag>_mesh.npz` + `<subj>_<tag>.msh` |
+  | 5. solving | `<subj>_<tag>_v.pos` + `_e.pos`, both complete |
+  | 6. saving the results | `<subj>_<tag>_v.nii`, `_e.nii`, `_emag.nii` |
+
+  Steps 1–2 belong to the modeled MRI (`<mri>` is after RAS, resampling
+  and padding), so every simulation of it shares them. Steps 3–6 belong
+  to one tag. Running the same call twice just loads the results, and a
+  new recipe on the same head starts at step 3.
+
+Three things go beyond MATLAB, so that an interrupted run resumes
+correctly:
+
+- **Atomic writes.** Step outputs are written under a temporary name and
+  renamed into place, so a file that exists is complete.
+- **Complete solutions only.** The `.pos` files count only if getDP
+  finished writing them. They are deleted when getDP fails or its
+  solution is empty or NaN, so the next run solves again.
+- **Redoing cascades.** When a step runs, every step after it runs too.
+  Delete `<subj>_<tag>_mask_elec.nii` and the electrodes, mesh, solution
+  and results are all redone. MATLAB checks each file on its own and
+  would keep the old mesh.
 
 ### runExamples.m in Python
 
@@ -218,8 +268,9 @@ python examples/run_examples.py --show 14  # figure windows (waits for you to cl
 
 The `roast_target` calls (34–37) and the `reviewRes` calls on their
 results (39–41) are left out. After each successful `roast()` the script
-saves that run's figures in `example/run_examples_figures/cmdNN/`, since
-untagged runs overwrite each other's outputs in `example/`.
+also saves that run's figures in `example/run_examples_figures/cmdNN/`.
+As in MATLAB, each call's outputs in `example/` carry its own tag, and
+running a call again reuses them: the second run takes seconds.
 
 Expect some calls to fail, quickly and with a message saying what's
 missing. These stop in about a second with the expected error:
@@ -731,7 +782,8 @@ of every simulation, and `review_res()` redraws a finished one from disk:
 ```python
 from roast_py import review_res
 
-review_res("../example/subject1.nii")                    # what roast() shows
+review_res("../example/subject1.nii")                    # the latest simulation, as roast() shows it
+review_res("../example/subject1.nii", sim_tag="awesomeSimulation")  # a given one
 review_res("../example/subject1.nii", tissue="skin")     # results on another tissue
 review_res("../example/subject1.nii", show=False, save_dir="figs")  # PNGs only
 ```
@@ -771,9 +823,9 @@ never costs you the simulation.
   [Landmarks](#landmarks-registration-to-mni)). Simulations run with an
   older roast_py have none saved, so their viewers show voxel coordinates
   only.
-- No simulation tags, so `review_res(subj)` takes no `simTag`. A new
-  `roast()` run on the same subject and work directory replaces the
-  previous one.
+- `sim_tag` may be left out: `review_res(subj)` shows the subject's most
+  recent simulation, where MATLAB asks for a tag. An unknown tag's error
+  lists the saved ones.
 - `roast_target()` isn't ported, so neither is reviewRes's targeting
   branch (`tarTag`, the montage topoplot).
 - `fast_render=False` smooths the displayed surface with VTK's Laplacian
@@ -782,9 +834,9 @@ never costs you the simulation.
   color bars sit under each panel, labeled at their ends, rather than
   beside it.
 
-To make `review_res()` possible, `roast()` now also saves
-`<subj>_mask_elec.nii`, `<subj>_mask_gel.nii`, `<subj>_mesh.npz` and
-`<subj>_roastOptions.json`. These are the counterparts of MATLAB's
+To make `review_res()` possible, `roast()` also saves
+`<subj>_<tag>_mask_elec.nii`, `_mask_gel.nii`, `_mesh.npz` and
+`_roastOptions.json`. These are the counterparts of MATLAB's
 `_mask_elec.nii`, `_mask_gel.nii`, `<subj>_<tag>.mat` and
 `_roastOptions.mat`.
 
