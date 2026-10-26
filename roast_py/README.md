@@ -293,13 +293,13 @@ driver script; the examples themselves are unchanged:
   in roast_py, since Multiaxial is already the default, so it wasn't run
   again.
 - 22 (resampling, padding 10, T2, pads): 534 s.
-- 25: every SPM step ran, along with the placement of all five electrodes
-  once the padding fix was in. The coarse mesh then missed the small
-  neck ring Nk1. It sits on the front of the neck at the very bottom of
-  subject1's scan, on a thin band that SPM labels skin although the T1
-  there is background noise. That is below the atlas again, as with the
-  padding. Enlarging Nk1 to F8's ring didn't help, so cmd 25 needs its
-  own `radbound` 4, and therefore the memory.
+- 25, as written (its own `radbound` 4 mesh): every step up to the solve
+  runs, with all five electrodes meshed (823,387 nodes). It needs the
+  ~20 GB machine to solve. With the T2, SPM labels part of the padding
+  under the neck as skin (a slab); see the SPM section for why. roast_py
+  leaves the segmentation as it is, so, as in MATLAB, Nk1 lands on the
+  slab in front of the chin. It stays part of the head, so it meshes and
+  solves.
 - 38 (15 s): `review_res` of an `awesomeSimulation` made by cmd 9's call with
   that tag, since cmd 25 couldn't finish here.
 
@@ -451,17 +451,17 @@ requires, via matlab-runtime's `mwpython2`.
 - **Output names.** ROAST's SPM12 turns the `prefix` option into a
   suffix. Official SPM prepends it, so roast_py lets SPM write `r*.nii` and
   renames the result to ROAST's names.
-- **Zero-padding is cleared to air after segmenting.** This isn't in
-  MATLAB. SPM leaves exact zeros out of its intensity model, so the tissue
-  of a padded voxel comes from the atlas prior alone. Below eTPM's field
-  of view that prior is the mean of its bottom slice, about 40% soft
-  tissue. In cmd 25 (`zeroPadding` 30) that made the slices under the neck
-  a slab of "skin" 1.9 million voxels wide. `cleanScalp` then filled the
-  scalp's whole bounding box, and POz's pad landed on a flat face, where
-  its `'ap'` orientation was parallel to the normal (NaN, then "goes out
-  of image boundary"). ROAST's SPM12 computes this prior the same way. The
-  padding holds no anatomy by construction, so `io.nifti.clear_padding()`
-  sets it back to air, for either segmenter.
+- **With a T2, SPM can label empty space as skin.** The segmentation is
+  left as SPM and segTouchup give it, as in MATLAB. SPM labels a voxel from
+  the atlas prior alone when any channel is exactly zero. subject1's T2 is
+  zero across much of its background (16% of voxels, against 0.1% in the
+  T1), and dropping those air voxels from the fit lowers SPM's background
+  weight (0.127 → 0.080 on cmd 25's image). Below the atlas, where the
+  prior is about 40% soft tissue, prior-only voxels then come out as soft
+  tissue (0.52 vs 0.46): part of the zero-padding under the neck becomes a
+  slab of "skin". With T1 alone it stays background. ROAST's SPM12 has the
+  same masking, and MATLAB's result for cmd 25 shows the slab too, with Nk1
+  placed on it.
 
 **`segTouchup.m` is now ported in full.** This includes the three patching
 passes (gray matter, CSF, bone, then skull holes to skin) and the "remove
@@ -511,7 +511,6 @@ corrected to match MATLAB:
     arrays.
   - The masks were first sampled through `y_`, the forward deformation,
     which is on the atlas grid. They need `iy_`.
-  - The zero-padding problem above.
 - **The full pipeline with SPM segmentation**
   (`roast('example/MNI152_T1_1mm.nii', multiaxial='off')`, all defaults)
   finished in 558 s. The brain E-field median is 0.11 V/m in WM and
@@ -606,15 +605,23 @@ that stop at the skull base. It does for subject1. It only matters if
 neck electrodes are requested, and placement then refuses with MATLAB's
 error.
 
-One correctness fix worth calling out: `cleanScalp.m`'s morphological
-close/open operations use structuring elements that grow up to `ones(30,30,30)`
-or larger, applied directly to a MATLAB image — at full head resolution
-(e.g. 192×256×256) a literal cube that size is computationally intractable
-in scipy. `geometry/scalp.py` decomposes each into repeated
-dilation/erosion with a 3×3×3 cube (`scipy.ndimage`'s optimized `iterations`
-path), which is mathematically identical for an all-ones cube structuring
-element but tractable — confirmed by the real-data test above completing in
-seconds rather than hanging.
+`cleanScalp.m` closes and opens the scalp with boxes `ones(se,se,se)`,
+`se` = 10, 20, 30, … until the result is closed and smooth. A literal box
+that size is slow in scipy at head resolution. `geometry/scalp.py` uses
+`roast_py/morphology.py` instead, which applies each box as three 1-D
+min/max filters (a box is separable). That is fast at any size and exact,
+including MATLAB's centring of even-sized boxes and its border handling.
+
+This replaced a bug. The first port iterated a 3×3×3 cube `se` times,
+which is a (2·se+1)³ box: 21, 41, 61, … voxels where MATLAB uses 10, 20,
+30, …, so roughly twice as big. On ordinary heads the difference was
+small. On cmd 25 (T2, `zeroPadding` 30), SPM labels part of the padding
+under the neck as skin, the loop runs to large `se`, and the doubled box
+shaved the scalp into a block with flat faces. POz's pad then sat on a
+face whose normal was parallel to its `'ap'` orientation, giving NaN and
+"Electrode POz goes out of image boundary". With MATLAB's box sizes POz is
+placed as in MATLAB, and Nk1 lands on the slab in front of the chin, as
+MATLAB places it.
 
 ## Meshing (Phase 3)
 

@@ -27,6 +27,8 @@ from __future__ import annotations
 import numpy as np
 from scipy import ndimage
 
+from ..morphology import imdilate_box, imerode_box
+
 # Tissue label order in the final mask (matches ROAST's 'conductivities'
 # option order, and roast_py.segmentation.multiaxial's output labels).
 WHITE, GRAY, CSF, BONE, SKIN, AIR = 1, 2, 3, 4, 5, 6
@@ -57,24 +59,6 @@ def _smooth_slices(volume: np.ndarray, sigma: float) -> np.ndarray:
         info = np.iinfo(volume.dtype)
         out = np.clip(np.floor(out + 0.5), info.min, info.max).astype(volume.dtype)
     return out
-
-
-def _box_dilate(mask: np.ndarray, n: int) -> np.ndarray:
-    """MATLAB's imdilate(mask, ones(n,n,n)), even n included."""
-    out = mask.astype(np.uint8)
-    for axis in range(mask.ndim):
-        out = ndimage.maximum_filter1d(out, n, axis=axis, mode="constant", cval=0, origin=0)
-    return out.astype(bool)
-
-
-def _box_erode(mask: np.ndarray, n: int) -> np.ndarray:
-    """MATLAB's imerode(mask, ones(n,n,n)): for even n the box's centre is
-    MATLAB's floor((n+1)/2), and the outside counts as foreground."""
-    out = mask.astype(np.uint8)
-    origin = -1 if n % 2 == 0 else 0
-    for axis in range(mask.ndim):
-        out = ndimage.minimum_filter1d(out, n, axis=axis, mode="constant", cval=1, origin=origin)
-    return out.astype(bool)
 
 
 # segTouchup.m's vect_g: the 18 neighbours whose offset has L1 norm 1 or 2
@@ -132,7 +116,7 @@ def patch_labels(all_mask: np.ndarray, holes, eyes, wm_exclude) -> np.ndarray:
     interior = _interior(labels.shape)
 
     white = labels == WHITE
-    keep = white & _box_dilate(np.asarray(wm_exclude) > 1e-4, 10)
+    keep = white & imdilate_box(np.asarray(wm_exclude) > 1e-4, 10)
     source = white & ~keep & interior
     labels[source & _neighbour_has(labels, [CSF, BONE, SKIN, AIR])] = GRAY
 
@@ -295,8 +279,8 @@ def touchup(
 
     # Remove outside air: keep only air enclosed by the head.
     not_air = ~air_t
-    closed = _box_erode(_box_dilate(not_air, 10), 10)
-    enclosed = _box_erode(ndimage.binary_fill_holes(closed), 12)
+    closed = imerode_box(imdilate_box(not_air, 10), 10)
+    enclosed = imerode_box(ndimage.binary_fill_holes(closed), 12)
     air_t = air_t & enclosed
 
     all_mask = np.zeros_like(gray_t, dtype=np.uint8)

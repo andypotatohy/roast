@@ -240,17 +240,17 @@ def test_patching_passes():
 
 
 def test_box_morphology_matches_matlab_for_even_sizes():
-    from roast_py.segmentation.touchup import _box_dilate, _box_erode
+    from roast_py.morphology import imdilate_box, imerode_box
 
     point = np.zeros((20, 20, 20), dtype=bool)
     point[10, 10, 10] = True
-    dilated = np.argwhere(_box_dilate(point, 10))
+    dilated = np.argwhere(imdilate_box(point, 10))
     # MATLAB: centre floor((10+1)/2) = 5 -> offsets -4..+5 around the point
     assert dilated.min(axis=0).tolist() == [6, 6, 6] and dilated.max(axis=0).tolist() == [15, 15, 15]
     hole = ~point
-    eroded_out = np.argwhere(~_box_erode(hole, 10))
+    eroded_out = np.argwhere(~imerode_box(hole, 10))
     assert eroded_out.min(axis=0).tolist() == [5, 5, 5] and eroded_out.max(axis=0).tolist() == [14, 14, 14]
-    assert _box_erode(np.ones((4, 4, 4), bool), 12).all()  # outside counts as foreground
+    assert imerode_box(np.ones((4, 4, 4), bool), 12).all()  # outside counts as foreground
 
 
 def test_integer_smoothing_rounds_like_imfilter():

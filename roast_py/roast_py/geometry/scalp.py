@@ -7,26 +7,7 @@ from __future__ import annotations
 import numpy as np
 from scipy import ndimage
 
-_CUBE3 = np.ones((3, 3, 3), dtype=bool)
-
-
-def _close_cube(mask: np.ndarray, se: int) -> np.ndarray:
-    """binary_closing(mask, structure=ones((se,se,se))), computed as `se`
-    iterations of dilation/erosion with a 3x3x3 cube instead of a single
-    call with an se^3 structuring element -- mathematically identical for
-    an all-ones cube (dilating k times with a 3x3x3 cube == dilating once
-    with a (2k+1)^3 cube), but tractable at full head-volume resolution
-    where a literal se=30-ish cube would be far too slow.
-    """
-    dilated = ndimage.binary_dilation(mask, structure=_CUBE3, iterations=se, border_value=0)
-    return ndimage.binary_erosion(dilated, structure=_CUBE3, iterations=se, border_value=1)
-
-
-def _open_cube(mask: np.ndarray, se: int) -> np.ndarray:
-    """binary_opening(mask, structure=ones((se,se,se))), same iterated-cube
-    trick as _close_cube."""
-    eroded = ndimage.binary_erosion(mask, structure=_CUBE3, iterations=se, border_value=1)
-    return ndimage.binary_dilation(eroded, structure=_CUBE3, iterations=se, border_value=0)
+from ..morphology import imclose_box, imopen_box
 
 
 def clean_scalp(scalp_in: np.ndarray, scalp_surf: np.ndarray):
@@ -55,7 +36,7 @@ def clean_scalp(scalp_in: np.ndarray, scalp_surf: np.ndarray):
     scalp_mid = scalp_in
     while not is_filled:
         se += 10
-        closed = _close_cube(scalp_in, se)
+        closed = imclose_box(scalp_in, se)  # imclose(scalpIn, ones(se,se,se))
         scalp_mid = ndimage.binary_fill_holes(closed)
         is_filled = bool(scalp_mid[centroid])
 
@@ -74,7 +55,7 @@ def clean_scalp(scalp_in: np.ndarray, scalp_surf: np.ndarray):
             scalp_mid[0, :, :] = False
             scalp_mid[nx - 1, :, :] = False
 
-        scalp_out = _open_cube(scalp_mid, se)
+        scalp_out = imopen_box(scalp_mid, se)  # imopen(scalpMid, ones(se,se,se))
         is_open = np.concatenate(
             [
                 scalp_out[:, :, nz - 1].ravel(),

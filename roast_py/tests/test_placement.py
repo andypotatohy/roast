@@ -63,3 +63,27 @@ def test_generate_elec_mask_warns_on_partial_out_of_bounds():
     with pytest.warns(UserWarning, match="Part of the electrode"):
         vol = generate_elec_mask(coords, (10, 10, 10), ["e1"], do_warn=True)
     assert vol[1, 1, 1] == 1
+
+
+def test_clean_scalp_opens_with_matlabs_box_size():
+    """cleanScalp.m opens the scalp with ones(se,se,se), se = 10, 20, ...
+    The port once used a (2*se+1)^3 cube instead, twice as big, which
+    shaved a head with a slab of "skin" under it (runExamples cmd 25) into
+    a block with flat faces. A 12-voxel bump survives MATLAB's first
+    10-voxel opening; a 21-voxel cube would erase it."""
+    from roast_py.geometry.point_cloud import mask2edge_point_cloud
+    from roast_py.geometry.scalp import clean_scalp
+
+    shape = (90, 90, 90)
+    xx, yy, zz = np.meshgrid(*[np.arange(n) for n in shape], indexing="ij")
+    r = np.sqrt((xx - 45) ** 2 + (yy - 45) ** 2 + (zz - 45) ** 2)
+    scalp = (r <= 30) & (r >= 26)
+    bump = np.zeros(shape, bool)
+    bump[39:51, 39:51, 74:80] = True  # 12 x 12 voxels across, on top of the head
+    scalp |= bump
+    surface, _ = mask2edge_point_cloud(scalp, "erode", np.ones((3, 3, 3), dtype=bool))
+
+    scalp_out, scalp_filled = clean_scalp(scalp, surface)
+
+    assert scalp_filled[45, 45, 45]  # closed and filled
+    assert scalp_out[bump].mean() > 0.9
