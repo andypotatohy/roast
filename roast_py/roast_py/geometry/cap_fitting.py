@@ -11,8 +11,41 @@ import numpy as np
 from scipy import ndimage
 from scipy.interpolate import CubicSpline
 
+from ..morphology import imclose_box, imopen_box
+from .landmarks import _matlab_round
 from .point_cloud import map2points, project2closest_surface_points
 from .spline import ncs2d_approx
+
+
+def _round_1based(x) -> int:
+    """MATLAB's round() of a 0-based coordinate, taken on the 1-based value
+    as fitCap2individual.m does, returned 0-based. (Python's round() sends
+    halves to even: round(90.5) is 90 where MATLAB's round(91.5) is 92.)"""
+    return int(_matlab_round(np.asarray(x, dtype=float) + 1.0)) - 1
+
+
+def _matlab_edge(a: np.ndarray) -> np.ndarray:
+    """MATLAB's edge(a) with its defaults: Sobel gradients (imfilter with
+    'replicate' borders), the automatic threshold 4*mean(gradient^2), and
+    thinning. Thinning keeps a pixel whose gradient magnitude is >= the
+    previous neighbour's and > the next one's, horizontally or vertically,
+    so on a step edge it keeps the pixel after the step in each direction:
+    outside the silhouette on some sides and inside on others, not always
+    the inner boundary."""
+    a = np.asarray(a, dtype=float)
+    op = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]]) / 8.0  # fspecial('sobel')/8
+    bx = ndimage.correlate(a, op.T, mode="nearest")
+    by = ndimage.correlate(a, op, mode="nearest")
+    b = bx * bx + by * by
+    cutoff = 4 * b.mean()
+    bx, by = np.abs(bx), np.abs(by)
+    m, n = b.shape
+    left, right = b[:, np.r_[0, 0 : n - 1]], b[:, np.r_[1:n, n - 1]]
+    up, down = b[np.r_[0, 0 : m - 1], :], b[np.r_[1:m, m - 1], :]
+    tol = 100 * np.finfo(float).eps
+    return (b > cutoff) & (
+        ((bx >= by - tol) & (left <= b) & (right < b)) | ((by >= bx - tol) & (up <= b) & (down < b))
+    )
 
 
 def _central_sagittal_arc_length(scalp: np.ndarray, central_sag: int, inion, nasion):
@@ -24,6 +57,15 @@ def _central_sagittal_arc_length(scalp: np.ndarray, central_sag: int, inion, nas
     Returns (distance_all, yi, zi): the total arc length, and the fitted
     center-line points' (row, col) = (y, z) coordinates, used later to
     measure inter-electrode spacing along the same line.
+
+    This arc length is what fitCap2individual.m compares electrode
+    spacings against to choose the cap's height (`factor`), so every step
+    follows MATLAB exactly: its box morphology, its edge(), find()'s
+    column-major order, and stable sorts. Approximations here (a plain
+    inner boundary, row-major order and an unstable sort, which zig-zags
+    the path wherever the contour runs level) made the arc ~20% too long,
+    which on MNI152 tipped the fit from MATLAB's factor 0.95 to 1.0 and
+    put every electrode 2-4 mm higher than MATLAB does.
     """
     img_c = scalp[central_sag, :, :] > 0
 
@@ -37,24 +79,19 @@ def _central_sagittal_arc_length(scalp: np.ndarray, central_sag: int, inion, nas
     img_c[indr1 : indr2 + 1, indc] = True
 
     ytemp, ztemp = np.nonzero(img_c)
-    centroid = (int(round(ytemp.mean())), int(round(ztemp.mean())))
+    centroid = (_round_1based(ytemp.mean()), _round_1based(ztemp.mean()))
 
     se = 0
     is_filled = False
     im_test = img_c
     while not is_filled:
         se += 8
-        closed = ndimage.binary_closing(img_c, structure=np.ones((se, se), dtype=bool))
-        im_test = ndimage.binary_fill_holes(closed)
+        im_test = ndimage.binary_fill_holes(imclose_box(img_c, se))  # imfill(imclose(img_c,ones(se,se)),'holes')
         is_filled = bool(im_test[centroid[0], centroid[1]])
 
-    opened = ndimage.binary_opening(im_test, structure=np.ones((3, 3), dtype=bool))
-    # Boundary just inside the opened silhouette (see point_cloud.py's
-    # mask2edge_point_cloud docstring re: MATLAB's imerode border default).
-    eroded = ndimage.binary_erosion(opened, structure=np.ones((3, 3), dtype=bool), border_value=1)
-    bw_c = opened & ~eroded
+    bw_c = _matlab_edge(imopen_box(im_test, 3))  # edge(imopen(im_test,ones(3,3)))
 
-    r_c, c_c = np.nonzero(bw_c)  # (row, col) = (y, z) index pairs
+    c_c, r_c = np.nonzero(bw_c.T)  # [r_c,c_c] = find(bw_c): column-major, (row, col) = (y, z)
 
     matches_inion = np.where(c_c == inion[2])[0]
     matches_nasion = np.where(c_c == nasion[2])[0]
@@ -69,15 +106,15 @@ def _central_sagittal_arc_length(scalp: np.ndarray, central_sag: int, inion, nas
 
     i_max = np.argmax(c_c)
     right_up = np.where((c_c >= c_c[idx_inion]) & (r_c < r_c[i_max]))[0]
-    right_up = right_up[np.argsort(c_c[right_up])]
+    right_up = right_up[np.argsort(c_c[right_up], kind="stable")]  # MATLAB's sort() is stable
     right_down = np.where((c_c >= c_c[idx_nasion]) & (r_c >= r_c[i_max]))[0]
-    right_down = right_down[np.argsort(-c_c[right_down])]
+    right_down = right_down[np.argsort(-c_c[right_down], kind="stable")]  # sort(...,'descend'), stable
     index = np.concatenate([right_up, right_down])
 
     bx, by, breaks = ncs2d_approx(r_c[index].astype(float), c_c[index].astype(float))
     cs = CubicSpline(breaks, np.stack([bx, by], axis=1), bc_type="not-a-knot")
     n = breaks[-1]
-    yizi = cs(np.arange(1, n + 1))
+    yizi = cs(np.linspace(1, n, int(np.floor(n))))  # linspace(1, finalbreaks(end), finalbreaks(end))
     yi, zi = yizi[:, 0], yizi[:, 1]
 
     distance_all = np.sum(np.sqrt(np.diff(yi) ** 2 + np.diff(zi) ** 2))
@@ -113,7 +150,7 @@ def fit_cap_to_individual(
     line_center = (inion + nasion) / 2
 
     if not is_egi:
-        central_sag = int(round(line_center[0]))
+        central_sag = _round_1based(line_center[0])  # round(line_center(1)), 1-based in MATLAB
         distance_all, yi, zi = _central_sagittal_arc_length(scalp, central_sag, inion, nasion)
 
     if not is_egi:

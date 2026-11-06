@@ -252,6 +252,23 @@ def test_box_morphology_matches_matlab_for_even_sizes():
     assert eroded_out.min(axis=0).tolist() == [5, 5, 5] and eroded_out.max(axis=0).tolist() == [14, 14, 14]
     assert imerode_box(np.ones((4, 4, 4), bool), 12).all()  # outside counts as foreground
 
+def test_imclose_box_pads_like_matlab():
+    """MATLAB's imclose pads the image, so closing never grows a mask onto
+    the border: a lone voxel 3 from the edge closes to itself. Without the
+    padding, imerode's outside-is-foreground rule kept the dilated band
+    along the border, which made cleanScalp.m's opening loop run to se = 30
+    on MNI152 (MATLAB stops at 10) and tilted Fp1 by 5.8 degrees."""
+    from roast_py.morphology import imclose_box
+
+    point = np.zeros((20, 20, 20), bool)
+    point[3, 10, 10] = True
+    assert np.array_equal(imclose_box(point, 10), point)
+    gap = np.zeros((30, 30, 30), bool)
+    gap[10:20, 10:14, 10:20] = gap[10:20, 18:22, 10:20] = True  # two slabs 4 voxels apart
+    closed = imclose_box(gap, 10)
+    assert closed[15, 15, 15] and not closed[0].any()  # bridges the gap, stays off the border
+
+
 
 def test_integer_smoothing_rounds_like_imfilter():
     from roast_py.segmentation.touchup import _smooth_slices

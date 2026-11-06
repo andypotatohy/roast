@@ -623,6 +623,79 @@ face whose normal was parallel to its `'ap'` orientation, giving NaN and
 placed as in MATLAB, and Nk1 lands on the slab in front of the chin, as
 MATLAB places it.
 
+**Where the cap sits.** `fitCap2individual.m` tries 11 cap heights
+(`factor` 1, 0.95, …, 0.5). It keeps the one whose central electrodes
+(Oz…Fpz) best split the nasion–inion arc into ten equal parts, measuring
+that arc along the scalp on the central sagittal slice. The choice can be
+close (on MNI152, factors 1.0 and 0.95 differ by about 10% in fit error),
+so that arc is now traced exactly as MATLAB traces it:
+- `imclose`/`imopen` with MATLAB's box sizes and padding (`morphology.py`);
+- MATLAB's `edge()`: Sobel, automatic threshold and thinning;
+- `find()`'s column-major order, stable sorts, and the `linspace` sampling
+  of the spline;
+- MATLAB's rounding for the slice index.
+
+The first port took the contour as an inner boundary in row-major order
+with an unstable sort. That zig-zagged the path wherever it runs level, so
+across the top of the head. On MNI152 the arc came out 500–560 mm instead
+of about 417, the fit chose factor 1.0 where MATLAB chooses 0.95, and every
+electrode sat 2–4 mm higher than MATLAB puts it.
+
+**MATLAB's `imclose` pads the image.** That is, it pads, dilates, erodes,
+then crops, so closing never grows a mask onto the image border. A plain
+`imerode(imdilate(...))` does grow it there, because `imerode` counts the
+outside as foreground. `morphology.imclose_box` now pads. On MNI152 the
+unpadded closing grew the filled head onto the left and right faces, so
+`cleanScalp.m`'s opening loop ran to `se` = 30 where MATLAB stops at 10.
+That changed the cleaned scalp around the forehead and tilted Fp1's disc
+5.8° from MATLAB's. The same closing is used in `fitCap2individual.m` and
+segTouchup's outside-air step.
+
+**Checked against MATLAB** on MATLAB's own segmentation (SPM12) and
+landmarks for `roast([],{'Fp1',1,'FC4',1,'POz',-2},'electype',{'disc','pad','ring'})`.
+Each cell is the electrode-mask Dice with MATLAB's mask:
+
+| | factor | Fp1 (disc) | FC4 (pad) | POz (ring) |
+|---|---|---|---|---|
+| first port | 1.0 | 0.78 | 0.87 | 0.23 |
+| cap fit traced as MATLAB | 0.95, as MATLAB | 0.86 | **1.00** | 0.97 |
+| + padded `imclose` | 0.95 | **0.98** | **1.00** | **0.98** |
+
+The pad matches voxel for voxel. Discs and rings can't, even in MATLAB:
+`cylinder2P.m` orients each circle with `rand(1,3)`, so every MATLAB run
+voxelizes their rims a little differently. Twenty roast_py runs with that
+random orientation agree with each other at Dice 0.97–0.99, the same
+range as with MATLAB's masks, and every axis agrees with MATLAB's to 0.2°.
+roast_py keeps a fixed orientation (`shapes.cylinder2p`), so its results
+are reproducible. On roast_py's own SPM25 segmentation the electrodes
+differ from MATLAB's by at most a voxel, which is the landmark difference
+between SPM12 and SPM25.
+
+**subject1, runExamples cmd 25** (all five electrode kinds: disc, rings,
+a 4 mm pad, a neck ring and a custom pad), on MATLAB's segmentation. Two
+more details had to follow MATLAB for the pads to match:
+- **Pad layers.** A pad's gel and metal are where its cuboid meets shells
+  made by dilating the scalp with `ones(h,h,h)`, `h` its thickness.
+  `mask2edge_point_cloud` used scipy for that, which centres an even box
+  one voxel off MATLAB, so POz's 4 mm pad sat a voxel too far out
+  (Dice 0.40). It now uses `morphology.py`'s MATLAB-exact boxes.
+- **Ties.** Points come in `find()`'s column-major order, directions are
+  normalised in double and then single precision as in MATLAB, and every
+  ranking is a stable sort. A custom electrode's local scalp patch is its
+  100 nearest points, and on a voxel grid many distances tie. Ordering
+  ties differently changed which points made the cut (custom1: Dice 0.996
+  before, 1.000 now).
+
+| | Fp1 (disc) | F8 (ring) | POz (4 mm pad) | Nk1 (ring) | custom1 (pad) |
+|---|---|---|---|---|---|
+| Dice with MATLAB | 0.98 | 0.97 | **1.00** | 0.94 | **1.00** |
+| Dice between two random-orientation roast_py runs | 0.96–0.995 | 0.96–0.996 | 1.00 | 0.91–0.995 | 1.00 |
+
+Both pads are identical to MATLAB's. The disc and rings fall within the
+spread of MATLAB's own random orientation, with every axis within 0.6° of
+MATLAB's. These runs used roast_py's SPM25 landmarks; MATLAB's `seg8.mat`
+for this run wasn't available.
+
 ## Meshing (Phase 3)
 
 `roast_py/meshing/` ports the volumetric mesh generation step:

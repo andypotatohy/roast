@@ -87,3 +87,79 @@ def test_clean_scalp_opens_with_matlabs_box_size():
 
     assert scalp_filled[45, 45, 45]  # closed and filled
     assert scalp_out[bump].mean() > 0.9
+
+
+def _disc_scalp(radius=60):
+    """A head-like slab: on every sagittal slice a disc of `radius` voxels
+    centred at z = 70, with the inion and nasion at its widest points, so
+    the arc between them over the top is half the circle."""
+    shape = (5, 160, 140)
+    yy, zz = np.meshgrid(np.arange(shape[1]), np.arange(shape[2]), indexing="ij")
+    scalp = np.zeros(shape, bool)
+    scalp[:] = (yy - 80) ** 2 + (zz - 70) ** 2 <= radius**2
+    rows = np.where(scalp[2, :, 70])[0]
+    return scalp, np.array([2, rows[0], 70]), np.array([2, rows[-1], 70])
+
+
+def test_central_sagittal_arc_length_follows_the_scalp():
+    """fitCap2individual.m picks the cap's height by comparing electrode
+    spacing with this arc. The port once ordered the contour row-major
+    with an unstable sort, which zig-zagged it wherever it runs level (the
+    top of the head), and traced an inner boundary instead of MATLAB's
+    edge(): on MNI152 the arc came out ~20% long and the cap one step too
+    high, every electrode 2-4 mm above MATLAB's. The arc over half a disc
+    of radius 60 is pi*60 ~= 188.5."""
+    from roast_py.geometry.cap_fitting import _central_sagittal_arc_length
+
+    scalp, inion, nasion = _disc_scalp(60)
+    distance_all, yi, zi = _central_sagittal_arc_length(scalp, 2, inion, nasion)
+    assert abs(distance_all - np.pi * 60) < 0.03 * np.pi * 60
+    assert zi.max() == pytest.approx(130, abs=1.5)  # passes over the top, z = 70 + 60
+    assert np.all(np.abs(np.diff(yi)) < 2)  # no zig-zag: consecutive samples stay close
+
+
+def test_matlab_edge_keeps_the_pixel_after_each_step():
+    """MATLAB's edge() thins a step edge to the pixel after it (scanning
+    left-to-right and top-to-bottom): inside the shape on its left and top
+    sides, outside on its right and bottom sides."""
+    from roast_py.geometry.cap_fitting import _matlab_edge
+
+    a = np.zeros((20, 20), bool)
+    a[5:15, 5:15] = True
+    e = _matlab_edge(a)
+    assert e[8:12, 5].all() and not e[8:12, 4].any()  # left side: inside
+    assert e[8:12, 15].all() and not e[8:12, 14].any()  # right side: outside
+    assert e[5, 8:12].all() and not e[4, 8:12].any()  # top: inside
+    assert e[15, 8:12].all() and not e[14, 8:12].any()  # bottom: outside
+
+
+def test_mask2edge_point_cloud_matches_matlab_for_even_boxes_and_order():
+    """A 4 mm pad (runExamples cmd 25, POz) builds its gel/electrode layers
+    by dilating the scalp with ones(4,4,4). MATLAB centres an even box at
+    floor((n+1)/2); scipy centred it one voxel over, which moved that pad a
+    voxel outward. Points also come in find()'s column-major order, which
+    MATLAB's stable sorts use to break ties."""
+    from roast_py.geometry.point_cloud import mask2edge_point_cloud
+    from roast_py.morphology import imdilate_box
+
+    mask = np.zeros((12, 12, 12), bool)
+    mask[5:7, 5:7, 5:7] = True
+    points, dilated = mask2edge_point_cloud(mask, "dilate", np.ones((4, 4, 4), bool))
+    assert np.array_equal(dilated, imdilate_box(mask, 4))
+    assert points[:, 0].min() == 4 and points[:, 0].max() == 8  # MATLAB: 1 voxel before, 2 after (scipy: 2 and 1)
+    keys = points[:, 2] * 144 + points[:, 1] * 12 + points[:, 0]
+    assert np.all(np.diff(keys) > 0)  # column-major: x varies fastest
+
+
+def test_map2points_breaks_ties_like_matlab():
+    """MATLAB's sort is stable, so among equally distant points the first
+    in the cloud wins for 'closest' and 'closer', and the last for
+    'farthest'. Custom electrodes take their local scalp patch from the
+    100 'closer' points, where voxel-grid distances tie all the time."""
+    from roast_py.geometry.point_cloud import map2points
+
+    goal = np.array([[1.0, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0], [0, 0, 2]])
+    _, closest = map2points(np.zeros(3), goal, "closest")
+    _, closer = map2points(np.zeros(3), goal, "closer", 3)
+    _, farthest = map2points(np.zeros(3), goal[:4], "farthest")
+    assert closest[0] == 0 and closer[:, 0].tolist() == [0, 1, 2] and farthest[0] == 3

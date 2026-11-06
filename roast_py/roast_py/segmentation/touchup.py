@@ -27,7 +27,7 @@ from __future__ import annotations
 import numpy as np
 from scipy import ndimage
 
-from ..morphology import imdilate_box, imerode_box
+from ..morphology import imclose_box, imdilate_box, imerode_box
 
 # Tissue label order in the final mask (matches ROAST's 'conductivities'
 # option order, and roast_py.segmentation.multiaxial's output labels).
@@ -279,7 +279,7 @@ def touchup(
 
     # Remove outside air: keep only air enclosed by the head.
     not_air = ~air_t
-    closed = imerode_box(imdilate_box(not_air, 10), 10)
+    closed = imclose_box(not_air, 10)  # imclose(temp, ones(10,10,10))
     enclosed = imerode_box(ndimage.binary_fill_holes(closed), 12)
     air_t = air_t & enclosed
 
