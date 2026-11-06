@@ -71,69 +71,69 @@ THREE_ELECTRODES = {"Fp1": 1, "FC4": 1, "POz": -2}
 # (MATLAB cmd number, function, positional args, keyword args), in
 # runExamples.m's order. `None` stands for MATLAB's [] / '' (use the default).
 EXAMPLES = [
-    (1, roast, (), {}),
-    (2, roast, (None, None), dict(multiaxial="on")),
-    (3, roast, (str(EXAMPLE / "bikson.hdr"),), {}),
-    (4, roast, (str(EXAMPLE / "bikson.img"),), {}),
-    (5, roast, (None, {"Exx19": 1, "C4": -1}), dict(zero_padding=20)),
-    (6, roast, (None, {"Exx19": 1, "C4": -1}), dict(zero_padding=20, multiaxial="on")),
-    (7, roast, (SUBJECT1, FOUR_ELECTRODES), {}),
-    (8, roast, (SUBJECT1, FOUR_ELECTRODES), dict(multiaxial="on")),
+    (1, roast, (), dict(multiaxial="off",simulation_tag="cmd1")),
+    (2, roast, (None, None), dict(multiaxial="on",simulation_tag="cmd2")),
+    (3, roast, (str(EXAMPLE / "bikson.hdr"),), dict(multiaxial="off")),
+    (4, roast, (str(EXAMPLE / "bikson.img"),), dict(multiaxial="off")),
+    (5, roast, (None, {"Exx19": 1, "C4": -1}), dict(zero_padding=20, multiaxial="off",simulation_tag="cmd5")),
+    (6, roast, (None, {"Exx19": 1, "C4": -1}), dict(zero_padding=20, multiaxial="on",simulation_tag="cmd6")),
+    (7, roast, (SUBJECT1, FOUR_ELECTRODES), dict(multiaxial="off",simulation_tag="cmd7")),
+    (8, roast, (SUBJECT1, FOUR_ELECTRODES), dict(multiaxial="on",simulation_tag="cmd8")),
     (9, roast, (SUBJECT1, None), dict(t2=SUBJECT1_T2)),
     (10, roast, (SUBJECT1, None), dict(t2=SUBJECT1_T2, multiaxial="on")),
-    (11, roast, (SUBJECT1, FOUR_ELECTRODES), dict(resampling="on", zero_padding=20)),
+    (11, roast, (SUBJECT1, FOUR_ELECTRODES), dict(resampling="on", zero_padding=20, multiaxial="off")),
     (12, roast, (SUBJECT1, FOUR_ELECTRODES), dict(resampling="on", zero_padding=20, multiaxial="on")),
     # roast('example/subject1.nii',{'G12',1,'J7',-1},'captype','biosemi')  -- commented out in MATLAB too
     (
         13,
         roast,
         (SUBJECT1, {"G12": 0.25, "J7": -0.25, "Nk1": 0.5, "Nk3": -0.5, "custom1": 0.25, "custom3": -0.25}),
-        dict(cap_type="biosemi"),
+        dict(cap_type="biosemi", multiaxial="off"),
     ),
-    (14, roast, (None, THREE_ELECTRODES), dict(elec_type=["disc", "pad", "ring"])),
+    (14, roast, (None, THREE_ELECTRODES), dict(elec_type=["disc", "pad", "ring"], multiaxial="off",simulation_tag="threeElec")),
     (
         15,
         roast,
         (None, THREE_ELECTRODES),
-        dict(elec_type=["disc", "pad", "ring"], elec_size=[[8, 2], [45, 25, 4], [5, 8, 2]]),
+        dict(elec_type=["disc", "pad", "ring"], elec_size=[[8, 2], [45, 25, 4], [5, 8, 2]], multiaxial="off"),
     ),
-    (16, roast, (None, None), dict(elec_type="pad", elec_ori="ap")),
-    (17, roast, (None, None), dict(elec_type="pad", elec_ori=[0.71, 0.71, 0])),
+    (16, roast, (None, None), dict(elec_type="pad", elec_ori="ap", multiaxial="off")),
+    (17, roast, (None, None), dict(elec_type="pad", elec_ori=[0.71, 0.71, 0], multiaxial="off")),
     # roast('example/subject1.nii',{'Fp1',1,'FC4',1,'POz',-2},'electype','pad','elecori',{'ap','lr','si'})
     #   -- commented out in MATLAB too
     (
         18,
         roast,
         (SUBJECT1, THREE_ELECTRODES),
-        dict(elec_type="pad", elec_ori=[[0.71, 0.71, 0], [-0.71, 0.71, 0], [0, 0.71, 0.71]]),
+        dict(elec_type="pad", elec_ori=[[0.71, 0.71, 0], [-0.71, 0.71, 0], [0, 0.71, 0.71]], multiaxial="off"),
     ),  # MATLAB's note: the direction vectors for pads aren't really intuitive
     (
         19,
         roast,
         (None, THREE_ELECTRODES),
-        dict(elec_type=["pad", "disc", "pad"], elec_ori=[[0.71, 0.71, 0], [0, 0.71, 0.71]]),
+        dict(elec_type=["pad", "disc", "pad"], elec_ori=[[0.71, 0.71, 0], [0, 0.71, 0.71]], multiaxial="off"),
     ),
     (
         20,
         roast,
         (None, THREE_ELECTRODES),
-        dict(elec_type=["pad", "disc", "pad"], elec_ori=["ap", None, [0, 0.71, 0.71]]),
+        dict(elec_type=["pad", "disc", "pad"], elec_ori=["ap", None, [0, 0.71, 0.71]], multiaxial="off"),
     ),
-    (21, roast, (None, None), dict(mesh_options={"radbound": 4, "maxvol": 8})),
+    (21, roast, (None, None), dict(mesh_options={"radbound": 4, "maxvol": 8}, multiaxial="off")),
     (
         22,
         roast,
         (SUBJECT1, None),
         dict(resampling="on", zero_padding=10, t2=SUBJECT1_T2, elec_type="pad"),
     ),
-    (23, roast, (None, THREE_ELECTRODES), dict(conductivities={"csf": 0.6, "electrode": 0.1})),
+    (23, roast, (None, THREE_ELECTRODES), dict(conductivities={"csf": 0.6, "electrode": 0.1}, multiaxial="off")),
     (
         24,
         roast,
         (None, THREE_ELECTRODES),
         dict(
             elec_type=["pad", "disc", "pad"],
-            conductivities={"gel": [1, 0.3, 1], "electrode": [0.1, 5.9e7, 0.1]},
+            conductivities={"gel": [1, 0.3, 1], "electrode": [0.1, 5.9e7, 0.1]}, multiaxial="off"
         ),
     ),
     (
