@@ -779,6 +779,19 @@ Two things keep this manageable:
   "getDP did not converge". roast_py passes PETSc's
   `-ksp_error_if_not_converged`, so getDP exits with MUMPS's error, and
   `roast()` reports it as running out of memory.
+- **Loose pieces of the mesh are left out of the solve.** Not in MATLAB
+  ROAST. Multiaxial's segmentation leaves stray bits of "skin" just
+  outside the scalp, and the mesher sometimes meshes one as a sliver
+  that doesn't touch the head. No current reaches it and no voltage is
+  fixed on it, so it makes the matrix singular. Usually round-off hides
+  that, but runExamples cmd 12 on subject1 got a 14-node sliver 0.7 mm
+  off the scalp, and MUMPS stopped with INFOG(1) = −10, "numerically
+  singular matrix" (MATLAB ROAST is exposed to the same luck: moving the
+  electrodes 2–4 mm changed which slivers the mesher kept).
+  `prepare_for_getdp` now leaves every piece with no gel or electrode in
+  it out of `_ready.msh` and says how many tetrahedra it left out. The
+  saved `.msh` is unchanged, and these pieces can't affect the field in
+  the head.
 
 That real run also caught a genuine performance bug before it shipped:
 `read_medit()`'s and `save_msh()`'s initial implementations converted

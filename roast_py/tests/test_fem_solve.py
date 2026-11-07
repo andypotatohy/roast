@@ -18,9 +18,10 @@ import pytest
 
 from roast_py.fem.getdp_runner import find_getdp_binary, run_getdp
 from roast_py.fem.pos_parser import interpolate_to_grid, read_pos_node_table
-from roast_py.fem.prepare import prepare_for_getdp
+from roast_py.fem.prepare import attached_to_electrodes, prepare_for_getdp
 from roast_py.fem.pro_writer import Conductivities, write_pro_file
 from roast_py.meshing.cgal_mesher import mesh_by_iso2mesh
+from roast_py.meshing.mesh_io import save_msh
 
 
 def test_find_getdp_binary_locates_bundled_binary():
@@ -66,6 +67,45 @@ def two_electrode_sphere_mesh(tmp_path_factory):
         work_dir=work_dir, out_path=work_dir / "subj_test.msh", maxvol=20,
     )
     return work_dir, node, elem, shape, c
+
+
+def test_attached_to_electrodes_finds_floating_pieces():
+    # Two tetrahedra sharing a face (skin + gel), one sharing a single node
+    # with them (still attached), and one sharing nothing (floating skin).
+    elem = np.array([
+        [1, 2, 3, 4, 5],
+        [2, 3, 4, 5, 7],
+        [5, 6, 8, 9, 5],
+        [10, 11, 12, 13, 5],
+    ])
+    assert attached_to_electrodes(elem).tolist() == [True, True, True, False]
+
+
+@pytest.mark.slow
+def test_floating_pieces_left_out_of_solver_mesh(two_electrode_sphere_mesh, tmp_path):
+    # runExamples cmd 12: specks of skin floating free of the head made
+    # MUMPS stop with "numerically singular matrix". They are left out.
+    work_dir, node, elem, shape, c = two_electrode_sphere_mesh
+    far = node[:, :3].max(axis=0) + 10
+    speck = far + np.array([[0, 0, 0], [2, 0, 0], [0, 2, 0], [0, 0, 2], [2, 2, 2]], dtype=float)
+    n0 = node.shape[0]
+    node2 = np.vstack([node[:, :3], speck])
+    elem2 = np.vstack([elem[:, :5], [[n0 + 1, n0 + 2, n0 + 3, n0 + 4, 5], [n0 + 2, n0 + 3, n0 + 4, n0 + 5, 5]]])
+    save_msh(node2, elem2, str(tmp_path / "s.msh"))
+
+    faces, area = prepare_for_getdp(str(tmp_path / "s.msh"), str(tmp_path / "s_ready.msh"), node2, elem2, ["a", "b"])
+    text = (tmp_path / "s_ready.msh").read_text()
+    block = text.split("$Elements\n", 1)[1].split("$EndElements", 1)[0].splitlines()
+    assert int(block[0]) == len(elem) + sum(f.shape[0] for f in faces) == len(block) - 1
+    assert [int(line.split()[0]) for line in block[1:]] == list(range(1, len(block)))
+    used = {int(v) for line in block[1:] for v in line.split()[5:]}
+    assert max(used) == n0  # no element uses the speck's nodes
+
+    sigma = Conductivities(gel=[0.3, 0.3], electrode=[5.9e7, 5.9e7])
+    write_pro_file(str(tmp_path / "s.pro"), current=[1.0, -1.0], sigma=sigma, area_elec_needed=area, ind_use=[1, 2])
+    run_getdp(str(tmp_path / "s.pro"), str(tmp_path / "s_ready.msh"))
+    v_ids, v_vals = read_pos_node_table(str(tmp_path / "s_v.pos"), 1)
+    assert v_ids.size > 0 and not np.any(np.isnan(v_vals))
 
 
 @pytest.mark.slow
