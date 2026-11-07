@@ -32,8 +32,10 @@ fields aren't ported.
 The calls with T2 images, resampling or multiaxial 'off' use SPM, which
 needs the MATLAB Runtime (installed on first use, after you accept its
 license; set ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes to run unattended
--- see roast_py.spm). Calls that leave 'multiaxial' out use roast_py's
-default, Multiaxial, where MATLAB's default is SPM. The New York head and
+-- see roast_py.spm). Each call segments as MATLAB's does. roast_py's own
+default is Multiaxial where MATLAB's is SPM, so every call that MATLAB
+leaves on its default passes multiaxial='off'. The exceptions are the
+calls with a T2, which segment with SPM in roast_py too. The New York head and
 lead fields aren't ported and fail fast with NotImplementedError. Each
 roast() run that goes through takes ~10-15 minutes on CPU and several GB
 of memory for the solve: ~7.6 GB for the MNI152 head, up to ~19 GB for

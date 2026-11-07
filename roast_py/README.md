@@ -289,9 +289,10 @@ were also run there with a coarser mesh (`mesh_options={'radbound': 8,
 driver script; the examples themselves are unchanged:
 
 - 9 (T1 + T2): 544 s.
-- 11 (SPM resampling, padding 20, Multiaxial): 671 s. 12 is the same call
-  in roast_py, since Multiaxial is already the default, so it wasn't run
-  again.
+- 11 as it then stood (SPM resampling, padding 20, and Multiaxial, since it
+  left `multiaxial` out): 671 s. That run is now cmd 12. cmd 11 now passes
+  `multiaxial='off'` and segments with SPM, as in MATLAB; it hasn't been run
+  here since.
 - 22 (resampling, padding 10, T2, pads): 534 s.
 - 25, as written (its own `radbound` 4 mesh): every step up to the solve
   runs, with all five electrodes meshed (823,387 nodes). It needs the
