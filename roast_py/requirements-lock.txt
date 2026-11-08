@@ -43,7 +43,7 @@ openpyxl==3.1.5
 opt-einsum==3.4.0
 optree==0.20.0
 pandas==3.0.5
-pillow==12.3.0
+pillow==13.0.0
 platformdirs==4.12.2
 pooch==1.9.0
 protobuf==7.36.1
