@@ -1,6 +1,8 @@
 """Python port of ROAST's core simulation pipeline (roast/roast_target/reviewRes),
-built to remove the MATLAB dependency. See /roast_py/README.md for status and scope.
+built to remove the MATLAB dependency. See roast_py/README.md for status and scope.
 """
+
+__version__ = "0.1.0"
 
 import importlib
 import sys

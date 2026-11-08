@@ -1,7 +1,7 @@
 [project]
 name = "roast-py"
-version = "0.0.1"
-description = "Python port of ROAST's core TES simulation pipeline (no MATLAB required)"
+version = "0.1.0"
+description = "Python port of ROAST (realistic volumetric approach to simulate transcranial electric stimulation), no MATLAB required"
 requires-python = ">=3.11,<3.14"
 # Everything roast() needs at runtime, as ranges so `pip install -e .` can
 # coexist with other packages. The exact versions roast_py was verified

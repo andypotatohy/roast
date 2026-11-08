@@ -1,61 +1,367 @@
-# roast_py — Python port of ROAST's core pipeline (work in progress)
+# roast_py 0.1: ROAST in Python, no MATLAB needed
 
-This is an in-progress translation of ROAST's core simulation pipeline
-(`roast()`, `roast_target()`, `reviewRes()`) from MATLAB to Python, with the
-goal of removing the MATLAB license requirement. Scope, phasing, and the
-two open technical risks (the CGAL mesher and SPM segmentation are not
-plain standalone binaries the way getDP and NiftyReg are) are written up
-in full in the project's plan; the short version is below.
+roast_py is a Python port of [ROAST](https://www.parralab.org/roast/)'s
+`roast()`: it builds a head model from a T1 MRI, places the electrodes
+you ask for, and computes the voltage and electric field of a
+transcranial electrical stimulation (TES) montage. It does what MATLAB
+ROAST does, with the same options and output files, and needs no MATLAB
+license.
 
-**Status: Phases 0-4 (I/O, segmentation, electrode placement, meshing, FEM
-solve) done, wired into a top-level `roast()` (see Quickstart below), plus
-the visualization half of Phase 7 (`reviewRes`/`visualizeRes` and the views
-they call — see Visualization below). Phases 5 and 6 not yet implemented.** Runs end to end and produces physically
-sane output, but **has not yet been numerically validated against MATLAB
-ROAST** (that's Phase 5 — the actual accuracy gate). Landmarks now come
-from registration to MNI space, as in MATLAB (see
-[Landmarks](#landmarks-registration-to-mni)). Don't use it for real
-simulations until Phase 5 passes.
+**Status of 0.1.** The full `roast()` pipeline works: segmentation
+(Multiaxial or SPM), electrode placement, meshing, the FEM solve, and
+ROAST's result viewers (`reviewRes`). Electrode placement has been checked
+against MATLAB ROAST's masks: pads match voxel for voxel, and discs and
+rings match within the spread of MATLAB's own random rim orientation (see
+[Electrode placement](#electrode-placement-and-cap-fitting)). The
+E-field has been checked against MATLAB ROAST end to end on 8 of ROAST's
+example simulations, and differs from MATLAB's by 4–9% on average (see
+[Validation against MATLAB ROAST](#validation-against-matlab-roast)).
+Not ported yet: `roast_target()`, the New York head, lead fields, and the
+manual landmark GUI.
 
-## Install
+- [Quickstart](#quickstart)
+- [Using roast_py](#using-roast_py)
+- [Developer guide](#developer-guide)
+
+## Quickstart
+
+### What you need
+
+- **The whole ROAST repository**, not just this folder. roast_py uses
+  files that sit at the repository root: the getDP, CGAL and NiftyReg
+  binaries and the Multiaxial models under `lib/`, `capInfo.xlsx`,
+  `eTPM.nii` and `example/MNI152_T1_1mm.nii`
+  ([full list](#files-roast_py-uses-from-the-rest-of-the-repository)).
+- **Python 3.11, 3.12 or 3.13.** 3.11 is what roast_py is tested on.
+- **Memory.** The FEM solve needs about **8 GB** for ROAST's default head
+  (MNI152) and about **20 GB** for a head like `example/subject1.nii`
+  at default mesh settings. A coarser mesh needs less (see
+  [Memory](#memory)).
+- **A computer roast_py has been tested on: Linux.** Bundled binaries also
+  exist for Windows and macOS (Apple silicon, through Rosetta), but those
+  haven't been tested. Intel Macs can't run the Multiaxial segmentation
+  (no TensorFlow build).
+
+### Install
+
+```
+git clone https://github.com/andypotatohy/roast.git
+cd roast/roast_py
+conda create -n roast_py python=3.11 -y      # or any Python 3.11-3.13 environment
+conda activate roast_py
+pip install -e .
+```
+
+Install with `-e` (editable). A regular `pip install .` copies only the
+Python code, and roast_py then can't find the files it needs from the
+rest of the repository. (Installing is optional too: from inside
+`roast/roast_py`, `import roast_py` works without it.)
+
+You don't need to install the other packages yourself. The first time you
+call `roast()`, it checks your environment against the exact package
+versions roast_py was tested with and installs whatever is missing with
+pip (see [Dependencies](#dependencies)).
+
+### Your first simulation
+
+```python
+from roast_py import roast
+
+result = roast()
+```
+
+This is MATLAB's `roast()`: ROAST's default head
+(`example/MNI152_T1_1mm.nii`) with its default montage, anode Fp1 at
+1 mA and cathode P4 at −1 mA. It takes about 15 minutes on 4 CPU cores.
+When it's done, figures open showing the head, the electrodes, and the
+voltage and E-field; `roast()` returns when you close them.
+
+Your own head and montage:
+
+```python
+result = roast("/data/sub01/T1.nii", {"F3": 1.0, "F4": -1.0})
+```
+
+The recipe is a dict of electrode name to current in mA, and the currents
+must add up to zero. Electrode names come from the 10-05 system by default
+(`cap_type` for BioSemi or EGI); `Nk1`–`Nk4` are neck electrodes, and
+`custom*` electrodes are read from `<subj>_customLocations`, as in
+MATLAB.
+
+### What you get
+
+`roast()` saves its results next to the MRI (or in `work_dir=`), named as
+MATLAB names them:
+
+| File | Contents |
+|---|---|
+| `<subj>_<tag>_v.nii` | voltage (mV) |
+| `<subj>_<tag>_e.nii` | E-field (V/m), 3 components |
+| `<subj>_<tag>_emag.nii` | E-field magnitude (V/m) |
+| `<subj>_<tag>_mask_elec.nii`, `_mask_gel.nii` | electrodes and gel, labeled in your recipe's order |
+| `<mri>_multiaxial_masks.nii` or `<mri>_T1orT2_SPM_masks.nii` | the segmentation: 1 white matter, 2 gray matter, 3 CSF, 4 bone, 5 skin, 6 air |
+| `<subj>_<tag>_roastOptions.json`, `<subj>_roastLog` | the options used, and a log of every simulation |
+
+`<tag>` is `simulation_tag=` or, by default, the date and time
+(`20261107T162433`). The results are in the space of the MRI that was
+modeled, i.e. after RAS conversion, resampling and zero-padding, as in
+MATLAB.
+
+The returned `RoastResult` holds the same volumes as numpy arrays
+(`result.vol_v`, `result.vol_e`, `result.ef_mag`), along with the
+segmentation (`result.tissue_labels`), the electrode and gel masks, the
+mesh, the landmarks, the MRI-to-MNI transform (`result.mri2mni`) and the
+tag (`result.sim_tag`).
+
+To look at a finished simulation again:
+
+```python
+from roast_py import review_res
+
+review_res("/data/sub01/T1.nii")                          # the latest simulation
+review_res("/data/sub01/T1.nii", sim_tag="mySim")          # a given one
+review_res("/data/sub01/T1.nii", tissue="skin")            # results on another tissue
+review_res("/data/sub01/T1.nii", show=False, save_dir="figs")  # save PNGs only
+```
+
+## Using roast_py
+
+### Options
+
+`roast()` takes MATLAB's options as keyword arguments, with the same
+defaults and checks. MATLAB's `roast(subj, recipe, 'elecType', 'pad',
+'zeroPadding', 20)` is `roast(subj, recipe, elec_type="pad",
+zero_padding=20)`. Cell arrays become lists, `[]` becomes `None`, and
+structs become dicts:
+
+```python
+roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
+      elec_type=["pad", "disc", "pad"], elec_ori=["ap", None, [0, 0.71, 0.71]],
+      elec_size=[[45, 25, 4], None, [50, 30, 3]],
+      conductivities={"csf": 0.6}, mesh_options={"maxvol": 8},
+      zero_padding=10, simulation_tag="mySim")
+```
+
+| MATLAB option | Python | Notes |
+|---|---|---|
+| `subj`, `recipe` | positional | `None` = default; the recipe is a dict (MATLAB's flat list also works). A non-RAS MRI is converted first (`<subj>_ras.nii`). |
+| `'capType'` | `cap_type` | `"1020"`, `"1010"` (default), `"1005"`, `"biosemi"`, `"egi"` |
+| `'elecType'`, `'elecSize'`, `'elecOri'` | `elec_type`, `elec_size`, `elec_ori` | disc, pad and ring; one value for all electrodes, or a list with one per electrode |
+| `'T2'` | `t2` | a T2 image to segment with (SPM); aligned to the T1 if needed |
+| `'multiaxial'` | `multiaxial` | `"on"`/`True` or `"off"`/`False`; see [Segmentation](#segmentation-multiaxial-or-spm) |
+| `'meshOptions'` | `mesh_options` | dict of `radbound`, `angbound`, `distbound`, `reratio`, `maxvol` |
+| `'conductivities'` | `conductivities` | dict, including per-electrode gel and electrode values |
+| `'simulationTag'` | `simulation_tag` | see [Tags and resuming](#tags-and-resuming) |
+| `'resampling'` | `resampling` | reslice to 1 mm voxels first (SPM) |
+| `'zeroPadding'` | `zero_padding` | voxels of padding on every side |
+| | `work_dir` | where to save the outputs (default: next to the MRI) |
+| | `visualize` | `False` skips the figures |
+| | `install_missing` | `False` installs no packages (see [Dependencies](#dependencies)) |
+| | `accept_matlab_runtime_license` | for SPM in scripts; see below |
+| `'manualGui'`, `'nyhead'`, `'leadfield'` | | not ported: `NotImplementedError` |
+
+### Segmentation: Multiaxial or SPM
+
+roast_py can segment the head two ways, as MATLAB ROAST can:
+
+- **Multiaxial** (roast_py's default): a neural network that runs inside
+  Python with TensorFlow. Nothing extra to install.
+- **SPM** (MATLAB ROAST's default): used with `multiaxial="off"`, or
+  whenever a `t2` is given. It runs a compiled SPM on the free MATLAB
+  Runtime, which roast_py installs the first time you need it (about
+  11 GB; keep about 20 GB free while it installs). Installing it means
+  accepting MathWorks' license: roast_py asks once in a terminal, or pass
+  `accept_matlab_runtime_license=True` (or set
+  `ROAST_PY_ACCEPT_MATLAB_RUNTIME_LICENSE=yes`) in scripts. To install it
+  ahead of time:
+
+  ```
+  python -m roast_py.spm install --accept-license
+  python -m roast_py.spm check     # start SPM once and print its version
+  ```
+
+The default differs from MATLAB's so that the common case needs no MATLAB
+Runtime. To get MATLAB's default, pass `multiaxial="off"`:
+
+```python
+roast("/data/sub01/T1.nii", {"F3": 1.0, "F4": -1.0}, multiaxial="off")
+```
+
+### Tags and resuming
+
+Every simulation is saved under a tag, as in MATLAB. Running the same call
+again finds the saved simulation and just loads its results. If a run is
+interrupted, running it again resumes where it stopped: each of the six
+steps (segmentation, registration, electrode placement, meshing, solving,
+saving results) is skipped when its output already exists, and a new
+montage on the same head starts at electrode placement. To redo a step,
+delete its output; the steps after it are redone too. Reusing a tag for
+different options is an error, as in MATLAB. Details:
+[Simulation tags](#simulation-tags-and-resuming-details).
+
+### Memory
+
+Most of the memory goes to the FEM solve (getDP's direct solver), and it
+grows with the mesh: about 8 GB for MNI152 (385k mesh nodes) and about
+20 GB for `example/subject1.nii` (600–800k nodes). MATLAB ROAST needs the
+same, since it runs the same solver. If getDP runs out of memory,
+`roast()` says so. On a smaller machine, use a coarser mesh; the node
+count is set mostly by `radbound` and `distbound`:
+
+```python
+roast(subj, recipe, mesh_options={"radbound": 8, "distbound": 0.4, "maxvol": 30})  # ~470k nodes for subject1
+```
+
+Don't go much coarser: the mesher can then miss small electrodes, and
+`roast()` stops with "Electrode was not meshed properly".
+
+### Figures
+
+Slice viewers are matplotlib windows; the 3D views are one PyVista (VTK)
+window with a panel each, and you can drag to rotate. `roast()` and
+`review_res()` return once you close every window. Without a display
+(a server, CI), the figures are saved as PNGs in
+`<work_dir>/<subj>_figures/` instead. Interactive slice viewers need
+tkinter or Qt.
+
+### Validation against MATLAB ROAST
+
+The E-field was compared end to end with MATLAB ROAST's on 8 simulations
+from `runExamples.m` (see [Running ROAST's examples](#running-roasts-examples)):
+
+| cmd | head | segmentation |
+|---|---|---|
+| 1 | MNI152 | SPM |
+| 2 | MNI152 | Multiaxial |
+| 5 | MNI152, zero-padded, 10-05 electrode | SPM |
+| 6 | MNI152, zero-padded, 10-05 electrode | Multiaxial |
+| 7 | subject1, four electrodes | SPM |
+| 8 | subject1, four electrodes | Multiaxial |
+| 14 | MNI152, disc, pad and ring | SPM |
+| 25 | subject1 with T2, five electrode kinds | SPM |
+
+roast_py's E-field differs from MATLAB's by **4–9% on average**, relative
+to MATLAB's results. Two known differences could explain this:
+
+- **MATLAB's `convertToRAS.m` has a small glitch** in the MRI header it
+  writes, which roast_py doesn't reproduce.
+- **Different SPM versions** (the SPM runs only): roast_py runs SPM 25.01,
+  MATLAB ROAST its bundled, modified SPM12.
+
+### Differences from MATLAB ROAST
+
+- **The MRI header after RAS conversion.** roast_py reorients with
+  nibabel and doesn't reproduce the glitch in MATLAB's `convertToRAS.m`
+  (see [Validation](#validation-against-matlab-roast)).
+- **Multiaxial is the default segmenter** (see above). With SPM, roast_py
+  uses SPM 25.01, where MATLAB ROAST bundles a modified SPM12, so
+  segmentations can differ slightly.
+- **Voxel coordinates are 0-based** in the viewers and in `RoastResult`:
+  MATLAB's voxel (129, 129, 129) is (128, 128, 128) here.
+- **Electrode masks are labeled in your recipe's order.** MATLAB labels
+  them in its own sorted order.
+- **Discs and rings are reproducible.** MATLAB orients their rims at
+  random (`rand` in `cylinder2P.m`), so every MATLAB run differs a little;
+  roast_py uses a fixed orientation.
+- **Loose bits of mesh are left out of the solve.** The mesher sometimes
+  keeps a stray sliver of "skin" that doesn't touch the head, which can
+  make the solve fail in MATLAB ROAST. roast_py leaves such pieces out and
+  says so.
+- **Resuming redoes the steps after one that ran;** MATLAB checks each
+  file on its own and could reuse a stale mesh.
+- **`review_res(subj)` shows the latest simulation;** MATLAB asks for a
+  tag.
+- **Figures block until closed** in a script, since the script would
+  otherwise exit and close them.
+
+### Running ROAST's examples
+
+`examples/run_examples.py` is MATLAB's `runExamples.m`: the same calls,
+in the same order. Like MATLAB, it logs failures to `errLog.txt` and
+carries on.
+
+```
+python examples/run_examples.py            # all of them
+python examples/run_examples.py 14 20 24   # just these
+python examples/run_examples.py --list     # print the calls
+```
+
+Expect some to fail on purpose, with a message saying why: missing input
+files (3, 4), a T2 with Multiaxial (10), the New York head (26–31, 33)
+and lead fields (32). The `roast_target` calls and the reviews of their
+results (34–37, 39–41) are left out. The calls on `subject1.nii` need about 20 GB of memory (see
+[Memory](#memory)).
+
+`examples/quickstart.py` runs one simulation on `example/subject1.nii`
+(about 20 GB of memory).
+
+## Developer guide
+
+Everything below is for working on roast_py: how it's laid out, how each
+part was ported from MATLAB, and how it was checked.
+
+### Layout
+
+| Module | Ports |
+|---|---|
+| `roast_py/roast.py` | `roast.m`: the six steps, tags and resuming |
+| `roast_py/options.py` | `roast.m`'s option handling, error messages included |
+| `roast_py/simulation_log.py` | `writeRoastLog.m`, `isNewOptions.m` |
+| `roast_py/io/` | `convertToRAS.m`, `zeroPadding.m`, `alignHeader2mni.m` |
+| `roast_py/segmentation/` | Multiaxial (`lib/multiaxial`), `segTouchup.m` |
+| `roast_py/spm/` | `start_seg.m`, `realignT2.m`, `resampToOneMM.m` through spm-python |
+| `roast_py/registration/` | `runNiftyReg.m` |
+| `roast_py/geometry/` | landmarks, cap fitting, electrode placement |
+| `roast_py/morphology.py` | MATLAB's box `imdilate`/`imerode`/`imclose`/`imopen` |
+| `roast_py/meshing/` | `meshByIso2mesh.m`, iso2mesh's `cgalv2m.m` and mesh I/O |
+| `roast_py/fem/` | `prepareForGetDP.m`, `solveByGetDP.m`, `postGetDP.m` |
+| `roast_py/viz/` | `reviewRes.m`, `visualizeRes.m`, `sliceshow.m` and the viewers |
+| `roast_py/dependencies.py` | the tested environment and its auto-install |
+
+### Files roast_py uses from the rest of the repository
+
+roast_py finds these by searching the folders above its own source
+files, which is why it has to run from a ROAST checkout (or an editable
+install of one):
+
+| File | Used for | Size |
+|---|---|---|
+| `lib/getdp-3.2.0/bin/` (`getdp`, `getdp.exe`, `getdpMac`) | FEM solve | 81 MB folder |
+| `lib/iso2mesh/bin/` (`cgalmesh.mexa64`, `.mexmaci64`, `.exe` + DLLs) | meshing | 7 MB |
+| `lib/NiftyReg/{linux,mac,win}/reg_aladin` | registration to MNI (Multiaxial path) | 5 MB |
+| `lib/multiaxial/*.h5` | Multiaxial model weights | 13 MB |
+| `lib/spm12/eTPM_*.nii` (3 files) | segTouchup's atlas masks (SPM path) | 6.5 MB |
+| `eTPM.nii` | landmark atlas; SPM's tissue priors | 70 MB |
+| `capInfo.xlsx` | EEG cap layouts | 44 KB |
+| `example/MNI152_T1_1mm.nii` | default head; NiftyReg's template | 14 MB |
+
+The examples and tests also use `example/subject1.nii` and friends. Each
+binary can be overridden (`roast(..., getdp_bin=, cgalmesh_bin=,
+niftyreg_bin=, model_dir=)`).
+
+### Dependencies
 
 roast_py runs on **one exact, tested environment**: the package versions
-that were installed when `roast("../example/subject1.nii")` last ran end to
-end, segmentation through FEM solve. They are listed in
-`requirements-lock.txt` (identical to `TESTED_ENVIRONMENT` in
-`roast_py/dependencies.py`):
+that ran the pipeline end to end, listed in `requirements-lock.txt`
+(identical to `TESTED_ENVIRONMENT` in `roast_py/dependencies.py`):
 
 | | |
 |---|---|
 | Python | **3.11.15** (3.11–3.13 supported; 3.10 and 3.14 are not) |
-| Installer | **pip only** — no conda packages; conda, if used, only provides Python |
+| Installer | **pip only**; conda, if used, only provides Python |
 | Key packages | tensorflow 2.21.0, tf-keras 2.21.0, keras 3.15.1, numpy 2.4.6, scipy 1.17.1, nibabel 5.4.2, pandas 3.0.5, openpyxl 3.1.5, scikit-image 0.26.0, h5py 3.14.0, matplotlib 3.11.2, pyvista 0.49.0, vtk 9.7.1 (+ their dependencies, 58 pins total) |
-| Platforms with wheels | Linux x86_64/aarch64 (glibc ≥ 2.27), macOS on Apple silicon, Windows x86_64 — **not** Intel Macs (no TensorFlow 2.21 build) |
+| Platforms with wheels | Linux x86_64/aarch64 (glibc ≥ 2.27), macOS on Apple silicon, Windows x86_64; **not** Intel Macs (no TensorFlow 2.21 build) |
 
-**Recommended setup** — a fresh environment on the tested Python:
-
-```
-conda create -n roast_py python=3.11 -y
-conda activate roast_py
-```
-
-then just call `roast()`:
-
-```python
-from roast_py import roast      # works with nothing installed
-result = roast("../example/subject1.nii")
-```
-
-Before doing any work, `roast()` compares the running interpreter against
+Before doing any work, `roast()` compares the running interpreter with
 the tested environment and installs anything missing or at a different
 version, with a single `python -m pip install name==version ...` into that
-interpreter. It refuses up front (with the commands above) on an
-unsupported Python. After installing it re-checks every version and
-test-imports TensorFlow + tf-keras in a fresh process, so a broken install
-fails right away with an explanation, not minutes into segmentation.
+interpreter. It refuses up front on an unsupported Python. After
+installing it re-checks every version and test-imports TensorFlow and
+tf-keras in a fresh process, so a broken install fails right away with an
+explanation, not minutes into segmentation.
 
-Importing `roast_py` deliberately needs nothing but the standard library,
-which is what makes that possible: if getting hold of `roast` required the
+Importing `roast_py` needs nothing but the standard library, which is
+what makes that possible: if getting hold of `roast` required the
 packages it installs, the auto-install could never run.
 
 To install up front instead (all equivalent):
@@ -76,7 +382,11 @@ pass `roast(..., install_missing=False)` or set
 TensorFlow/tf-keras pair then raise an actionable error; other version
 differences only warn.
 
-### Why exact pins, and why pip rather than conda
+SPM's packages (spm-python and the compiled SPM, an 80 MB wheel) aren't
+part of this environment; they're installed the first time a call needs
+SPM (see [SPM through spm-python](#spm-through-spm-python)).
+
+#### Why exact pins, and why pip rather than conda
 
 The bundled segmentation models are Keras 2 `.h5` files, loadable only
 through the `tf-keras` compatibility package, and `tf-keras` X.Y only works
@@ -101,109 +411,7 @@ If your existing environment already has a conda-installed TensorFlow,
 so; if that can't be done cleanly it stops and points you at the fresh
 environment above, which is the reliable route.
 
-## Quickstart
-
-Python equivalent of MATLAB's `roast('example/subject1.nii')` (default
-recipe: anode Fp1 1 mA, cathode P4 -1 mA):
-
-```python
-from roast_py import roast
-
-result = roast("/path/to/subject1.nii")  # copy it out of example/ first -- see examples/quickstart.py
-```
-
-That's the whole call — `roast()` chains segmentation → electrode
-placement → meshing → FEM solve and saves `<subj>_<tag>_v.nii` (voltage),
-`_e.nii` (E-field, 3 components) and `_emag.nii` (E-field magnitude) next
-to the input, exactly like MATLAB's `postGetDP.m`. `<tag>` is
-`simulation_tag`, or the date and time. It also
-returns a `RoastResult` with those same volumes as numpy arrays
-(`result.vol_v`, `result.vol_e`, `result.ef_mag`) plus the intermediate
-tissue/electrode/gel masks, for inspection without re-reading the NIfTI
-files. Like MATLAB's `roast()`, it then shows the results — see
-[Visualization](#visualization-phase-7) — and returns once you close the
-windows (`visualize=False` skips them).
-
-A custom montage is just a dict of electrode name → current in mA (must
-sum to ~0):
-
-```python
-result = roast("/path/to/subject1.nii", {"F3": 1.0, "F4": -1.0})
-```
-
-Runnable end-to-end example: `examples/quickstart.py`. It works straight
-from a git clone with no install step — it puts the package root on
-`sys.path` itself, and `roast()` installs the tested environment if needed:
-
-```
-python examples/quickstart.py                    # install the tested env if needed, then run
-python examples/quickstart.py --check-deps       # just report what differs from it
-python examples/quickstart.py --no-install-deps  # don't install anything
-python examples/quickstart.py --no-visualize     # skip the result figures
-```
-
-Verified in `tests/test_roast.py` (`@pytest.mark.slow`) and by running
-exactly `roast("../example/subject1.nii")` from `roast_py/` with the default
-recipe: **~5.5–6.5 min total** on CPU (331 s in the tested environment; 377 s
-in a fresh venv that started out with a broken TensorFlow 2.20 + tf-keras
-2.15 pair, which `roast()` replaced with the pinned versions before running),
-producing a voltage volume of 0 to 362 mV and an E-field magnitude up to
-31 V/m across the full 192×256×256 grid — physically sane magnitudes for a
-1 mA montage (not the 10^10-scale nonsense a mis-set-up model produces,
-see the FEM solve section below), with `subject1_v.nii`/`_e.nii`/`_emag.nii`
-written out alongside the intermediate `.msh`/`.pro`/`.pos` files.
-
-Those subject1 numbers predate two later changes. Landmarks now come
-from NiftyReg registration, which adds about 2 minutes and moves the
-electrodes to their correct positions. Meshing now uses `roast.m`'s mesh
-settings, which roughly triples subject1's mesh (see
-[Meshing](#meshing-phase-3)).
-
-With both in place, the full pipeline was run on MATLAB's own default
-head, `example/MNI152_T1_1mm.nii`. It took
-**938 s (~15.6 min)** on 4 CPU cores, with a 384,549-node mesh, voltage
-from 0 to 280 mV and E-field up to 30 V/m. The electrode centers landed
-at MNI (−36, 82, −4) for Fp1 and (59, −85, 52) for P4. The slow test
-`tests/test_roast.py` now runs on this head, because subject1 at these
-mesh settings needs more memory than some test machines have.
-
-### roast() options
-
-`roast()` takes MATLAB's options as keyword arguments, with the same
-defaults and checks (`roast_py/options.py` ports `roast.m`'s option
-handling, error messages included):
-
-```python
-roast()                                              # example/MNI152_T1_1mm.nii, Fp1 +1 mA / P4 -1 mA
-roast("example/subject1.nii", {"F1": 0.3, "P2": 0.7, "C5": -0.6, "O2": -0.4})
-roast(None, {"Fp1": 1, "FC4": 1, "POz": -2},
-      elec_type=["pad", "disc", "pad"], elec_ori=["ap", None, [0, 0.71, 0.71]],
-      elec_size=[[45, 25, 4], None, [50, 30, 3]],
-      conductivities={"csf": 0.6}, mesh_options={"maxvol": 8},
-      zero_padding=10, simulation_tag="mySim")
-```
-
-| MATLAB option | Python | Status |
-|---|---|---|
-| `subj`, `recipe` | positional; `None` = default; recipe as a dict (or MATLAB's flat list) | done; non-RAS input is converted automatically (`<subj>_ras.nii`) |
-| `'capType'` | `cap_type` | done (1020/1010/1005/BioSemi/EGI) |
-| `'elecType'`, `'elecSize'`, `'elecOri'` | `elec_type`, `elec_size`, `elec_ori` | done: disc/pad/ring, mixed types, per-electrode sizes and pad orientations. MATLAB's cell arrays are lists, with `None` for `[]` |
-| neck (`Nk1`–`Nk4`) and `custom*` electrodes | in the recipe | done; custom coordinates from `<subj>_customLocations`, as in MATLAB |
-| `'meshOptions'` | `mesh_options` (dict) | done |
-| `'conductivities'` | `conductivities` (dict) | done, including per-electrode gel/electrode values |
-| `'simulationTag'` | `simulation_tag` | done, as in MATLAB: outputs are `<subj>_<tag>_*`, with a date-time tag (`20261025T143012`) by default; see [Simulation tags and resuming](#simulation-tags-and-resuming) |
-| `'zeroPadding'` | `zero_padding` | done |
-| `'multiaxial'` | `multiaxial` | done: `'off'` segments with SPM. Left out, roast_py uses Multiaxial (unless a T2 is given) — MATLAB's default is SPM |
-| `'T2'` | `t2` | done (SPM): aligned to the T1 if needed, then segmented with it; with `multiaxial='on'` you get MATLAB's own error |
-| `'resampling'` | `resampling` | done (SPM's `spm_reslice`, as in MATLAB) |
-| `'manualGui'` | `manual_gui` | `NotImplementedError` |
-| `'nyhead'`, `'leadfield'` | as in MATLAB | `NotImplementedError` |
-
-Results are in the space of the modeled MRI (after RAS conversion and
-zero-padding), as in MATLAB. `review_res(subj, sim_tag=..., tissue=...)`
-redraws a simulation.
-
-### Simulation tags and resuming
+### Simulation tags and resuming: details
 
 `roast_py/simulation_log.py` ports writeRoastLog.m and isNewOptions.m. As
 in MATLAB, every simulation is saved under a tag:
@@ -280,9 +488,9 @@ missing. These stop in about a second with the expected error:
 - the New York head (26–31, 33)
 - lead fields (32)
 
-**The SPM calls (9, 11, 12, 22, 25, 38) need a machine with ~20 GB of
-memory.** At roast.m's mesh settings, subject1 is too big to solve on the
-14 GB machine they were run on. Cmd 9 gives 801,767 nodes, and MUMPS asks
+**The calls on subject1 need a machine with ~20 GB of memory.** At
+roast.m's mesh settings, subject1 is too big to solve on the 14 GB
+machine they were run on. Cmd 9 gives 801,767 nodes, and MUMPS asks
 for ~19 GB. Cmd 11 gives 666,927 nodes and was killed at ~13 GB. So they
 were also run there with a coarser mesh (`mesh_options={'radbound': 8,
 'distbound': 0.4, 'maxvol': 30}`, about 470k nodes), passed by a separate
@@ -292,7 +500,10 @@ driver script; the examples themselves are unchanged:
 - 11 as it then stood (SPM resampling, padding 20, and Multiaxial, since it
   left `multiaxial` out): 671 s. That run is now cmd 12. cmd 11 now passes
   `multiaxial='off'` and segments with SPM, as in MATLAB; it hasn't been run
-  here since.
+  here since. cmd 12 at roast.m's mesh settings later stopped with MUMPS
+  INFOG(1) = −10 (a singular matrix) because of a loose sliver of mesh.
+  Those are now left out of the solve (see [Meshing](#meshing)), and it
+  gets as far as running out of memory on the 14 GB machine.
 - 22 (resampling, padding 10, T2, pads): 534 s.
 - 25, as written (its own `radbound` 4 mesh): every step up to the solve
   runs, with all five electrodes meshed (823,387 nodes). It needs the
@@ -325,31 +536,26 @@ Each call runs in its own Python process, so memory is released between
 calls and a crash or out-of-memory kill is logged as that call's error
 rather than ending the batch. (`--in-process` runs them all in one.)
 
-
-## What's here so far
+### MRI I/O
 
 `roast_py/io/nifti.py` ports the pure-numerical MRI preprocessing helpers:
 
 | MATLAB | Python | Notes |
 |---|---|---|
-| `convertToRAS.m` | `convert_to_ras()` | Uses nibabel's `as_closest_canonical` rather than reimplementing the sform/qform flip math by hand. Verified against `example/MNI152_T1_1mm.nii` (the LAS-oriented file the top-level README calls out) — the resulting affine matches ROAST's translation-update formula exactly. |
+| `convertToRAS.m` | `convert_to_ras()` | Uses nibabel's `as_closest_canonical` rather than reimplementing the sform/qform flip math by hand. Checked on `example/MNI152_T1_1mm.nii`, the LAS-oriented file the top-level README calls out. MATLAB's `convertToRAS.m` has a small glitch in the header it writes, which this doesn't reproduce; it is one likely source of the 4–9% E-field difference (see [Validation](#validation-against-matlab-roast)). |
 | `zeroPadding.m` | `zero_pad()` | Verified world-coordinates are preserved across padding on the same example file. |
 | `alignHeader2mni.m` | `align_header_to_mni()` | Ports the `update_affine` helper (forces sform, writes `_MNI` suffix). |
 
-`resampToOneMM.m` and `realignT2.m` are deliberately **not** ported yet —
-both call into SPM (`spm_reslice`, `spm_jobman` coreg) to do real
-resampling/registration, not just header math, so they're deferred to the
-segmentation phase where the SPM dependency gets resolved as a whole
-(likely via SPM12's free MATLAB-Runtime-based standalone build, the same
-approach other Python neuroimaging pipelines use to call SPM without a
-MATLAB license).
+`resampToOneMM.m` and `realignT2.m` run SPM (`spm_reslice`, coregistration),
+so they live in `roast_py/spm/` (see
+[SPM through spm-python](#spm-through-spm-python)).
 
 Tests in `tests/test_nifti.py` run against the real example MRIs bundled
 in the repo's `example/` directory (not synthetic fixtures), so they
 double as a numerical-parity check against ROAST's own documented example
 data.
 
-## Segmentation (Phase 1)
+### Segmentation
 
 Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
 3=csf, 4=bone, 5=skin, 6=air, 0=background):
@@ -381,7 +587,7 @@ Two paths, both producing ROAST's 6-tissue label scheme (1=white, 2=gray,
   `segTouchup.m` in full (`roast_py/segmentation/touchup.py`) to turn SPM's
   tissue maps into the 6-label scheme.
 
-## SPM through spm-python
+### SPM through spm-python
 
 `roast()` runs ROAST's SPM steps with SPM's official Python interface,
 [spm-python](https://github.com/spm/spm-python). That package runs a
@@ -519,7 +725,7 @@ corrected to match MATLAB:
 - **runExamples' SPM calls on subject1:** see
   [runExamples.m in Python](#runexamplesm-in-python).
 
-## Electrode placement & cap fitting (Phase 2)
+### Electrode placement and cap fitting
 
 `roast_py/geometry/` ports the whole electrode-placement pipeline:
 
@@ -553,7 +759,7 @@ deliberately requesting electrodes out of pool order.
   Confirms Cz, Fpz and Oz land where the 10-10 system puts them in MNI
   space, and gel never overlaps electrodes or other tissue.
 
-## Landmarks (registration to MNI)
+### Landmarks (registration to MNI)
 
 Electrode placement needs the nasion, inion, both ear points and two neck
 points on the individual head. As in MATLAB with the Multiaxial
@@ -594,12 +800,12 @@ registered landmarks Cz lands at MNI (−1, −15, 99) and Fp1 at
 
 - `checkLandmarks.m`, the manual landmark GUI that can refit the
   registration from clicked points.
-- The SPM path's registration, which reads `Affine` from `_seg8.mat`.
-  `Registration` takes that format too, so it plugs in once SPM
-  segmentation runs.
 - `alignHeader2mni` on the outputs (the `_MNI` header copies).
-- Caching: unlike MATLAB, `roast()` re-runs the registration every time
-  rather than reusing an existing `_niftyReg` file.
+
+With SPM segmentation the registration comes from SPM instead: `Affine`
+in `_seg8.mat`, read by the same `Registration` class. Either way it is
+saved and reused, like the other steps (see
+[Simulation tags](#simulation-tags-and-resuming-details)).
 
 As in MATLAB, the back-neck landmark can fall below the image on scans
 that stop at the skull base. It does for subject1. It only matters if
@@ -697,7 +903,7 @@ spread of MATLAB's own random orientation, with every axis within 0.6° of
 MATLAB's. These runs used roast_py's SPM25 landmarks; MATLAB's `seg8.mat`
 for this run wasn't available.
 
-## Meshing (Phase 3)
+### Meshing
 
 `roast_py/meshing/` ports the volumetric mesh generation step:
 
@@ -732,7 +938,7 @@ work around.
   produced tetrahedra are valid (positive volume, in-range node
   references) and that region numbering behaves as documented above.
 - Manually verified against the real pipeline output: `example/subject1.nii`
-  segmented (Phase 1) → 3 electrodes placed (Phase 2) → meshed at
+  segmented → 3 electrodes placed → meshed at
   `maxvol=10` produced 223,926 nodes / ~1.33M tetrahedra / 897,814
   triangles across all 12 expected regions (6 tissue + 3 gel + 3
   electrode), in about a minute. That run used cgalv2m's own sizing
@@ -800,7 +1006,7 @@ would be a real bottleneck at the ~11 million numbers a real head mesh
 involves. Both now parse/write in bulk via numpy (`str.split()` + single
 `np.array(..., dtype=...)` calls for reading, `np.savetxt` for writing).
 
-## FEM solve (Phase 4)
+### FEM solve
 
 `roast_py/fem/` ports boundary-condition setup, the `.pro` (getDP problem
 script) generation, the getdp subprocess, and `.pos` post-processing:
@@ -813,7 +1019,7 @@ script) generation, the getdp subprocess, and `.pos` post-processing:
 | `postGetDP.m` (`.pos` parsing + `TriScatteredInterp`) | `fem/pos_parser.py` |
 | the roast() (non-lead-field) path end to end | `fem/solve.py` |
 
-This was the plan's flagged highest-precision-risk phase (PDE assembly,
+This was the step with the highest precision risk (PDE assembly,
 boundary tags, element ordering all have to actually match, not just
 "look right"), so it got the most direct kind of check available without
 a MATLAB reference to diff against: **does the real getdp binary actually
@@ -845,7 +1051,8 @@ an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
   sinking cathode, which only holds if the boundary condition sign, region
   wiring, and area computation all have the right sign and magnitude
   together, not just individually.
-- Manually run against the real pipeline output: Phase 1-3's segmented,
+- Manually run against the real pipeline output (an early run, before the
+  mesh settings matched roast.m): the segmented,
   electrode-placed, meshed `example/subject1.nii` (223,926 nodes, ~1.33M
   elements), solved with a real 3-electrode montage (a 1mA/-0.5mA/-0.5mA
   Oz/Fpz/Cz montage). **Completed successfully end to end** — meshed in
@@ -868,7 +1075,7 @@ an adjacent cube's shared interface face leaves exactly 5 faces (area 5).
   pipeline's numerical results are only as physically sane as the tissue
   geometry handed to it.
 
-## Visualization (Phase 7)
+### Visualization
 
 `roast_py/viz/` ports ROAST's visualization. `roast()` calls it at the end
 of every simulation, and `review_res()` redraws a finished one from disk:
@@ -957,21 +1164,27 @@ conda's and python.org's Python) or Qt. Without one, matplotlib can only
 save files, and the slice views are saved as PNGs instead (the 3D window
 still opens).
 
-## Remaining phases (see the full plan for detail)
+### Roadmap
 
-0. ~~I/O & preprocessing~~ done
-1. ~~Segmentation~~ done (see above)
-2. ~~Electrode placement & cap fitting~~ done (see above)
-3. ~~Meshing~~ done (see above)
-4. ~~FEM solve~~ done (see above)
-5. End-to-end numerical validation against MATLAB ROAST (gate before continuing)
-6. Targeting (`roast_target()`, CVX → cvxpy)
-7. ~~Visualization (`reviewRes()`)~~ done (see above); packaging remains
+Done in 0.1: MRI I/O, segmentation (Multiaxial and SPM), landmarks,
+electrode placement, meshing, the FEM solve, tags and resuming, and
+visualization, with the E-field checked against MATLAB ROAST end to end
+on 8 examples.
 
-## Running the tests
+Next:
+
+1. **Targeting:** `roast_target()` (CVX → cvxpy) and reviewRes's
+   targeting views.
+2. **Packaging:** bundle the files roast_py uses from the rest of the
+   repository (see [above](#files-roast_py-uses-from-the-rest-of-the-repository))
+   so that roast_py installs on its own with a regular `pip install`.
+3. The New York head, lead fields and the manual landmark GUI.
+
+### Running the tests
 
 ```
 cd roast_py
 pip install -e ".[dev]"
-pytest tests/ -v
+pytest tests/ -m "not slow"   # about 30 s
+pytest tests/                 # also the slow end-to-end tests (real models, binaries and getDP)
 ```
