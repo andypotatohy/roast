@@ -72,7 +72,7 @@ result = roast()
 
 This is MATLAB's `roast()`: ROAST's default head
 (`example/MNI152_T1_1mm.nii`) with its default montage, anode Fp1 at
-1 mA and cathode P4 at −1 mA. It takes about 15 minutes on 4 CPU cores.
+1 mA and cathode P4 at −1 mA. It takes 10–15 minutes on 4 CPU cores.
 When it's done, figures open showing the head, the electrodes, and the
 voltage and E-field; `roast()` returns when you close them.
 
@@ -292,8 +292,14 @@ and lead fields (32). The `roast_target` calls and the reviews of their
 results (34–37, 39–41) are left out. The calls on `subject1.nii` need about 20 GB of memory (see
 [Memory](#memory)).
 
-`examples/quickstart.py` runs one simulation on `example/subject1.nii`
-(about 20 GB of memory).
+`examples/quickstart.py` runs `roast()` on ROAST's default head (MNI152,
+about 8 GB of memory), working in a temporary folder:
+
+```
+python examples/quickstart.py                 # install the tested environment if needed, then run
+python examples/quickstart.py --check-deps    # just report what differs from it
+python examples/quickstart.py --no-visualize  # skip the figures
+```
 
 ## Developer guide
 

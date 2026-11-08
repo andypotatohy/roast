@@ -1,6 +1,6 @@
-"""Quick simulation on the bundled subject1.nii with ROAST's default
-recipe (anode Fp1 1 mA, cathode P4 -1 mA) -- the Python equivalent of
-MATLAB's `roast('example/subject1.nii')`.
+"""Quick simulation on ROAST's default head, the MNI152 template
+(example/MNI152_T1_1mm.nii), with ROAST's default recipe (anode Fp1 1 mA,
+cathode P4 -1 mA) -- the Python equivalent of MATLAB's `roast()`.
 
 Run from the roast_py/ directory:
 
@@ -15,20 +15,21 @@ running interpreter when anything is missing or at a different version.
 Needs Python 3.11-3.13; `conda create -n roast_py python=3.11` gives you
 the exact Python it was tested on.
 
-Takes several minutes on CPU: ~2-3 min for segmentation, ~1-2 min for
-meshing + the FEM solve, plus the dependency install on first run. See the
-top-level README for what each phase does and how it's been verified.
+Takes about 10-15 minutes on 4 CPU cores, plus the dependency install on
+the first run, and needs about 8 GB of memory (the FEM solve). See
+README.md for what each step does and how it's been verified.
 """
 
 import argparse
 import importlib.util
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]  # the roast_py/ project directory
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SUBJECT1 = REPO_ROOT / "example" / "subject1.nii"
+MNI152 = REPO_ROOT / "example" / "MNI152_T1_1mm.nii"
 
 # Work straight from a git clone, with no `pip install -e .` step: running
 # a script in examples/ puts examples/ on sys.path, not the project root,
@@ -66,8 +67,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--work-dir",
-        default="/tmp/roast_py_quickstart",
-        help="where to copy the subject and write outputs (default: %(default)s)",
+        default=str(Path(tempfile.gettempdir()) / "roast_py_quickstart"),
+        help="where to copy the MRI and write outputs (default: %(default)s)",
     )
     args = parser.parse_args()
 
@@ -91,12 +92,13 @@ def main() -> int:
     from roast_py import roast  # importable even with nothing installed
 
     # roast() writes its outputs (.msh, .pro, .pos, and the final _v/_e/_emag
-    # .nii files) next to the input, so copy subject1.nii out of the repo's
+    # .nii files) next to the input, so copy the MRI out of the repo's
     # example/ folder first rather than writing into it.
     work_dir = Path(args.work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
-    subj = work_dir / "subject1.nii"
-    shutil.copy(SUBJECT1, subj)
+    subj = work_dir / MNI152.name
+    if not subj.exists():
+        shutil.copy(MNI152, subj)
 
     # recipe defaults to {'Fp1': 1.0, 'P4': -1.0}
     result = roast(
@@ -105,10 +107,11 @@ def main() -> int:
 
     print(f"Voltage volume:  {result.vol_v.shape}")
     print(f"E-field volume:  {result.vol_e.shape}")
+    stem = f"{subj.stem}_{result.sim_tag}"
     print(f"Outputs saved under: {result.work_dir}")
-    print(f"  {subj.stem}_v.nii     -- voltage (mV)")
-    print(f"  {subj.stem}_e.nii     -- E-field, 3 components (V/m)")
-    print(f"  {subj.stem}_emag.nii  -- E-field magnitude (V/m)")
+    print(f"  {stem}_v.nii     -- voltage (mV)")
+    print(f"  {stem}_e.nii     -- E-field, 3 components (V/m)")
+    print(f"  {stem}_emag.nii  -- E-field magnitude (V/m)")
     print(f"Redraw the figures any time with: roast_py.review_res({str(subj)!r})")
     return 0
 
