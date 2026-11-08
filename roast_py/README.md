@@ -1,6 +1,6 @@
 # roast_py 0.1: ROAST in Python, no MATLAB needed
 
-roast_py is a Python port of [ROAST](https://www.parralab.org/roast/)'s
+roast_py is a Python port of ROAST's
 `roast()`: it builds a head model from a T1 MRI, places the electrodes
 you ask for, and computes the voltage and electric field of a
 transcranial electrical stimulation (TES) montage. It does what MATLAB
@@ -300,6 +300,14 @@ python examples/quickstart.py                 # install the tested environment i
 python examples/quickstart.py --check-deps    # just report what differs from it
 python examples/quickstart.py --no-visualize  # skip the figures
 ```
+
+(c) [Yu (Andy) Huang](https://andypotatohy.github.io/), [University of Colorado at Colorado Springs](https://eas.uccs.edu/staff/dr-yu-andy-huang)
+
+andypotatohy@gmail.com
+
+Co-authored by Claude Code powered by Opus 5.5
+
+November 2026
 
 ## Developer guide
 
@@ -1194,3 +1202,11 @@ pip install -e ".[dev]"
 pytest tests/ -m "not slow"   # about 30 s
 pytest tests/                 # also the slow end-to-end tests (real models, binaries and getDP)
 ```
+
+(c) [Yu (Andy) Huang](https://andypotatohy.github.io/), [University of Colorado at Colorado Springs](https://eas.uccs.edu/staff/dr-yu-andy-huang)
+
+andypotatohy@gmail.com
+
+Co-authored by Claude Code powered by Opus 5.5
+
+November 2026
