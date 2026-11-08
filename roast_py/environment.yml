@@ -1,0 +1,22 @@
+# Conda environment for roast_py, reproducing the tested environment.
+#
+#     conda env create -f environment.yml
+#     conda activate roast_py
+#
+# Conda supplies only Python itself -- the exact interpreter version roast_py
+# was verified on. Every package comes from pip at the exact versions in
+# requirements-lock.txt, because that is how the tested environment was
+# built: a conda-forge TensorFlow can be newer than any tf-keras release,
+# and the bundled Keras 2 segmentation models need the two to match.
+#
+# You don't have to use this file: in any Python 3.11-3.13 environment,
+# roast() installs requirements-lock.txt on its own.
+name: roast_py
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - -r requirements-lock.txt
+      - -e .
