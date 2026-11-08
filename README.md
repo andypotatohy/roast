@@ -783,8 +783,8 @@ This software uses free packages from the Internet, except Matlab, which is a pr
 
 ROAST is considered as an "aggregate" rather than "derived work", based on the definitions in [GPL FAQ](http://www.gnu.org/licenses/gpl-faq.html#MereAggregation). The ROAST license only applies to the scripts, documentations, and the individual MRI data under `example/` folder in the root directory in this package and excludes those programs stored in the `lib/` directory. The software under `lib/` follow their respective licenses. This software is only intended for non-commercial use.
 
-(c) [Yu (Andy) Huang](https://www.parralab.org/people/yu-andy-huang/), Parra Lab at CCNY
+(c) [Yu (Andy) Huang](https://andypotatohy.github.io/), [University of Colorado at Colorado Springs](https://eas.uccs.edu/staff/dr-yu-andy-huang)
 
-yhuang16@citymail.cuny.edu
+andypotatohy@gmail.com
 
-September 2025
+November 2026
